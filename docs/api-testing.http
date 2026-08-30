@@ -1,0 +1,198 @@
+### Campus Companion API — manual test requests
+#
+# Install the "REST Client" extension in VS Code, then click "Send Request"
+# above any block below. Handy for demonstrating the API to a supervisor
+# without needing the Flutter app running.
+#
+# Run the login request FIRST — the others reuse its token.
+
+@host = http://localhost:4000/api
+
+### Health check (no auth needed)
+GET {{host}}/health
+
+### Log in as a student  -> captures the token for later requests
+# @name studentLogin
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "student@ug.edu.gh",
+  "password": "student123"
+}
+
+### Log in as an administrator
+# @name adminLogin
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@ug.edu.gh",
+  "password": "admin123"
+}
+
+@studentToken = {{studentLogin.response.body.token}}
+@adminToken = {{adminLogin.response.body.token}}
+
+### Register a brand new student account
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Ama Owusu",
+  "email": "ama.owusu@ug.edu.gh",
+  "password": "password123"
+}
+
+### Who am I?
+GET {{host}}/auth/me
+Authorization: Bearer {{studentToken}}
+
+
+############################################################
+# Module 2 — dashboard & schedule
+############################################################
+
+### Everything the home screen needs, in one request
+GET {{host}}/dashboard
+Authorization: Bearer {{studentToken}}
+
+### Full week timetable
+GET {{host}}/schedule
+Authorization: Bearer {{studentToken}}
+
+### Friday only (1 = Monday ... 5 = Friday)
+GET {{host}}/schedule?day=5
+Authorization: Bearer {{studentToken}}
+
+### Today's classes
+GET {{host}}/schedule/today
+Authorization: Bearer {{studentToken}}
+
+
+############################################################
+# Module 3 — announcements
+############################################################
+
+### Recent announcements
+GET {{host}}/announcements
+Authorization: Bearer {{studentToken}}
+
+### Post an announcement (admin only)
+POST {{host}}/announcements
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Registration deadline",
+  "message": "Course registration closes on Friday at 5 PM.",
+  "category": "academic"
+}
+
+### The same request as a student -> expect 403 Forbidden
+POST {{host}}/announcements
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{
+  "title": "Should be blocked",
+  "message": "A student must not be able to post this.",
+  "category": "emergency"
+}
+
+
+############################################################
+# Module 4 — grades
+############################################################
+
+### My results, GPA and average
+GET {{host}}/grades
+Authorization: Bearer {{studentToken}}
+
+### Record a mark (admin only)
+POST {{host}}/grades
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "courseId": 2,
+  "score": 88
+}
+
+
+############################################################
+# Module 5 — events & clubs
+############################################################
+
+### Upcoming events only
+GET {{host}}/events?upcoming=true
+Authorization: Bearer {{studentToken}}
+
+### RSVP to event 1
+POST {{host}}/events/1/register
+Authorization: Bearer {{studentToken}}
+
+### Cancel that RSVP
+DELETE {{host}}/events/1/register
+Authorization: Bearer {{studentToken}}
+
+### All clubs, with membership state
+GET {{host}}/clubs
+Authorization: Bearer {{studentToken}}
+
+### Join club 1
+POST {{host}}/clubs/1/join
+Authorization: Bearer {{studentToken}}
+
+
+############################################################
+# Module 6 — campus map
+############################################################
+
+### All campus locations
+GET {{host}}/locations
+Authorization: Bearer {{studentToken}}
+
+### Filter by category
+GET {{host}}/locations?category=library
+Authorization: Bearer {{studentToken}}
+
+### Search by name
+GET {{host}}/locations?search=balme
+Authorization: Bearer {{studentToken}}
+
+### Valid category values
+GET {{host}}/locations/categories
+Authorization: Bearer {{studentToken}}
+
+
+############################################################
+# Security checks — these SHOULD fail
+############################################################
+
+### No token -> expect 401
+GET {{host}}/dashboard
+
+### Forged token -> expect 401
+GET {{host}}/dashboard
+Authorization: Bearer not.a.real.token
+
+### Wrong password -> expect 401
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "student@ug.edu.gh",
+  "password": "wrong-password"
+}
+
+### Password too short -> expect 400 with a validation message
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Test User",
+  "email": "shortpw@ug.edu.gh",
+  "password": "abc"
+}

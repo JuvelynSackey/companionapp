@@ -1,0 +1,74 @@
+services:
+  # Express/Postgres API
+  - type: web
+    name: campus-companion-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_HOST
+        fromDatabase:
+          name: campus-companion-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: campus-companion-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: campus-companion-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: campus-companion-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: campus-companion-db
+          property: password
+
+  # Flutter web build, served as a static site.
+  #
+  # The build environment doesn't have Flutter preinstalled, so buildCommand
+  # fetches the stable SDK first. BACKEND_HOST is resolved to the backend
+  # service's real hostname by Render (avoids hardcoding a name that might
+  # not be available on onrender.com) and baked into the compiled JS via
+  # --dart-define, since Flutter web has no server-side runtime to read env
+  # vars from after the build.
+  #
+  # GEMINI_API_KEY is deliberately NOT passed here: any --dart-define value
+  # ends up in plaintext in the compiled JS bundle, so baking a real API key
+  # into a public static site would leak it. Left unset, the app's Assistant
+  # screen just runs in its offline/local-engine fallback mode.
+  - type: web
+    name: campus-companion-web
+    runtime: static
+    rootDir: mobile
+    buildCommand: >-
+      git clone https://github.com/flutter/flutter.git -b stable --depth 1 _flutter &&
+      export PATH="$PATH:$PWD/_flutter/bin" &&
+      flutter config --enable-web &&
+      flutter pub get &&
+      flutter build web --release --dart-define=API_BASE_URL=https://$BACKEND_HOST/api
+    staticPublishPath: build/web
+    envVars:
+      - key: BACKEND_HOST
+        fromService:
+          type: web
+          name: campus-companion-backend
+          property: host
+
+databases:
+  - name: campus-companion-db
+    plan: free
+    databaseName: campus_companion
+    user: campus_companion

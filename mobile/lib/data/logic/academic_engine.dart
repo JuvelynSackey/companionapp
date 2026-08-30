@@ -1,0 +1,130 @@
+import 'package:flutter/material.dart';
+import '../models/course_grade.dart';
+import '../models/institution_profile.dart';
+
+/// Institution-aware GPA/CWA + honours classification, computed client-side
+/// from the backend's raw per-course `score` (0-100). Ported from
+/// app/src/main/java/com/example/data/repository/GradingEngine.kt.
+///
+/// The backend's own `letterGrade` uses one fixed scale for every
+/// institution (see PROJECT_AUDIT.md's grading-scale mismatch note) — this
+/// engine deliberately ignores it and re-derives points from the raw score
+/// using each institution's own breakpoints, so multi-tenant grading stays
+/// faithful to the source app without needing backend schema changes.
+class AcademicMetricResult {
+  const AcademicMetricResult({
+    required this.scoreValue,
+    required this.formattedScore,
+    required this.honoursClass,
+    required this.honoursColor,
+    required this.totalCredits,
+    required this.isPercentage,
+    required this.metricLabel,
+    required this.statusSummary,
+  });
+
+  final double scoreValue;
+  final String formattedScore;
+  final String honoursClass;
+  final Color honoursColor;
+  final int totalCredits;
+  final bool isPercentage;
+  final String metricLabel;
+  final String statusSummary;
+}
+
+class AcademicEngine {
+  AcademicEngine._();
+
+  static const _noDataColor = Color(0xFF6B7280);
+
+  /// Score -> point breakpoints per grading system. KNUST's CWA is already
+  /// a percentage average, so it has no conversion table (see _pointForScore).
+  static const _gpa4_0Breakpoints = [
+    (80.0, 4.0), (75.0, 3.5), (70.0, 3.0), (65.0, 2.5),
+    (60.0, 2.0), (55.0, 1.5), (50.0, 1.0), (45.0, 0.5),
+  ];
+
+  static const _scale5_0Breakpoints = [
+    (80.0, 5.0), (70.0, 4.0), (60.0, 3.0), (50.0, 2.0), (45.0, 1.0),
+  ];
+
+  static const _scale4_3Breakpoints = [
+    (80.0, 4.3), (75.0, 3.7), (70.0, 3.3), (65.0, 2.7),
+    (60.0, 2.3), (55.0, 1.7), (50.0, 1.3), (45.0, 0.7),
+  ];
+
+  static double _pointForScore(double score, GradingSystemType system) {
+    if (system == GradingSystemType.knustCwa) return score;
+
+    final breakpoints = switch (system) {
+      GradingSystemType.gpa4_0 => _gpa4_0Breakpoints,
+      GradingSystemType.scale5_0 => _scale5_0Breakpoints,
+      GradingSystemType.scale4_3 => _scale4_3Breakpoints,
+      GradingSystemType.knustCwa => throw StateError('handled above'),
+    };
+    for (final (minScore, point) in breakpoints) {
+      if (score >= minScore) return point;
+    }
+    return 0.0;
+  }
+
+  static HonoursThreshold classify(double score, InstitutionProfile institution) {
+    for (final threshold in institution.honoursThresholds) {
+      if (score >= threshold.minScore) return threshold;
+    }
+    if (institution.honoursThresholds.isNotEmpty) return institution.honoursThresholds.last;
+    return const HonoursThreshold(title: 'Pass', minScore: 0, maxScore: 100, color: _noDataColor);
+  }
+
+  static double maxScaleFor(GradingSystemType system) => switch (system) {
+        GradingSystemType.gpa4_0 => 4.0,
+        GradingSystemType.scale5_0 => 5.0,
+        GradingSystemType.scale4_3 => 4.3,
+        GradingSystemType.knustCwa => 100.0,
+      };
+
+  static AcademicMetricResult calculate(List<CourseGrade> grades, InstitutionProfile institution) {
+    final isPercentage = institution.gradingSystem == GradingSystemType.knustCwa;
+    final metricLabel = isPercentage ? 'Cumulative CWA' : 'Cumulative GPA';
+
+    if (grades.isEmpty) {
+      return AcademicMetricResult(
+        scoreValue: 0,
+        formattedScore: isPercentage ? '0.00% CWA' : '0.00 / 4.00',
+        honoursClass: 'No Data',
+        honoursColor: _noDataColor,
+        totalCredits: 0,
+        isPercentage: isPercentage,
+        metricLabel: metricLabel,
+        statusSummary: 'Add courses to compute your ${isPercentage ? 'CWA' : 'GPA'}',
+      );
+    }
+
+    var totalCredits = 0;
+    var totalWeightedPoints = 0.0;
+    for (final grade in grades) {
+      final credits = grade.creditHours < 1 ? 1 : grade.creditHours;
+      totalCredits += credits;
+      totalWeightedPoints += credits * _pointForScore(grade.score, institution.gradingSystem);
+    }
+
+    final calculatedScore = totalCredits > 0 ? totalWeightedPoints / totalCredits : 0.0;
+    final honours = classify(calculatedScore, institution);
+
+    final formatted = isPercentage
+        ? '${calculatedScore.toStringAsFixed(2)}% CWA'
+        : '${calculatedScore.toStringAsFixed(2)} / ${maxScaleFor(institution.gradingSystem).toStringAsFixed(2)}';
+
+    return AcademicMetricResult(
+      scoreValue: calculatedScore,
+      formattedScore: formatted,
+      honoursClass: honours.title,
+      honoursColor: honours.color,
+      totalCredits: totalCredits,
+      isPercentage: isPercentage,
+      metricLabel: metricLabel,
+      statusSummary: '${honours.title} • $totalCredits Total Credit Hours',
+    );
+  }
+}
