@@ -1,6 +1,4 @@
 /// Local static fixture models — the backend has no library/resource tables.
-/// Loosely ported from CampusLibraryEntity / StudyResourceEntity in
-/// app/src/main/java/com/example/data/local/entity/Entities.kt.
 enum SeatOccupancyLevel { low, moderate, high, full }
 
 class LibraryInfo {

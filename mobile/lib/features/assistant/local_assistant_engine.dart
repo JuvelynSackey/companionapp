@@ -2,9 +2,7 @@ import '../../data/models/exam_countdown.dart';
 import 'context_aggregator.dart';
 
 /// Deterministic fallback used when no Gemini key is configured or the API
-/// call fails. Ported near-verbatim from the 12-branch keyword engine in
-/// app/src/main/java/com/example/data/ai/CampusAssistantService.kt
-/// (generateSmartLocalResponse), adapted to the data this app actually has
+/// call fails. A 12-branch keyword engine, adapted to the data this app actually has
 /// (e.g. no shortCode on locations, no per-class "moved" flag from the
 /// backend) — branches 7-11 (shuttle/MoMo/wifi/food/stress) had no real
 /// data backing in the source either, so they stay as informational text.

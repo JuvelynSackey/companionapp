@@ -1,6 +1,6 @@
 # Phase 2 Architecture Plan — Student Hub, Digital ID, AI Assistant, GPA Engine
 
-Scoping only — no implementation yet. Companion to the Phase 1 migration plan (`mobile/` Flutter app, wired to the Express backend). Ported source references are in `app/src/main/java/com/example/`.
+Scoping only — no implementation yet. Companion to the Phase 1 migration plan (`mobile/` Flutter app, wired to the Express backend). The original Kotlin/Compose app these features were ported from was removed from the repo after the migration; it remains available in git history (commit `77b2e02` and earlier).
 
 ## 1. Student Hub (shuttles, MoMo dues, lost & found, campus events, portals)
 

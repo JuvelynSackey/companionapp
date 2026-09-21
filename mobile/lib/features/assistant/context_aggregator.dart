@@ -43,8 +43,7 @@ class AssistantContext {
   List<LibraryInfo> get libraries => ResourceFixtures.libraries;
   List<InstitutionPortal> get portals => institution.portals;
 
-  /// System-instruction text sent to Gemini, mirroring the context block
-  /// CampusAssistantService.kt builds for the same purpose.
+  /// System-instruction text sent to Gemini, summarising the student's live data.
   String toSystemPrompt() {
     final scheduleSummary = todaysClasses.isEmpty
         ? 'No classes today.'

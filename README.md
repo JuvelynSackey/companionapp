@@ -8,7 +8,6 @@ alerts, events, campus map, grade analytics, quizzes, and an AI assistant and tu
 | `mobile/` | Flutter app (Riverpod, Dio). This is the app. |
 | `backend/` | Node/Express REST API on PostgreSQL. |
 | `docs/` | Schema notes, API examples (`api-testing.http`), phase-2 plan. |
-| `app/` | Legacy Kotlin/Compose app, kept only as a reference. Not built or used. |
 
 See [PROJECT_AUDIT.md](PROJECT_AUDIT.md) for what works, what is simulated, and what is left to clean up.
 

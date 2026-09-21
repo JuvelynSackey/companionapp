@@ -8,7 +8,7 @@ import '../../data/models/schedule_entry.dart';
 import '../../data/models/student_hub_models.dart';
 
 /// Wraps SharedPreferences for the small bits of local-only state:
-/// onboarding/institution selection (mirrors InstitutionPreferencesRepository.kt),
+/// onboarding/institution selection,
 /// per-device announcement read state (not in the backend schema), the
 /// local-only Exams feature (no backend table exists for exams), and the
 /// now-local-only Schedule/Timetable (student-managed, backend's

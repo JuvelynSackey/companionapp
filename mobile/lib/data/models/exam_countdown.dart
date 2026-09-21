@@ -1,7 +1,7 @@
 import 'package:intl/intl.dart';
 import 'exam.dart';
 
-/// Ported from app/src/main/java/com/example/data/repository/ExamCountdownUtils.kt
+/// Days/hours remaining until an [Exam], for the countdown UI.
 class ExamCountdown {
   ExamCountdown({
     required this.exam,

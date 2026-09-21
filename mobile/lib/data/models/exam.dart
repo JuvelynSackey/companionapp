@@ -1,5 +1,4 @@
 /// Local-only model — the backend has no exams table/endpoint.
-/// Ported from app/src/main/java/com/example/data/local/entity/Entities.kt (ExamScheduleEntity).
 class Exam {
   Exam({
     required this.id,

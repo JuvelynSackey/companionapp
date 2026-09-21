@@ -1,7 +1,5 @@
 /// Local static fixture + local-only mutable models for the Student Hub
-/// (shuttles/trotro, MoMo dues, lost & found). Ported from
-/// CampusShuttleRoute / CampusDueItem / MoMoPaymentReceipt / LostAndFoundItem
-/// in app/src/main/java/com/example/data/model/CampusCompanionModels.kt.
+/// (shuttles/trotro, MoMo dues, lost & found).
 /// No backend table exists for any of this (see docs/phase-2-plan.md) — dues
 /// and lost & found reports are simulated, per-device state, never real
 /// payments or a shared feed.

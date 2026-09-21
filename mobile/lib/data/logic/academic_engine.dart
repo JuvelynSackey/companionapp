@@ -3,8 +3,7 @@ import '../models/course_grade.dart';
 import '../models/institution_profile.dart';
 
 /// Institution-aware GPA/CWA + honours classification, computed client-side
-/// from the backend's raw per-course `score` (0-100). Ported from
-/// app/src/main/java/com/example/data/repository/GradingEngine.kt.
+/// from the backend's raw per-course `score` (0-100).
 ///
 /// The backend's own `letterGrade` uses one fixed scale for every
 /// institution (see PROJECT_AUDIT.md's grading-scale mismatch note) — this

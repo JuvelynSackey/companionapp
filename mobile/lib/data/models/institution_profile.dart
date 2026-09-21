@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Port of app/src/main/java/com/example/data/model/InstitutionProfile.kt.
+/// Institution branding and grading rules.
 /// Phase 1 used this for branding/theme only; Phase 2 restores the grading
 /// system + honours thresholds for the institution-aware GPA/CWA engine
 /// (see AcademicEngine). Campus-zone and sample-schedule/exam fields from

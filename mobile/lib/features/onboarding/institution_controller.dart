@@ -4,7 +4,7 @@ import '../../data/models/institution_profile.dart';
 import '../../data/models/local_student_profile.dart';
 
 /// The selected institution — branding/theme only in Phase 1 (backend is
-/// single-tenant), mirrors InstitutionPreferencesRepository.kt.
+/// single-tenant).
 class InstitutionController extends Notifier<InstitutionProfile> {
   @override
   InstitutionProfile build() {

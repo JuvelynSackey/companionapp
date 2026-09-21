@@ -1,9 +1,8 @@
 import 'student_hub_models.dart';
 
-/// Ported from GhanaCampusCompanionData.kt's per-institution generators.
+/// Static per-institution content for the Student Hub.
 /// Institutions without dedicated content (Ashesi, GIMPA, ATU) fall back to
-/// the same generic set the Kotlin `else` branch used for UG — matching the
-/// source app's own fallback behavior rather than inventing new content.
+/// the same generic set used for UG.
 class StudentHubFixtures {
   StudentHubFixtures._();
 
