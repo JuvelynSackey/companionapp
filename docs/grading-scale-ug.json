@@ -1,0 +1,63 @@
+{
+  "_comment": "Single reference for the University of Ghana undergraduate grading scale. Read by the backend smoke test (backend/src/utils/smokeTest.js) and the Flutter test (mobile/test/grading_scale_parity_test.dart) so the server's letter grades / GPA and the app's GPA cannot drift apart. The scale itself lives in backend/db/schema.sql (letter_grade), backend/src/controllers/gradeController.js (GRADE_POINTS) and mobile/lib/data/logic/academic_engine.dart (_gpa4_0Breakpoints); change all of them and this file together. Expected GPAs below were worked out by hand: sum(points x credits) / sum(credits), rounded to 2 dp. A grade of F (below 45) is the only fail.",
+  "scale": [
+    { "letter": "A",  "min": 80, "points": 4.0 },
+    { "letter": "B+", "min": 75, "points": 3.5 },
+    { "letter": "B",  "min": 70, "points": 3.0 },
+    { "letter": "C+", "min": 65, "points": 2.5 },
+    { "letter": "C",  "min": 60, "points": 2.0 },
+    { "letter": "D+", "min": 55, "points": 1.5 },
+    { "letter": "D",  "min": 50, "points": 1.0 },
+    { "letter": "E",  "min": 45, "points": 0.5 },
+    { "letter": "F",  "min": 0,  "points": 0.0 }
+  ],
+  "boundaryScores": [100, 80, 79.99, 75, 74.99, 70, 69.99, 65, 64.99, 60, 59.99, 55, 54.99, 50, 49.99, 45, 44.99, 0],
+  "transcripts": [
+    {
+      "name": "bottom of each middle band, mixed credits",
+      "viaApi": true,
+      "expectedGpa": 1.73,
+      "note": "(2.5x3 + 1.5x3 + 0.5x2 + 2.0x3) / 11 = 19.0 / 11",
+      "rows": [
+        { "course": "DCIT 201", "credits": 3, "score": 65 },
+        { "course": "DCIT 202", "credits": 3, "score": 55 },
+        { "course": "DCIT 203", "credits": 2, "score": 45 },
+        { "course": "DCIT 205", "credits": 3, "score": 60 }
+      ]
+    },
+    {
+      "name": "just-failing mark and just-passing marks",
+      "viaApi": true,
+      "expectedGpa": 1.82,
+      "note": "(0x3 + 1.0x3 + 4.0x2 + 3.0x3) / 11 = 20.0 / 11",
+      "rows": [
+        { "course": "DCIT 201", "credits": 3, "score": 44.99 },
+        { "course": "DCIT 202", "credits": 3, "score": 50 },
+        { "course": "DCIT 203", "credits": 2, "score": 80 },
+        { "course": "DCIT 205", "credits": 3, "score": 74.99 }
+      ]
+    },
+    {
+      "name": "the seeded demo student",
+      "viaApi": false,
+      "expectedGpa": 3.64,
+      "note": "(4.0x3 + 3.0x3 + 3.5x2 + 4.0x3) / 11 = 40.0 / 11; asserted against the live API by the existing smoke check",
+      "rows": [
+        { "course": "DCIT 201", "credits": 3, "score": 85 },
+        { "course": "DCIT 202", "credits": 3, "score": 74 },
+        { "course": "DCIT 203", "credits": 2, "score": 79 },
+        { "course": "DCIT 205", "credits": 3, "score": 92 }
+      ]
+    },
+    {
+      "name": "credit weighting: the 3-credit course counts more than the 2-credit one",
+      "viaApi": false,
+      "expectedGpa": 3.6,
+      "note": "(4.0x3 + 3.0x2) / 5 = 18.0 / 5; an unweighted average would be 3.5",
+      "rows": [
+        { "course": "DCIT 201", "credits": 3, "score": 100 },
+        { "course": "DCIT 203", "credits": 2, "score": 70 }
+      ]
+    }
+  ]
+}

@@ -18,7 +18,8 @@ See [PROJECT_AUDIT.md](PROJECT_AUDIT.md) for what works, what is simulated, and 
 1. `cp backend/.env.example backend/.env` and set `DB_PASSWORD` and `JWT_SECRET`.
 2. Start PostgreSQL. `.\start-dev.ps1` starts the portable Postgres (port 5433) and the API (port 4000). Set `DB_PORT=5433` in `.env` to match.
 3. First run only: `cd backend && npm install && npm run db:setup`.
-4. Optional check: `npm run test:smoke` (needs the API running).
+4. Checks: `npm test` (offline unit tests) and `npm run test:smoke` (needs the API running).
+5. Upgrading an existing database: `npm run db:apply -- db/migrations/<file>.sql` (the grading-scale change needs `2026-09-ug-grading-scale.sql`).
 
 **Mobile**
 

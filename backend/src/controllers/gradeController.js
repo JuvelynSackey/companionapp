@@ -1,19 +1,6 @@
 import { z } from 'zod';
 import { query } from '../config/db.js';
-
-/**
- * Grade points for the scale printed in the proposal's Grades mock-up.
- * If the scale in schema.sql changes, change this to match — see
- * docs/schema-notes.md, "Open question: the grading scale".
- */
-const GRADE_POINTS = {
-  'A+': 4.0,
-  A: 4.0,
-  'B+': 3.5,
-  B: 3.0,
-  C: 2.0,
-  F: 0.0,
-};
+import { calculateGpa, FAILING_LETTER } from '../utils/grading.js';
 
 /** Must match the DEFAULT on grades.semester in schema.sql. */
 const CURRENT_SEMESTER = 'Semester 1 - 2025/2026';
@@ -24,25 +11,6 @@ export const upsertGradeSchema = z.object({
   score: z.number().min(0).max(100),
   semester: z.string().trim().max(40).optional(),
 });
-
-/**
- * GPA weighted by credit hours, which is how a university actually computes
- * it — a 3-credit course should move the average more than a 2-credit one.
- */
-function calculateGpa(rows) {
-  let points = 0;
-  let credits = 0;
-
-  for (const row of rows) {
-    const gradePoint = GRADE_POINTS[row.letter_grade];
-    if (gradePoint === undefined) continue;
-    points += gradePoint * row.credit_hours;
-    credits += row.credit_hours;
-  }
-
-  if (credits === 0) return null;
-  return Number((points / credits).toFixed(2));
-}
 
 /** GET /api/grades - the student's own results plus a summary. */
 export async function listGrades(req, res, next) {
@@ -65,7 +33,7 @@ export async function listGrades(req, res, next) {
       score: Number(row.score),
       letterGrade: row.letter_grade,
       semester: row.semester,
-      passed: row.letter_grade !== 'F',
+      passed: row.letter_grade !== FAILING_LETTER,
     }));
 
     const averageScore = grades.length

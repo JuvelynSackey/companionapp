@@ -8,6 +8,8 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "db:setup": "node src/utils/setupDb.js",
+    "db:apply": "node src/utils/applySql.js",
+    "test": "node --test",
     "test:smoke": "node src/utils/smokeTest.js"
   },
   "engines": {

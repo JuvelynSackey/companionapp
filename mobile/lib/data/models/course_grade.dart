@@ -1,6 +1,7 @@
-/// Matches GET /api/grades' per-course shape. `letterGrade` is the backend's
-/// own fixed-scale label — display only. The GPA/CWA number shown to the
-/// user is computed institution-aware by AcademicEngine from `score`.
+/// Matches GET /api/grades' per-course shape. `letterGrade` and `passed` are
+/// the backend's University of Ghana labels — display only. The GPA/CWA number
+/// shown to the user is computed institution-aware by AcademicEngine from
+/// `score`.
 class CourseGrade {
   CourseGrade({
     required this.gradeId,

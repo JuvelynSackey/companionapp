@@ -15,6 +15,8 @@
  * and events are deleted at the end; each run leaves two accounts behind
  * (smoke-lecturer-*, smoke-register-*), since there is no delete-user endpoint.
  */
+import { readFile } from 'node:fs/promises';
+
 const BASE = process.env.API_BASE ?? 'http://localhost:4000/api';
 
 let passed = 0;
@@ -132,6 +134,74 @@ async function run() {
     body: { userId: 1, courseId: 1, score: 100 },
   });
   check('student cannot post grades', studentPostsGrade.status === 403);
+
+  console.log('\nModule 4b — University of Ghana grading scale (docs/grading-scale-ug.json)');
+  // The same fixture the Flutter parity test reads, so server and app are held to one table.
+  const ug = JSON.parse(await readFile(new URL('../../../docs/grading-scale-ug.json', import.meta.url), 'utf8'));
+  const bandFor = (score) => ug.scale.find((band) => score >= band.min);
+  const round2 = (n) => Number(n.toFixed(2));
+  const gradeRunId = Date.now();
+
+  const catalog = await call('GET', '/courses', { token: adminToken });
+  const courseByCode = new Map((catalog.data?.courses ?? []).map((c) => [c.courseCode, c]));
+
+  // A fresh student per scenario: GPA is cumulative, so the seeded student's
+  // 3.64 (checked above) must not be disturbed. Grades cannot be deleted, so
+  // each run leaves these smoke-grades-* accounts behind; `npm run db:setup` resets them.
+  const newStudent = async (label) => {
+    const res = await call('POST', '/auth/register', {
+      body: {
+        fullName: `Smoke Grades ${label}`,
+        email: `smoke-grades-${label}-${gradeRunId}@ug.edu.gh`,
+        password: 'smokepass123',
+      },
+    });
+    return { userId: res.data?.user?.userId, token: res.data?.token };
+  };
+  const postGrade = (userId, courseCode, score, semester) =>
+    call('POST', '/grades', {
+      token: adminToken,
+      body: { userId, courseId: courseByCode.get(courseCode)?.courseId, score, semester },
+    });
+
+  // Every boundary mark, one semester each, all on the same 3-credit course.
+  const boundary = await newStudent('boundary');
+  check('boundary-test student created', typeof boundary.userId === 'number');
+  for (const [i, score] of ug.boundaryScores.entries()) {
+    const expected = bandFor(score);
+    const res = await postGrade(boundary.userId, 'DCIT 201', score, `Smoke boundary ${i}`);
+    check(`mark ${score} is graded ${expected.letter}`,
+      res.status === 201 && res.data?.letterGrade === expected.letter,
+      `status ${res.status}, got ${res.data?.letterGrade}`);
+  }
+
+  const boundaryList = await call('GET', '/grades', { token: boundary.token });
+  const boundaryRows = boundaryList.data?.grades ?? [];
+  check('all boundary marks are listed', boundaryRows.length === ug.boundaryScores.length,
+    `got ${boundaryRows.length}`);
+  check('only a grade of F is a fail (passed flag)',
+    boundaryRows.every((g) => g.passed === (g.letterGrade !== 'F')));
+  check('a mark of 55 passes (it failed under the old proposal scale)',
+    boundaryRows.find((g) => g.score === 55)?.passed === true);
+  // Same course and credits for every row, so the credit weighting cancels out.
+  const expectedBoundaryGpa = round2(
+    ug.boundaryScores.reduce((sum, score) => sum + bandFor(score).points, 0) / ug.boundaryScores.length);
+  check(`GPA over every boundary mark is ${expectedBoundaryGpa}`,
+    boundaryList.data?.summary?.gpa === expectedBoundaryGpa, `got ${boundaryList.data?.summary?.gpa}`);
+
+  // Hand-computed transcripts across courses with different credit hours.
+  for (const transcript of ug.transcripts.filter((t) => t.viaApi)) {
+    const student = await newStudent(transcript.name.split(' ')[0]);
+    let creditsMatch = true;
+    for (const row of transcript.rows) {
+      creditsMatch &&= courseByCode.get(row.course)?.creditHours === row.credits;
+      await postGrade(student.userId, row.course, row.score, 'Smoke transcript');
+    }
+    check(`transcript "${transcript.name}": course credit hours match the fixture`, creditsMatch);
+    const res = await call('GET', '/grades', { token: student.token });
+    check(`transcript "${transcript.name}" gives GPA ${transcript.expectedGpa}`,
+      res.data?.summary?.gpa === transcript.expectedGpa, `got ${res.data?.summary?.gpa}`);
+  }
 
   console.log('\nModule 3 — announcements');
   const anns = await call('GET', '/announcements', { token: studentToken });

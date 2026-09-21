@@ -74,18 +74,42 @@ with its "Now" badge.
 
 ---
 
-## Open question for your supervisor: the grading scale
+## Grading scale: University of Ghana (decided)
 
-The Grades mock-up (proposal p.25) prints this scale:
+The Grades mock-up (proposal p.25) printed a simplified scale:
 
     A+ ≥ 90    A ≥ 80    B+ ≥ 75    B ≥ 70    C ≥ 60    F < 60
 
-`schema.sql` implements exactly that, so the app matches the report. But it is
-**not** the University of Ghana undergraduate scale, which runs
-A (80–100), B+ (75–79), B (70–74), C+ (65–69), C (60–64), D+ (55–59),
-D (50–54), E (45–49), F (0–44) — no `A+`, and a fail at 44, not 60.
+That is **not** the University of Ghana undergraduate scale, and under it a
+student scoring 55 failed. The implementation now uses the real UG scale:
 
-Under the proposal's scale a student scoring 55 fails; under the real UG scale
-they pass with a D+. Worth deciding deliberately which one you implement,
-because an examiner from your own department will know the real one. Changing
-it is a small edit to one `CASE` expression in `schema.sql`.
+| Grade | Marks   | Points |
+|-------|---------|--------|
+| A     | 80–100  | 4.0    |
+| B+    | 75–79   | 3.5    |
+| B     | 70–74   | 3.0    |
+| C+    | 65–69   | 2.5    |
+| C     | 60–64   | 2.0    |
+| D+    | 55–59   | 1.5    |
+| D     | 50–54   | 1.0    |
+| E     | 45–49   | 0.5    |
+| F     | 0–44    | 0.0    |
+
+F is the only failing grade. A cumulative GPA is
+sum(points × credit hours) / sum(credit hours).
+
+**Where it lives.** The letter is the generated `grades.letter_grade` column in
+`schema.sql`; the points are `GRADE_POINTS` in `backend/src/utils/grading.js`;
+the app's copy is `_gpa4_0Breakpoints` in `academic_engine.dart`. The whole table
+is also in `docs/grading-scale-ug.json`, and every one of those is tested
+against that file (backend `npm test` and `npm run test:smoke`, Flutter
+`grading_scale_parity_test.dart`), so they cannot drift apart unnoticed.
+
+**Existing databases** keep the old column until you run
+`npm run db:apply -- db/migrations/2026-09-ug-grading-scale.sql`, which
+preserves every recorded score. A fresh `npm run db:setup` already has the new
+scale.
+
+**For the report:** this deliberately differs from the proposal's mock-up. Say
+so in Chapter 4, and update the Grades screenshot/table if the report reprints
+the old scale.

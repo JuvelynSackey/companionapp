@@ -145,9 +145,14 @@ CREATE INDEX idx_schedules_user_day ON schedules (user_id, day_of_week, start_ti
 
 -- ------------------------------------------------------------
 -- GRADE  (proposal entity 3)
--- letter_grade is GENERATED from score using the grading scale
--- printed on the proposal's Grades mock-up (page 25), so the two
--- columns can never drift out of sync.
+-- letter_grade is GENERATED from score using the University of Ghana
+-- undergraduate scale, so the two columns can never drift out of sync.
+-- The grade points for each letter are in gradeController.js
+-- (GRADE_POINTS) and the app's academic_engine.dart; the whole table is
+-- also in docs/grading-scale-ug.json, which the tests check all three
+-- against. Change them together. Existing databases need
+-- db/migrations/2026-09-ug-grading-scale.sql (this file only affects a
+-- fresh `npm run db:setup`).
 -- ------------------------------------------------------------
 CREATE TABLE grades (
     grade_id    SERIAL PRIMARY KEY,
@@ -158,11 +163,14 @@ CREATE TABLE grades (
     recorded_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
     letter_grade VARCHAR(2) GENERATED ALWAYS AS (
         CASE
-            WHEN score >= 90 THEN 'A+'
             WHEN score >= 80 THEN 'A'
             WHEN score >= 75 THEN 'B+'
             WHEN score >= 70 THEN 'B'
+            WHEN score >= 65 THEN 'C+'
             WHEN score >= 60 THEN 'C'
+            WHEN score >= 55 THEN 'D+'
+            WHEN score >= 50 THEN 'D'
+            WHEN score >= 45 THEN 'E'
             ELSE 'F'
         END
     ) STORED,

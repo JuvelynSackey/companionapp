@@ -5,11 +5,13 @@ import '../models/institution_profile.dart';
 /// Institution-aware GPA/CWA + honours classification, computed client-side
 /// from the backend's raw per-course `score` (0-100).
 ///
-/// The backend's own `letterGrade` uses one fixed scale for every
-/// institution (see PROJECT_AUDIT.md's grading-scale mismatch note) — this
-/// engine deliberately ignores it and re-derives points from the raw score
-/// using each institution's own breakpoints, so multi-tenant grading stays
-/// faithful to the source app without needing backend schema changes.
+/// The backend is single-tenant and grades on the University of Ghana scale;
+/// the 4.0 breakpoints below are that same scale (checked against
+/// docs/grading-scale-ug.json by grading_scale_parity_test.dart, which the
+/// server is also checked against). This engine re-derives points from the raw
+/// score using each institution's own breakpoints, so the other institutions'
+/// scales (5.0, 4.3, CWA) work without backend changes. For those, the
+/// backend's `letterGrade` label is still the UG one.
 class AcademicMetricResult {
   const AcademicMetricResult({
     required this.scoreValue,

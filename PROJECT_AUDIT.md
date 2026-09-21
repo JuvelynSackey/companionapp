@@ -11,8 +11,9 @@ live app is now Flutter; the legacy Kotlin module `app/` was removed (see sectio
 | Check | Result |
 |---|---|
 | `flutter analyze` | No issues |
-| `flutter test` | 164 / 164 pass |
-| Backend `npm run test:smoke` | 111 / 111 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events (including lecturer create/delete and ownership), clubs, locations, admin provisioning, role permissions, self-registration never granting a role, and the quiz lifecycle. Re-runnable: it deletes its quizzes and events, but leaves a `smoke-lecturer-*` and a `smoke-register-*` account per run. |
+| `flutter test` | 188 / 188 pass |
+| Backend `npm test` (offline) | 12 / 12 pass: the grading scale in `schema.sql`, the migration and `GRADE_POINTS` all match `docs/grading-scale-ug.json` |
+| Backend `npm run test:smoke` | 138 / 138 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events (including lecturer create/delete and ownership), clubs, locations, admin provisioning, role permissions, self-registration never granting a role, and the quiz lifecycle. Re-runnable: it deletes its quizzes and events, but leaves a `smoke-lecturer-*` and a `smoke-register-*` account per run. |
 
 ## 2. Features that work (implemented and wired end to end)
 
@@ -29,6 +30,7 @@ where noted, tests.
 - **Admin panel** — admins only (Admin panel item in the profile menu): create lecturer or admin accounts via `/admin/provision-user`, with client-side validation, backend errors shown (e.g. duplicate email), and an extra confirmation before creating an admin. The screen and the menu item are hidden from other roles; the backend enforces the role regardless. Tested. The menu item itself is not covered by a widget test.
 - **Clubs** — list with search and an All / My clubs filter, join / leave with optimistic updates and rollback on failure, and a detail screen with the club's upcoming events. Opened from the Clubs icon on the Events screen. Tested (`club`, `clubs_providers`, `clubs_screen`). Not seen running on a device or emulator yet.
 - **Campus locations and map** — `/locations`, custom painter map, open in Maps. Tested (`map_coordinate_mapper`).
+- **Grades and GPA** — the server and the app now use the same University of Ghana scale (A 80+ … F below 45, F the only fail; GPA = Σ points × credits / Σ credits). Before 21 September the server graded on the proposal's simplified scale, so a 55 showed as a fail (F) next to a GPA that counted it as D+. Guarded by `docs/grading-scale-ug.json`, which the backend tests and the Flutter parity test both read. Existing databases need `npm run db:apply -- db/migrations/2026-09-ug-grading-scale.sql`. For non-UG institutions in the app (5.0, 4.3, CWA) the per-course letter label is still the UG one.
 - **Analytics** — GPA/CWA, honours class and target-class predictor, computed client-side per institution. Tested (`grade_prediction_engine`, `academic_engine`).
 - **Quizzes** — create, take, submit attempts; import a past-paper PDF and extract questions with Gemini. Tested (`past_paper_extraction`).
 - **AI Assistant / AI Tutor** — Gemini when a key is supplied, otherwise a local rule engine. Tested (`assistant_engine`).
@@ -44,10 +46,9 @@ These are what to clean up or finish. Ordered by how likely they are to matter i
 | 2 | **Student Hub — Shuttles, MoMo Dues, Lost & Found** | Simulated | No backend tables. Content is static fixtures (`student_hub_fixtures.dart`). "Paying" a due only writes a fake receipt on the device; no payment gateway. Lost & Found reports are per device and never shared. |
 | 3 | **Resources** — libraries, past papers, academic calendar, handbook | Static content | Hard-coded in `resource_models.dart`. Not editable and not backed by the API. |
 | 4 | **AI Assistant on the deployed web build** | Local fallback only | `GEMINI_API_KEY` is intentionally not baked into the web build (`render.yaml`), so it always uses the rule engine. In that engine the shuttle, MoMo, wifi, food and stress replies are generic text, not data. |
-| 5 | **Backend grading scale** | Known mismatch | The server computes `summary.gpa` on a fixed 4.0 scale that differs from the UG scale. The app recomputes client-side, so the two GPA numbers can disagree. Open question is in `docs/schema-notes.md`. |
-| 6 | **Unused backend routes** | Dead from the app's side | `GET /schedule/today` is never called by the mobile app. Lecturers can delete their own events on the backend, but the app offers deletion to admins only (the events API does not say who created an event). (The backend has no `GET /clubs/:id`, club leadership or categories, so the Clubs screens do not show them.) |
-| 7 | **Default API URL** | Works only on an Android emulator | Defaults to `http://10.0.2.2:4000/api`. A physical device or desktop run needs `--dart-define=API_BASE_URL=...`. |
-| 8 | **Backend tests** | Thin | One smoke script that needs a live server and database. No unit tests. |
+| 5 | **Unused backend routes** | Dead from the app's side | `GET /schedule/today` is never called by the mobile app. Lecturers can delete their own events on the backend, but the app offers deletion to admins only (the events API does not say who created an event). (The backend has no `GET /clubs/:id`, club leadership or categories, so the Clubs screens do not show them.) |
+| 6 | **Default API URL** | Works only on an Android emulator | Defaults to `http://10.0.2.2:4000/api`. A physical device or desktop run needs `--dart-define=API_BASE_URL=...`. |
+| 7 | **Backend tests** | Thin | A smoke script that needs a live server and database, plus offline unit tests for the grading scale only. Nothing else has unit tests. |
 
 ## 4. Cleanup done
 
@@ -79,4 +80,3 @@ The August report listed these as problems. They are no longer accurate:
 1. Push notifications: resolve the `TODO` in `announcementController.js` and add an FCM listener in the app.
 2. Student Hub: replace `student_hub_fixtures.dart` with real tables and routes for shuttles, dues and lost & found.
 3. Unused route: use `/schedule/today` in the app. Optionally let lecturers delete their own events (needs `createdBy` in the events API).
-4. Settle the grading scale so server and client GPA agree.
