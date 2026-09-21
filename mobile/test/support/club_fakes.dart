@@ -36,10 +36,14 @@ class FakeClubApi implements ClubApi {
 
 class FakeEventApi implements EventApi {
   FakeEventApi(this.events);
-  final List<CampusEvent> events;
+  List<CampusEvent> events;
+  int fetchCount = 0;
 
   @override
-  Future<List<CampusEvent>> fetch({bool upcoming = true}) async => events;
+  Future<List<CampusEvent>> fetch({bool upcoming = true}) async {
+    fetchCount++;
+    return events;
+  }
 
   @override
   Future<int> create({

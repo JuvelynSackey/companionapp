@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../admin/admin_dashboard_screen.dart';
 import '../alerts/alerts_screen.dart';
 import '../analytics/analytics_screen.dart';
 import '../assistant/assistant_screen.dart';
@@ -87,6 +88,8 @@ class AppShell extends ConsumerWidget {
                 ref.read(sessionControllerProvider.notifier).signOut();
               } else if (value == 'digitalId') {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DigitalIdScreen()));
+              } else if (value == 'admin') {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AdminDashboardScreen()));
               }
             },
             itemBuilder: (context) => [
@@ -96,6 +99,7 @@ class AppShell extends ConsumerWidget {
               ),
               const PopupMenuDivider(),
               const PopupMenuItem(value: 'digitalId', child: Text('Digital Student ID')),
+              if (user?.isAdmin ?? false) const PopupMenuItem(value: 'admin', child: Text('Admin panel')),
               const PopupMenuItem(value: 'signOut', child: Text('Sign out')),
             ],
           ),

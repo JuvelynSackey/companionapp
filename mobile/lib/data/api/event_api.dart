@@ -11,7 +11,7 @@ class EventApi {
         return list.map((e) => CampusEvent.fromJson(e as Map<String, dynamic>)).toList();
       });
 
-  /// admin-only
+  /// lecturer or admin
   Future<int> create({
     required String title,
     required String description,
@@ -22,7 +22,9 @@ class EventApi {
         final res = await _client.dio.post('/events', data: {
           'title': title,
           'description': description,
-          'eventDate': eventDate.toIso8601String(),
+          // UTC with a 'Z': the backend rejects a timestamp with no offset
+          // (which a local DateTime's toIso8601String() produces).
+          'eventDate': eventDate.toUtc().toIso8601String(),
           if (location != null && location.isNotEmpty) 'location': location,
         });
         return res.data['eventId'] as int;

@@ -6,6 +6,7 @@ import '../../data/models/campus_event.dart';
 import '../../data/models/event_pass.dart';
 import '../../data/models/student_identity.dart';
 import '../../widgets/async_value_view.dart';
+import '../admin/delete_event_button.dart';
 import '../auth/session_controller.dart';
 import '../clubs/clubs_screen.dart';
 import '../onboarding/institution_controller.dart';
@@ -127,6 +128,7 @@ class _EventCardState extends ConsumerState<_EventCard> {
             Row(
               children: [
                 Expanded(child: Text(event.title, style: Theme.of(context).textTheme.titleMedium)),
+                DeleteEventButton(eventId: event.eventId, eventTitle: event.title),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
