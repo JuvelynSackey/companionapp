@@ -20,6 +20,49 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+/**
+ * Provisions an elevated-role account (lecturer or admin). Only reachable by
+ * an existing admin (see requireAdmin on the route) — there is no
+ * self-service or email-invite path to lecturer/admin, deliberately, same
+ * as the original admin seed account.
+ */
+export const provisionSchema = z.object({
+  fullName: z.string().trim().min(2, 'Name must be at least 2 characters').max(120),
+  email: z.string().trim().toLowerCase().email('Enter a valid email address').max(160),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(200, 'Password is too long'),
+  role: z.enum(['lecturer', 'admin']),
+});
+
+/**
+ * Granular permission strings derived from role, never stored — role stays
+ * the single source of truth so permissions can't drift out of sync with
+ * it. Computed fresh on every login/register/me response rather than
+ * trusted from an old JWT, so a role change takes effect on next sign-in
+ * without needing to reissue every outstanding token.
+ */
+const ROLE_PERMISSIONS = {
+  student: [
+    'schedule:read', 'exams:read', 'grades:read:own', 'announcements:read', 'events:read', 'events:register',
+    'quizzes:read', 'quizzes:attempt',
+  ],
+  lecturer: [
+    'schedule:read', 'exams:read', 'grades:read:own', 'announcements:read', 'events:read', 'events:register',
+    'events:create', 'quizzes:read', 'quizzes:attempt', 'quizzes:create',
+  ],
+  admin: [
+    'schedule:read', 'exams:read', 'grades:read:own', 'announcements:read', 'events:read', 'events:register',
+    'events:create', 'schedule:write', 'grades:write', 'announcements:write',
+    'quizzes:read', 'quizzes:attempt', 'quizzes:create', 'quizzes:delete',
+  ],
+};
+
+function permissionsForRole(role) {
+  return ROLE_PERMISSIONS[role] ?? [];
+}
+
 function issueToken(user) {
   return jwt.sign(
     { sub: user.user_id, role: user.role },
@@ -35,6 +78,7 @@ function publicUser(row) {
     fullName: row.full_name,
     email: row.email,
     role: row.role,
+    permissions: permissionsForRole(row.role),
   };
 }
 
@@ -93,6 +137,35 @@ export async function login(req, res, next) {
     }
 
     return res.json({ token: issueToken(user), user: publicUser(user) });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/** POST /api/admin/provision-user — admin only. Creates a lecturer/admin account directly. */
+export async function provisionUser(req, res, next) {
+  const { fullName, email, password, role } = req.body;
+
+  try {
+    const existing = await query(
+      'SELECT 1 FROM users WHERE LOWER(email) = LOWER($1)',
+      [email]
+    );
+
+    if (existing.rowCount > 0) {
+      return res.status(409).json({ error: 'An account with that email already exists' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    const { rows } = await query(
+      `INSERT INTO users (full_name, email, password_hash, role)
+       VALUES ($1, $2, $3, $4)
+       RETURNING user_id, full_name, email, role`,
+      [fullName, email, passwordHash, role]
+    );
+
+    return res.status(201).json({ user: publicUser(rows[0]) });
   } catch (err) {
     return next(err);
   }

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/logic/academic_engine.dart';
 import 'package:mobile/data/models/campus_location.dart';
+import 'package:mobile/data/models/campus_event.dart';
 import 'package:mobile/data/models/course_grade.dart';
 import 'package:mobile/data/models/dashboard_data.dart';
 import 'package:mobile/data/models/exam.dart';
@@ -14,6 +15,7 @@ AssistantContext _buildContext({
   List<ExamCountdown> exams = const [],
   List<CampusLocation> locations = const [],
   List<CourseGrade> grades = const [],
+  List<CampusEvent> events = const [],
   InstitutionProfile institution = InstitutionRegistry.ug,
 }) {
   return AssistantContext(
@@ -24,6 +26,7 @@ AssistantContext _buildContext({
     locations: locations,
     announcements: const [],
     academicMetric: AcademicEngine.calculate(grades, institution),
+    events: events,
   );
 }
 
@@ -87,6 +90,29 @@ void main() {
       expect(response, contains('Sakai LMS'));
     });
 
+    test('event keyword lists upcoming events', () {
+      final events = [
+        CampusEvent(
+          eventId: 1,
+          title: 'Freshers Night',
+          description: 'Welcome party',
+          eventDate: DateTime(2026, 9, 20, 18, 0),
+          location: 'Great Hall',
+          clubName: 'SRC',
+          attendeeCount: 120,
+          isRegistered: false,
+        ),
+      ];
+      final response = LocalAssistantEngine.respond('any events happening this week?', _buildContext(events: events));
+      expect(response, contains('Freshers Night'));
+      expect(response, contains('Great Hall'));
+    });
+
+    test('event keyword with no upcoming events gives a helpful message, not a crash', () {
+      final response = LocalAssistantEngine.respond('what events are on campus', _buildContext());
+      expect(response, contains('No upcoming events'));
+    });
+
     test('unmatched query falls back to the general help menu, addressed by name', () {
       final response = LocalAssistantEngine.respond('asdkjfhaskdjfh', _buildContext());
       expect(response, contains('Akwaaba, Ekow'));
@@ -108,6 +134,24 @@ void main() {
       final prompt = _buildContext().toSystemPrompt();
       expect(prompt, contains('No classes today.'));
       expect(prompt, contains('No upcoming exams.'));
+      expect(prompt, contains('No upcoming events.'));
+    });
+
+    test('includes upcoming events when present', () {
+      final events = [
+        CampusEvent(
+          eventId: 1,
+          title: 'Tech Fair',
+          description: 'Annual expo',
+          eventDate: DateTime(2026, 10, 1, 10, 0),
+          location: 'JQB Auditorium',
+          clubName: null,
+          attendeeCount: 40,
+          isRegistered: false,
+        ),
+      ];
+      final prompt = _buildContext(events: events).toSystemPrompt();
+      expect(prompt, contains('Tech Fair'));
     });
   });
 }

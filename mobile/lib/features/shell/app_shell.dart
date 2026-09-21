@@ -11,7 +11,9 @@ import '../locations/locations_screen.dart';
 import '../onboarding/institution_controller.dart';
 import '../profile/digital_id_screen.dart';
 import '../resources/resources_screen.dart';
+import '../student_hub/student_hub_screen.dart';
 import '../timetable/timetable_screen.dart';
+import '../tutor/tutor_screen.dart';
 import 'nav_providers.dart';
 
 const _tabTitles = {
@@ -44,7 +46,7 @@ class AppShell extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Text(_tabTitles[selectedTab] ?? ''),
+            Flexible(child: Text(_tabTitles[selectedTab] ?? '', overflow: TextOverflow.ellipsis)),
           ],
         ),
         actions: [
@@ -59,6 +61,11 @@ class AppShell extends ConsumerWidget {
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EventsScreen())),
           ),
           IconButton(
+            icon: const Icon(Icons.storefront_outlined),
+            tooltip: 'Student Hub',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentHubScreen())),
+          ),
+          IconButton(
             icon: const Icon(Icons.insights_outlined),
             tooltip: 'Analytics',
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AnalyticsScreen())),
@@ -67,6 +74,11 @@ class AppShell extends ConsumerWidget {
             icon: const Icon(Icons.auto_awesome_outlined),
             tooltip: 'AI Assistant',
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AssistantScreen())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.school_outlined),
+            tooltip: 'AI Tutor',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TutorScreen())),
           ),
           PopupMenuButton<String>(
             icon: const CircleAvatar(child: Icon(Icons.person)),

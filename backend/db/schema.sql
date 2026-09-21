@@ -11,6 +11,10 @@ DROP TABLE IF EXISTS events            CASCADE;
 DROP TABLE IF EXISTS clubs             CASCADE;
 DROP TABLE IF EXISTS grades            CASCADE;
 DROP TABLE IF EXISTS schedules         CASCADE;
+DROP TABLE IF EXISTS quiz_attempt_answers CASCADE;
+DROP TABLE IF EXISTS quiz_attempts     CASCADE;
+DROP TABLE IF EXISTS quiz_questions    CASCADE;
+DROP TABLE IF EXISTS quizzes           CASCADE;
 DROP TABLE IF EXISTS courses           CASCADE;
 DROP TABLE IF EXISTS locations         CASCADE;
 DROP TABLE IF EXISTS users             CASCADE;
@@ -24,7 +28,14 @@ CREATE TABLE users (
     email         VARCHAR(160)  NOT NULL UNIQUE,
     password_hash VARCHAR(255)  NOT NULL,   -- bcrypt hash, never the raw password
     role          VARCHAR(20)   NOT NULL DEFAULT 'student'
-                  CHECK (role IN ('student', 'admin')),
+                  CHECK (role IN ('student', 'lecturer', 'admin')),
+    -- Durable per-user watermark for AnnouncementPushBridge: the highest
+    -- announcement_id already surfaced as a notification. Server-side (not
+    -- per-device) so a student signed in on two devices, or reinstalling,
+    -- doesn't miss announcements posted while only one was online. 0 means
+    -- "never synced" — the first sync baselines to the current max id
+    -- instead of notifying for every historical announcement.
+    last_synced_announcement_id INTEGER NOT NULL DEFAULT 0,
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 
@@ -46,6 +57,69 @@ CREATE TABLE courses (
     lecturer_name VARCHAR(120),
     credit_hours  SMALLINT      NOT NULL DEFAULT 3
                   CHECK (credit_hours BETWEEN 1 AND 6)
+);
+
+-- ------------------------------------------------------------
+-- QUIZ  (Phase 3: interactive learning — not in the original
+-- proposal ERD). A quiz is course-anchored and either hand-authored
+-- by a lecturer/admin or curated from a real past-paper PDF (see
+-- docs/schema-notes.md-style rationale in the mobile PastPaperImport
+-- flow — extraction always happens client-side; the backend only
+-- ever receives the final structured question set, never raw PDF
+-- bytes or AI calls).
+-- ------------------------------------------------------------
+CREATE TABLE quizzes (
+    quiz_id     SERIAL PRIMARY KEY,
+    course_id   INTEGER NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
+    title       VARCHAR(160) NOT NULL,
+    source      VARCHAR(20) NOT NULL DEFAULT 'manual'
+                CHECK (source IN ('manual', 'past_paper')),
+    created_by  INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_quizzes_course ON quizzes(course_id);
+
+-- Two question shapes share one table: multiple_choice (options +
+-- correct_option index) and open_ended (model_answer only, no
+-- options) — many real past exam papers are essay/structured-answer
+-- format, not MCQ, so a single rigid MCQ-only shape would not fit them.
+CREATE TABLE quiz_questions (
+    question_id     SERIAL PRIMARY KEY,
+    quiz_id         INTEGER NOT NULL REFERENCES quizzes(quiz_id) ON DELETE CASCADE,
+    question_type   VARCHAR(20) NOT NULL
+                    CHECK (question_type IN ('multiple_choice', 'open_ended')),
+    question_text   TEXT NOT NULL,
+    options         JSONB,      -- array of option strings; multiple_choice only
+    correct_option  SMALLINT,   -- index into options; multiple_choice only
+    model_answer    TEXT,       -- open_ended model answer, or an MCQ explanation
+    order_index     SMALLINT NOT NULL DEFAULT 0
+);
+
+CREATE INDEX idx_quiz_questions_quiz ON quiz_questions(quiz_id);
+
+-- One row per student attempt. score/total_graded cover only the
+-- auto-gradable (multiple_choice) questions in the quiz — open_ended
+-- answers are self-marked by the student against the revealed model
+-- answer, not server-scored.
+CREATE TABLE quiz_attempts (
+    attempt_id    SERIAL PRIMARY KEY,
+    quiz_id       INTEGER NOT NULL REFERENCES quizzes(quiz_id) ON DELETE CASCADE,
+    user_id       INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    score         NUMERIC(5,2),
+    total_graded  SMALLINT,
+    completed_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_quiz_attempts_user ON quiz_attempts(user_id);
+
+CREATE TABLE quiz_attempt_answers (
+    attempt_id        INTEGER NOT NULL REFERENCES quiz_attempts(attempt_id) ON DELETE CASCADE,
+    question_id       INTEGER NOT NULL REFERENCES quiz_questions(question_id) ON DELETE CASCADE,
+    selected_option   SMALLINT,
+    free_text_answer  TEXT,
+    is_correct        BOOLEAN,
+    PRIMARY KEY (attempt_id, question_id)
 );
 
 -- ------------------------------------------------------------

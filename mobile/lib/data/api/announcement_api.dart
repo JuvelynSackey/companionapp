@@ -30,4 +30,21 @@ class AnnouncementApi {
   Future<void> delete(int announcementId) => _client.guard(() async {
         await _client.dio.delete('/announcements/$announcementId');
       });
+
+  /// Server-side (not per-device) high-water mark — see
+  /// users.last_synced_announcement_id in schema.sql for why.
+  Future<int> fetchSyncCursor() => _client.guard(() async {
+        final res = await _client.dio.get('/announcements/sync-cursor');
+        return res.data['lastSyncedAnnouncementId'] as int;
+      });
+
+  /// Only ever moves the cursor forward server-side (see updateSyncCursor in
+  /// announcementController.js) — safe to call with a value that turns out
+  /// to be stale.
+  Future<int> updateSyncCursor(int lastSyncedAnnouncementId) => _client.guard(() async {
+        final res = await _client.dio.put('/announcements/sync-cursor', data: {
+          'lastSyncedAnnouncementId': lastSyncedAnnouncementId,
+        });
+        return res.data['lastSyncedAnnouncementId'] as int;
+      });
 }

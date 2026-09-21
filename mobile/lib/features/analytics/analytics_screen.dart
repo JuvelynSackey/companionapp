@@ -7,6 +7,7 @@ import '../../widgets/async_value_view.dart';
 import '../../widgets/campus_card_tile.dart';
 import '../onboarding/institution_controller.dart';
 import 'analytics_providers.dart';
+import 'target_class_predictor.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
@@ -29,6 +30,8 @@ class AnalyticsScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 _ScorecardCard(metric: metric, institutionShortCode: institution.shortCode, institutionBadgeColor: institution.primaryColor),
+                const SizedBox(height: 16),
+                const TargetClassPredictorWidget(),
                 const SizedBox(height: 24),
                 Text('Courses', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),

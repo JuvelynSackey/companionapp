@@ -19,7 +19,7 @@ class EventsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final events = ref.watch(eventsProvider);
-    final isAdmin = ref.watch(sessionControllerProvider).valueOrNull?.isAdmin ?? false;
+    final canCreateEvents = ref.watch(sessionControllerProvider).valueOrNull?.canCreateEvents ?? false;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Campus Events')),
@@ -44,8 +44,9 @@ class EventsScreen extends ConsumerWidget {
           },
         ),
       ),
-      floatingActionButton: isAdmin
+      floatingActionButton: canCreateEvents
           ? FloatingActionButton(
+              heroTag: 'events_fab',
               onPressed: () async {
                 final created = await showDialog<bool>(context: context, builder: (_) => const CreateEventDialog());
                 if (created == true) ref.invalidate(eventsProvider);

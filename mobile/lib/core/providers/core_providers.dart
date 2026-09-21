@@ -10,10 +10,13 @@ import '../../data/api/dashboard_api.dart';
 import '../../data/api/event_api.dart';
 import '../../data/api/grade_api.dart';
 import '../../data/api/location_api.dart';
+import '../../data/api/quiz_api.dart';
 import '../../data/api/schedule_api.dart';
+import '../../data/models/course.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/exams_repository.dart';
 import '../../data/repositories/local_schedule_repository.dart';
+import '../../features/auth/session_controller.dart';
 
 /// Overridden in main() once the async singletons (SharedPreferences) are ready.
 final localPrefsProvider = Provider<LocalPrefs>((ref) {
@@ -22,7 +25,15 @@ final localPrefsProvider = Provider<LocalPrefs>((ref) {
 
 final tokenStorageProvider = Provider<TokenStorage>((ref) => TokenStorage());
 
-final apiClientProvider = Provider<ApiClient>((ref) => ApiClient(ref.watch(tokenStorageProvider)));
+final apiClientProvider = Provider<ApiClient>((ref) {
+  return ApiClient(
+    ref.watch(tokenStorageProvider),
+    onSessionExpired: () {
+      ref.read(sessionExpiredProvider.notifier).state = true;
+      ref.invalidate(sessionControllerProvider);
+    },
+  );
+});
 
 final authApiProvider = Provider<AuthApi>((ref) => AuthApi(ref.watch(apiClientProvider)));
 final courseApiProvider = Provider<CourseApi>((ref) => CourseApi(ref.watch(apiClientProvider)));
@@ -34,6 +45,10 @@ final announcementApiProvider =
 final locationApiProvider = Provider<LocationApi>((ref) => LocationApi(ref.watch(apiClientProvider)));
 final eventApiProvider = Provider<EventApi>((ref) => EventApi(ref.watch(apiClientProvider)));
 final gradeApiProvider = Provider<GradeApi>((ref) => GradeApi(ref.watch(apiClientProvider)));
+final quizApiProvider = Provider<QuizApi>((ref) => QuizApi(ref.watch(apiClientProvider)));
+
+/// Shared course list — used by both the Quizzes and AI Tutor course pickers.
+final coursesProvider = FutureProvider<List<Course>>((ref) => ref.watch(courseApiProvider).fetch());
 
 final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => AuthRepository(ref.watch(authApiProvider), ref.watch(tokenStorageProvider)),

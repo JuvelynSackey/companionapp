@@ -20,6 +20,9 @@ class LocalAssistantEngine {
     if (q.contains('exam') || q.contains('leave') || q.contains('countdown') || q.contains('venue')) {
       return _examResponse(context);
     }
+    if (q.contains('event') || q.contains('club') || q.contains('happening')) {
+      return _eventsResponse(context);
+    }
     if (q.contains('class') || q.contains('schedule') || q.contains('today') || q.contains('timetable') || q.contains('lecture')) {
       return _classResponse(context);
     }
@@ -105,6 +108,20 @@ class LocalAssistantEngine {
         '• **Venue:** ${exam.venue}\n'
         '${exam.seatRange.isNotEmpty ? '• **Seating Range:** ${exam.seatRange}\n' : ''}'
         '• **Countdown:** ${nearest.formattedDaysRemaining}';
+  }
+
+  static String _eventsResponse(AssistantContext context) {
+    if (context.events.isEmpty) {
+      return "🎉 No upcoming events recorded right now. Check the Events tab for the latest campus happenings.";
+    }
+    final buffer = StringBuffer('🎉 **Upcoming Campus Events**:\n');
+    for (final event in context.events.take(3)) {
+      buffer.write('• **${event.title}**${event.clubName != null ? ' (${event.clubName})' : ''}: '
+          '${event.eventDate.toLocal().toString().split('.').first}'
+          '${event.location != null ? ' @ ${event.location}' : ''}\n');
+    }
+    buffer.write('\n💡 *Tip: Open the Events tab to register or see full details.*');
+    return buffer.toString();
   }
 
   static String _classResponse(AssistantContext context) {

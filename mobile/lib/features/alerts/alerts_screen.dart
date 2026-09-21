@@ -112,6 +112,7 @@ class AlertsScreen extends ConsumerWidget {
       ),
       floatingActionButton: isAdmin
           ? FloatingActionButton(
+              heroTag: 'alerts_fab',
               onPressed: () async {
                 final broadcast = await showDialog<bool>(
                   context: context,

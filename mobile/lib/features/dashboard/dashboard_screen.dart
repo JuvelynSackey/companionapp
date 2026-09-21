@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/engine/context_engine.dart';
 import '../../core/theme/campus_companion_theme.dart';
+import '../../data/logic/grade_prediction_engine.dart';
 import '../../data/models/dashboard_data.dart';
 import '../../widgets/async_value_view.dart';
 import '../../widgets/campus_card_tile.dart';
+import '../analytics/analytics_providers.dart';
+import '../analytics/analytics_screen.dart';
 import '../shell/nav_providers.dart';
 import 'dashboard_providers.dart';
 
@@ -27,6 +30,8 @@ class DashboardScreen extends ConsumerWidget {
             const _ContextSection(),
             const SizedBox(height: 24),
             _StatsRow(stats: data.stats),
+            const SizedBox(height: 24),
+            const _AcademicSnapshotCard(),
             const SizedBox(height: 24),
             Text("Today's Classes", style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
@@ -215,6 +220,48 @@ class _StatCard extends StatelessWidget {
           Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.onPrimaryContainer)),
         ],
       ),
+    );
+  }
+}
+
+/// Compact CGPA + target-class-feasibility summary for the Daily Brief,
+/// fed by the same academicPlanProvider the Analytics predictor writes to —
+/// changing the target class there updates this card too. Renders nothing
+/// (not a placeholder) until the student has grades and has set their
+/// remaining credit hours, same "fail silently into nothing" rule as
+/// _ContextSection, since this is optional enrichment, not core data.
+class _AcademicSnapshotCard extends ConsumerWidget {
+  const _AcademicSnapshotCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final planAsync = ref.watch(academicPlanProvider);
+    return planAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (plan) {
+        if (plan == null) return const SizedBox.shrink();
+        final campus = Theme.of(context).campusTheme;
+        final color = switch (plan.feasibility) {
+          PredictionFeasibility.alreadyAchieved || PredictionFeasibility.achievable => const Color(0xFF10B981),
+          PredictionFeasibility.stretch => const Color(0xFFF59E0B),
+          PredictionFeasibility.unattainable => const Color(0xFFEF4444),
+        };
+
+        return CampusCardTile(
+          decoration: campus.cardDecoration(),
+          radius: campus.cardRadius,
+          child: ListTile(
+            leading: CircleAvatar(backgroundColor: color.withValues(alpha: 0.15), child: Icon(Icons.trending_up, color: color)),
+            title: Text('${plan.formattedRequiredAverage} needed for ${plan.targetClass.title}'),
+            subtitle: Text(plan.summary, style: TextStyle(color: campus.textMuted)),
+            trailing: TextButton(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AnalyticsScreen())),
+              child: Text('View', style: TextStyle(color: campus.accentGlow)),
+            ),
+          ),
+        );
+      },
     );
   }
 }

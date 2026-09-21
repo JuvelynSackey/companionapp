@@ -54,6 +54,7 @@ class ExamsScreen extends ConsumerWidget {
               ],
             ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'exams_fab',
         onPressed: () => showDialog(context: context, builder: (_) => const AddExamDialog()),
         child: const Icon(Icons.add),
       ),
@@ -199,6 +200,12 @@ class _ExamRemindersButtonState extends ConsumerState<_ExamRemindersButton> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Reminders set for ${widget.exams.length} exams')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not set reminders. Please try again.')),
         );
       }
     } finally {

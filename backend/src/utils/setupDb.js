@@ -29,6 +29,12 @@ const DEMO_USERS = [
     password: 'admin123',
     role: 'admin',
   },
+  {
+    fullName: 'Dr. Abena Owusu',
+    email: 'lecturer@ug.edu.gh',
+    password: 'lecturer123',
+    role: 'lecturer',
+  },
 ];
 
 async function run() {

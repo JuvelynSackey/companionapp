@@ -1,6 +1,12 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tz_data;
+// latest.dart (not latest_all.dart) prunes zones whose rules are identical
+// to another canonical zone as duplicates — Africa/Accra is one of those
+// (UTC+0, no DST, same as several others) and isn't included, which threw
+// `Location with the name "Africa/Accra" doesn't exist` at runtime on a
+// real device the first time a reminder was scheduled.
+import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+import '../../data/models/announcement.dart';
 import '../../data/models/exam.dart';
 import '../../data/models/schedule_entry.dart';
 import '../utils/schedule_time_math.dart';
@@ -37,6 +43,35 @@ class NotificationService {
     importance: Importance.high,
     priority: Priority.high,
   );
+
+  static const _announcementChannel = AndroidNotificationDetails(
+    'announcements',
+    'Campus Announcements',
+    channelDescription: 'New posts to the campus notice board',
+    importance: Importance.high,
+    priority: Priority.high,
+  );
+
+  static const _emergencyChannel = AndroidNotificationDetails(
+    'emergency_announcements',
+    'Emergency Announcements',
+    channelDescription: 'Urgent, time-critical campus alerts',
+    importance: Importance.max,
+    priority: Priority.max,
+  );
+
+  /// Deterministic notification id for a given exam — the same exam always
+  /// maps to the same id, so re-scheduling (e.g. tapping "Remind Me" again,
+  /// or re-syncing) replaces the existing OS-level alarm instead of adding
+  /// a duplicate. Kept out of the class-reminder id range (which uses the
+  /// schedule's own int id directly) via the high bit.
+  static int examReminderId(String examId) => 0x40000000 | (examId.hashCode & 0x3fffffff);
+
+  /// Deterministic notification id for an announcement, tagged into its own
+  /// bit range (below examReminderId's 0x40000000 tag, above the raw
+  /// schedule ids used directly as class-reminder ids) so re-notifying the
+  /// same announcement replaces rather than duplicates.
+  static int announcementNotificationId(int announcementId) => 0x20000000 | (announcementId & 0x1fffffff);
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -93,7 +128,7 @@ class NotificationService {
     if (reminderTime.isBefore(DateTime.now())) return; // already past — nothing to schedule
 
     await _plugin.zonedSchedule(
-      id: 0x40000000 | (exam.id.hashCode & 0x3fffffff), // keep exam ids out of the schedule-id range above
+      id: examReminderId(exam.id),
       title: 'Exam reminder: ${exam.courseCode}',
       body: '${exam.courseTitle} at ${exam.venue} — starts ${exam.startTime} on ${exam.examDate}',
       scheduledDate: tz.TZDateTime.from(reminderTime, tz.local),
@@ -102,9 +137,31 @@ class NotificationService {
     );
   }
 
+  /// Surfaces a campus announcement as a local notification. This is
+  /// deliberately the *only* place that turns an announcement into a shown
+  /// notification — whether it arrives from AnnouncementPushBridge's
+  /// foreground poll (today) or, once a Firebase project is configured (see
+  /// PROJECT_AUDIT.md — no google-services.json exists yet), from a real
+  /// FCM onMessage/onBackgroundMessage handler, both call this same method
+  /// rather than building their own notification. Swapping in real push
+  /// later only means replacing the poll with an FCM listener.
+  Future<void> showAnnouncementNotification(Announcement announcement) async {
+    await initialize();
+    final isEmergency = announcement.category == 'emergency';
+    await _plugin.show(
+      id: announcementNotificationId(announcement.announcementId),
+      title: isEmergency ? '🚨 ${announcement.title}' : announcement.title,
+      body: announcement.message,
+      notificationDetails: NotificationDetails(
+        android: isEmergency ? _emergencyChannel : _announcementChannel,
+        iOS: const DarwinNotificationDetails(),
+      ),
+    );
+  }
+
   Future<void> cancelClassReminder(int scheduleId) => _plugin.cancel(id: scheduleId);
 
-  Future<void> cancelExamReminder(String examId) => _plugin.cancel(id: 0x40000000 | (examId.hashCode & 0x3fffffff));
+  Future<void> cancelExamReminder(String examId) => _plugin.cancel(id: examReminderId(examId));
 
   Future<void> cancelAll() => _plugin.cancelAll();
 }

@@ -1,17 +1,19 @@
-# mobile
+# Campus Companion — Flutter app
 
-A new Flutter project.
+Layout of `lib/`:
 
-## Getting Started
+- `core/` — API client, secure token storage, notifications, theme, `.ics` and schedule utilities.
+- `data/` — `api/` (one client per backend module), `models/`, `logic/` (GPA and grade engines), `repositories/`.
+- `features/` — one folder per screen area: auth, onboarding, dashboard, timetable, exams, alerts,
+  events, locations (custom-painter map), analytics, quizzes, resources, student_hub, assistant,
+  tutor, profile (digital ID), shell (bottom navigation).
 
-This project is a starting point for a Flutter application.
+Run and setup instructions are in the [root README](../README.md). Quick checks:
 
-A few resources to get you started if this is your first Flutter project:
+```
+flutter analyze
+flutter test
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Data that lives only on the device (exams, Student Hub content, Lost & Found reports, resources)
+is listed in [PROJECT_AUDIT.md](../PROJECT_AUDIT.md).

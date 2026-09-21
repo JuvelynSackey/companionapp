@@ -6,7 +6,12 @@ import 'session_controller.dart';
 import 'sign_up_screen.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
-  const SignInScreen({super.key});
+  const SignInScreen({super.key, this.showExpiredNotice = false});
+
+  /// True when the student landed here because their session expired
+  /// (a rejected token, restored or mid-session) rather than a plain
+  /// first-time sign-in — see sessionExpiredProvider.
+  final bool showExpiredNotice;
 
   @override
   ConsumerState<SignInScreen> createState() => _SignInScreenState();
@@ -75,6 +80,28 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
+                    if (widget.showExpiredNotice) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(campus.innerRadius),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 18, color: Colors.orange.shade800),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Your session expired. Please sign in again.',
+                                style: TextStyle(color: Colors.orange.shade800, fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,

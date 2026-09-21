@@ -27,13 +27,24 @@ export function requireAuth(req, res, next) {
 
 /**
  * Gate for the admin-only use cases in the proposal (manage users, post
- * announcements, manage events, update schedules and grades).
+ * announcements, update schedules and grades).
  *
  * Must be used *after* requireAuth.
  */
 export function requireAdmin(req, res, next) {
-  if (req.user?.role !== 'admin') {
-    return res.status(403).json({ error: 'Administrator access required' });
-  }
-  return next();
+  return requireRole('admin')(req, res, next);
+}
+
+/**
+ * Gate for endpoints open to more than one role (e.g. event creation, which
+ * both lecturers/club coordinators and admins may do). Must be used *after*
+ * requireAuth.
+ */
+export function requireRole(...allowedRoles) {
+  return (req, res, next) => {
+    if (!allowedRoles.includes(req.user?.role)) {
+      return res.status(403).json({ error: `Requires one of these roles: ${allowedRoles.join(', ')}` });
+    }
+    return next();
+  };
 }

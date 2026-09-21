@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/campus_companion_theme.dart';
 import '../../data/models/institution_profile.dart';
 import '../../data/models/resource_models.dart';
 import '../../widgets/campus_card_tile.dart';
 import '../onboarding/institution_controller.dart';
+import '../quizzes/quizzes_screen.dart';
+import 'resources_providers.dart';
 
 Color _occupancyColor(BuildContext context, SeatOccupancyLevel level) {
   switch (level) {
@@ -39,21 +42,24 @@ class ResourcesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
           title: const Text('Resources'),
           bottom: const TabBar(
+            isScrollable: true,
             tabs: [
               Tab(text: 'Libraries'),
               Tab(text: 'Past Papers'),
               Tab(text: 'Portals'),
+              Tab(text: 'Documents'),
+              Tab(text: 'Quizzes'),
             ],
           ),
         ),
         body: const TabBarView(
-          children: [_LibrariesTab(), _PastPapersTab(), _PortalsTab()],
+          children: [_LibrariesTab(), _PastPapersTab(), _PortalsTab(), _DocumentsTab(), QuizzesTab()],
         ),
       ),
     );
@@ -180,5 +186,139 @@ class _PortalsTab extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open ${portal.name}')));
       }
     }
+  }
+}
+
+/// Academic Calendar + Student Handbook (both static reference content) and
+/// Document Requests (transcript / proof of registration). Requesting a
+/// document only logs a tracked reference number — see DocumentType's doc
+/// comment in resource_models.dart for why this app never fabricates the
+/// official document itself.
+class _DocumentsTab extends StatelessWidget {
+  const _DocumentsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final campus = Theme.of(context).campusTheme;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('Document Requests', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        const _DocumentRequestCard(type: DocumentType.transcript),
+        const SizedBox(height: 8),
+        const _DocumentRequestCard(type: DocumentType.proofOfRegistration),
+        const SizedBox(height: 24),
+        Text('Academic Calendar', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          'Sample dates — confirm the official calendar on your institution\'s portal.',
+          style: TextStyle(color: campus.textMuted, fontSize: 12),
+        ),
+        const SizedBox(height: 8),
+        for (final entry in ResourceFixtures.academicCalendar)
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: campus.cardDecoration(),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.event_outlined, color: campus.accentGlow, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(entry.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(entry.dateRange, style: TextStyle(color: campus.accentGlow, fontSize: 12, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 2),
+                      Text(entry.description, style: TextStyle(color: campus.textMuted, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 16),
+        Text('Student Handbook', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        Container(
+          decoration: campus.cardDecoration(),
+          child: Column(
+            children: [
+              for (final section in ResourceFixtures.handbookSections)
+                ExpansionTile(
+                  title: Text(section.title),
+                  childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  expandedAlignment: Alignment.centerLeft,
+                  children: [Text(section.summary, style: TextStyle(color: campus.textMuted))],
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DocumentRequestCard extends ConsumerWidget {
+  const _DocumentRequestCard({required this.type});
+  final DocumentType type;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final campus = Theme.of(context).campusTheme;
+    final latest = ref.watch(documentRequestControllerProvider.select(
+      (requests) => requests.where((r) => r.type == type).isEmpty
+          ? null
+          : (requests.where((r) => r.type == type).toList()..sort((a, b) => b.requestedAt.compareTo(a.requestedAt))).first,
+    ));
+
+    return CampusCardTile(
+      decoration: campus.cardDecoration(),
+      radius: campus.cardRadius,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(type.label, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(type.description, style: TextStyle(color: campus.textMuted, fontSize: 12)),
+          const SizedBox(height: 12),
+          if (latest != null) ...[
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: campus.accentGlow.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Request logged · Ref: ${latest.referenceNumber}', style: TextStyle(color: campus.accentGlow, fontWeight: FontWeight.bold, fontSize: 12)),
+                  Text(
+                    'Submitted ${DateFormat('MMM d, h:mm a').format(latest.requestedAt)} — collect the certified copy from Academic Affairs.',
+                    style: TextStyle(color: campus.textMuted, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () async {
+                final request = await ref.read(documentRequestControllerProvider.notifier).request(type);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Request logged — reference ${request.referenceNumber}')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.add_task_outlined, size: 18),
+              label: Text(latest == null ? 'Request' : 'Request Another'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

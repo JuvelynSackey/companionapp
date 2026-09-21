@@ -55,8 +55,136 @@ class PastPaper {
   final String summaryText;
 }
 
+class CalendarEntry {
+  const CalendarEntry({required this.title, required this.dateRange, required this.description});
+
+  final String title;
+  final String dateRange;
+  final String description;
+}
+
+class HandbookSection {
+  const HandbookSection({required this.title, required this.summary});
+
+  final String title;
+  final String summary;
+}
+
+/// Transcripts and proof-of-registration are official documents used with
+/// third parties (employers, embassies, other institutions) — this app
+/// deliberately never generates anything that looks like one. Requesting
+/// one here only logs a request record with a reference number; the actual
+/// certified copy still has to be collected from Academic Affairs, the same
+/// way the "Official Certified Transcript Application" due in Student Hub
+/// only covers the admin fee, not the document itself.
+enum DocumentType { transcript, proofOfRegistration }
+
+extension DocumentTypeInfo on DocumentType {
+  String get label => switch (this) {
+        DocumentType.transcript => 'Official Transcript',
+        DocumentType.proofOfRegistration => 'Proof of Registration',
+      };
+
+  String get description => switch (this) {
+        DocumentType.transcript => 'Certified statement of results, issued by Academic Affairs.',
+        DocumentType.proofOfRegistration => 'Confirmation letter of current-semester enrollment.',
+      };
+}
+
+class DocumentRequest {
+  const DocumentRequest({
+    required this.type,
+    required this.referenceNumber,
+    required this.requestedAt,
+  });
+
+  factory DocumentRequest.fromJson(Map<String, dynamic> json) => DocumentRequest(
+        type: DocumentType.values.byName(json['type'] as String),
+        referenceNumber: json['referenceNumber'] as String,
+        requestedAt: DateTime.parse(json['requestedAt'] as String),
+      );
+
+  final DocumentType type;
+  final String referenceNumber;
+  final DateTime requestedAt;
+
+  Map<String, dynamic> toJson() => {
+        'type': type.name,
+        'referenceNumber': referenceNumber,
+        'requestedAt': requestedAt.toIso8601String(),
+      };
+}
+
 class ResourceFixtures {
   ResourceFixtures._();
+
+  /// Sample/indicative dates only — always confirm the real ones on the
+  /// institution's own portal before relying on them for a deadline.
+  static const academicCalendar = [
+    CalendarEntry(
+      title: 'Semester Registration',
+      dateRange: 'Aug 25 – Sep 5, 2026',
+      description: 'Online course registration and fee payment window for the new semester.',
+    ),
+    CalendarEntry(
+      title: 'Lectures Begin',
+      dateRange: 'Sep 8, 2026',
+      description: 'First day of teaching for the semester.',
+    ),
+    CalendarEntry(
+      title: 'Mid-Semester Examinations',
+      dateRange: 'Oct 20 – Oct 24, 2026',
+      description: 'Continuous assessment / mid-semester quizzes across all faculties.',
+    ),
+    CalendarEntry(
+      title: 'Lectures End',
+      dateRange: 'Dec 5, 2026',
+      description: 'Last day of teaching before revision week.',
+    ),
+    CalendarEntry(
+      title: 'End-of-Semester Examinations',
+      dateRange: 'Dec 15 – Dec 23, 2026',
+      description: 'Final examinations for all levels.',
+    ),
+    CalendarEntry(
+      title: 'Semester Break',
+      dateRange: 'Dec 24, 2026 – Jan 11, 2027',
+      description: 'Inter-semester vacation.',
+    ),
+  ];
+
+  static const handbookSections = [
+    HandbookSection(
+      title: 'Academic Integrity',
+      summary:
+          'Plagiarism, examination malpractice, and unauthorized collaboration are serious offences handled by '
+          'the university\'s disciplinary committee and can result in suspension or dismissal.',
+    ),
+    HandbookSection(
+      title: 'Grading & Classification',
+      summary:
+          'Cumulative averages determine honours classification at graduation. Check your institution\'s '
+          'grading system on the Analytics tab for your specific breakpoints.',
+    ),
+    HandbookSection(
+      title: 'Attendance Policy',
+      summary:
+          'A minimum attendance threshold (typically 75%) is required to sit end-of-semester examinations in '
+          'a course, unless an authorized absence is on file with the department.',
+    ),
+    HandbookSection(
+      title: 'Examination Conduct',
+      summary:
+          'Valid student ID must be presented at every examination venue. Unauthorized materials or devices '
+          'at an exam desk are treated as attempted malpractice.',
+    ),
+    HandbookSection(
+      title: 'Hall & Residence Rules',
+      summary:
+          'Residents are expected to observe quiet hours, visitor sign-in procedures, and room inspection '
+          'schedules set by their Hall\'s Junior Common Room.',
+    ),
+  ];
 
   static const libraries = [
     LibraryInfo(

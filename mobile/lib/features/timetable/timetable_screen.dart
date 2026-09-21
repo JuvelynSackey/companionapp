@@ -92,6 +92,7 @@ class TimetableScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'timetable_fab',
         onPressed: () => showDialog(context: context, builder: (_) => const AddScheduleDialog()),
         child: const Icon(Icons.add),
       ),
@@ -245,6 +246,12 @@ class _RemindersButtonState extends ConsumerState<_RemindersButton> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Reminders set for ${widget.entries.length} classes')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not set reminders. Please try again.')),
         );
       }
     } finally {

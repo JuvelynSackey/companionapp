@@ -7,6 +7,10 @@ export const createAnnouncementSchema = z.object({
   category: z.enum(['general', 'academic', 'emergency']).default('general'),
 });
 
+export const updateSyncCursorSchema = z.object({
+  lastSyncedAnnouncementId: z.number().int().min(0),
+});
+
 function shape(row) {
   return {
     announcementId: row.announcement_id,
@@ -60,6 +64,58 @@ export async function createAnnouncement(req, res, next) {
       announcementId: rows[0].announcement_id,
       datePosted: rows[0].date_posted,
     });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
+ * GET /api/announcements/sync-cursor
+ * Server-side (not per-device) high-water mark for AnnouncementPushBridge —
+ * see the column comment on users.last_synced_announcement_id in schema.sql
+ * for why this lives on the server instead of local device storage.
+ */
+export async function getSyncCursor(req, res, next) {
+  try {
+    const { rows } = await query(
+      'SELECT last_synced_announcement_id FROM users WHERE user_id = $1',
+      [req.user.userId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({ lastSyncedAnnouncementId: rows[0].last_synced_announcement_id });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
+ * PUT /api/announcements/sync-cursor
+ * Only ever moves forward — a stale client re-sending an older id (e.g. a
+ * slow device that queued a request before a newer one landed) can't roll
+ * the shared cursor backward and cause an already-seen announcement to be
+ * re-notified.
+ */
+export async function updateSyncCursor(req, res, next) {
+  const { lastSyncedAnnouncementId } = req.body;
+
+  try {
+    const { rows } = await query(
+      `UPDATE users
+          SET last_synced_announcement_id = GREATEST(last_synced_announcement_id, $1)
+        WHERE user_id = $2
+        RETURNING last_synced_announcement_id`,
+      [lastSyncedAnnouncementId, req.user.userId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({ lastSyncedAnnouncementId: rows[0].last_synced_announcement_id });
   } catch (err) {
     return next(err);
   }
