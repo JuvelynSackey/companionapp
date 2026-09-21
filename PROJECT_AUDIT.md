@@ -68,6 +68,12 @@ Still open: `mobile/build/` and `mobile/android/build/` are build output and can
 `docs/phase-2-plan.md` is a scoping doc written before implementation, so its "no implementation yet" framing is stale.
 The root `.gitignore` still has Android/Gradle entries from the old layout.
 
+## Dependency security
+
+`npm audit fix` (non-forced, 21 September) moved `express` 4.22.2 -> 4.22.3, `body-parser` 1.20.6 -> 1.20.8, `morgan` 1.11.0 -> 1.12.1 and `qs` 6.15.3 -> 6.16.0 (patch/minor only), clearing 4 of 6 moderate advisories. Backend unit, database and smoke suites were re-run on a clean `npm ci` and stayed green.
+
+Two moderate advisories remain, both `uuid` 9.0.1 pulled in by `firebase-admin` (through `@google-cloud/storage` and `gaxios`). They are not exploitable here: the advisory is about `uuid` v3/v5/v6 called with a caller-supplied buffer, while `gaxios` only calls `uuid.v4()` with none, and our push code never loads Cloud Storage. Fixing them needs a major-version change inside Google's libraries, so they are left until `firebase-admin` updates. Re-check with `npm audit --omit=dev` after each `firebase-admin` upgrade.
+
 ## 5. Corrections to the old audit
 
 The August report listed these as problems. They are no longer accurate:
