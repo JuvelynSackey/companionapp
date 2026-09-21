@@ -51,7 +51,7 @@ export async function listEvents(req, res, next) {
   }
 }
 
-/** POST /api/events - admin only. */
+/** POST /api/events - lecturer or admin. */
 export async function createEvent(req, res, next) {
   const { title, description, eventDate, location, clubId } = req.body;
 
@@ -93,6 +93,38 @@ export async function registerForEvent(req, res, next) {
     if (err.code === '23503') {
       return res.status(404).json({ error: 'Event not found' });
     }
+    return next(err);
+  }
+}
+
+/**
+ * DELETE /api/events/:id - lecturer or admin (role gate is on the route).
+ * An admin may delete any event; a lecturer only the events they created, so
+ * one lecturer cannot remove another's (or an admin's) event. RSVPs go with
+ * it via ON DELETE CASCADE.
+ */
+export async function deleteEvent(req, res, next) {
+  const eventId = Number(req.params.id);
+
+  if (!Number.isInteger(eventId) || eventId <= 0) {
+    return res.status(404).json({ error: 'Event not found' });
+  }
+
+  try {
+    const { rows } = await query('SELECT created_by FROM events WHERE event_id = $1', [eventId]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    const isOwner = rows[0].created_by === req.user.userId;
+    if (req.user.role !== 'admin' && !isOwner) {
+      return res.status(403).json({ error: 'You can only delete events you created' });
+    }
+
+    await query('DELETE FROM events WHERE event_id = $1', [eventId]);
+    return res.status(204).send();
+  } catch (err) {
     return next(err);
   }
 }

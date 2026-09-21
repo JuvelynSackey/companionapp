@@ -6,12 +6,14 @@
  * Walks the whole student journey from the proposal's system-testing example
  * (login -> dashboard -> schedule -> grades -> events) plus the admin paths,
  * and checks that authorisation is actually enforced rather than assumed.
- * Also covers admin provisioning of lecturer accounts, role permissions, and
- * the quiz lifecycle (create -> fetch without answer key -> attempt -> delete).
+ * Also covers admin provisioning of lecturer accounts, role permissions,
+ * self-registration never granting a privileged role, lecturer event
+ * create/delete (with ownership rules), and the quiz lifecycle
+ * (create -> fetch without answer key -> attempt -> delete).
  *
  * Needs the seeded demo accounts (`npm run db:setup`). Safe to re-run: quizzes
- * are deleted at the end; each run leaves one smoke-lecturer-*@ug.edu.gh
- * account behind, since there is no delete-user endpoint.
+ * and events are deleted at the end; each run leaves two accounts behind
+ * (smoke-lecturer-*, smoke-register-*), since there is no delete-user endpoint.
  */
 const BASE = process.env.API_BASE ?? 'http://localhost:4000/api';
 
@@ -211,12 +213,14 @@ async function run() {
   const badCategory = await call('GET', '/locations?category=nonsense', { token: studentToken });
   check('invalid category rejected', badCategory.status === 400);
 
-  // Quizzes created below are tracked so they are removed even if a check
-  // throws part-way. Deleting a quiz cascades to its questions and attempts.
-  // Provisioned accounts are NOT cleaned up (there is no delete-user
-  // endpoint), so each run leaves one smoke-lecturer-*@ug.edu.gh row behind;
-  // `npm run db:setup` resets it.
+  // Quizzes and events created below are tracked so they are removed even if
+  // a check throws part-way. Deleting a quiz cascades to its questions and
+  // attempts; deleting an event cascades to its RSVPs. Accounts are NOT
+  // cleaned up (there is no delete-user endpoint), so each run leaves a
+  // smoke-lecturer-* and a smoke-register-* row behind; `npm run db:setup`
+  // resets them.
   const createdQuizIds = [];
+  const createdEventIds = [];
   try {
     console.log('\nAdmin — provisioning elevated accounts');
     const runId = Date.now();
@@ -284,6 +288,31 @@ async function run() {
     const lecturerMe = await call('GET', '/auth/me', { token: lecturerToken });
     check('me returns the lecturer', lecturerMe.data?.user?.email === lecturerAccount.email);
 
+    // Privilege escalation: a client-supplied role must never be honoured.
+    const escalation = await call('POST', '/auth/register', {
+      body: {
+        fullName: 'Smoke Escalation',
+        email: `smoke-register-${runId}@ug.edu.gh`,
+        password: 'smokepass123',
+        role: 'admin',
+      },
+    });
+    check('self-registration succeeds', escalation.status === 201 && !!escalation.data?.token);
+    check('registration ignores a client-supplied role (response)', escalation.data?.user?.role === 'student',
+      `got ${escalation.data?.user?.role}`);
+    const escalationMe = await call('GET', '/auth/me', { token: escalation.data?.token });
+    check('stored role is student (read back from the database)', escalationMe.data?.user?.role === 'student',
+      `got ${escalationMe.data?.user?.role}`);
+    check('registered account has no elevated permissions',
+      !escalationMe.data?.user?.permissions?.includes('announcements:write') &&
+      !escalationMe.data?.user?.permissions?.includes('quizzes:create'));
+    const escalatedPost = await call('POST', '/announcements', {
+      token: escalation.data?.token,
+      body: { title: 'Escalated notice', message: 'Should be blocked' },
+    });
+    check('registered account cannot use admin routes', escalatedPost.status === 403,
+      `got ${escalatedPost.status}`);
+
     const lecturerProvision = await call('POST', '/admin/provision-user', {
       token: lecturerToken,
       body: { ...lecturerAccount, email: `smoke-other-${runId}@ug.edu.gh` },
@@ -302,15 +331,88 @@ async function run() {
     });
     check('lecturer cannot post grades', lecturerGrade.status === 403);
 
-    // Events: there is no delete-event endpoint, so a successful create would
-    // leave a row behind and skew later runs. An invalid body proves the role
-    // gate was passed (400 from validation, not 403 from the role check).
-    const studentEvent = await call('POST', '/events', { token: studentToken, body: {} });
-    check('student cannot create events (403)', studentEvent.status === 403);
+    console.log('\nEvents — lecturer create & delete');
+    const eventBody = (title) => ({
+      title,
+      description: 'Created by the smoke test.',
+      eventDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      location: 'Smoke Test Hall',
+    });
+    const findEvent = async (id) => {
+      const list = await call('GET', '/events', { token: studentToken });
+      return list.data?.events?.find((e) => e.eventId === id);
+    };
 
-    const lecturerEvent = await call('POST', '/events', { token: lecturerToken, body: {} });
-    check('lecturer passes the event role gate (400, not 403)', lecturerEvent.status === 400,
-      `got ${lecturerEvent.status}`);
+    const studentEvent = await call('POST', '/events', {
+      token: studentToken,
+      body: eventBody(`Student event ${runId}`),
+    });
+    if (studentEvent.data?.eventId) createdEventIds.push(studentEvent.data.eventId);
+    check('student cannot create events (403)', studentEvent.status === 403, `got ${studentEvent.status}`);
+
+    const invalidEvent = await call('POST', '/events', { token: lecturerToken, body: {} });
+    check('invalid event body rejected (400)', invalidEvent.status === 400);
+
+    const eventA = await call('POST', '/events', {
+      token: lecturerToken,
+      body: eventBody(`Smoke event A ${runId}`),
+    });
+    check('lecturer can create an event', eventA.status === 201 && typeof eventA.data?.eventId === 'number');
+    const eventAId = eventA.data?.eventId;
+    if (eventAId) createdEventIds.push(eventAId);
+
+    const eventB = await call('POST', '/events', {
+      token: lecturerToken,
+      body: eventBody(`Smoke event B ${runId}`),
+    });
+    const eventBId = eventB.data?.eventId;
+    if (eventBId) createdEventIds.push(eventBId);
+
+    check("student sees the lecturer's event", (await findEvent(eventAId))?.title === `Smoke event A ${runId}`);
+
+    const studentDeleteEvent = await call('DELETE', `/events/${eventAId}`, { token: studentToken });
+    check('student cannot delete events', studentDeleteEvent.status === 403);
+
+    // "Someone else's" event is one the admin creates here, not a seeded one,
+    // so a broken ownership check can never delete real data.
+    const adminEvent = await call('POST', '/events', {
+      token: adminToken,
+      body: eventBody(`Smoke admin event ${runId}`),
+    });
+    const adminEventId = adminEvent.data?.eventId;
+    if (adminEventId) createdEventIds.push(adminEventId);
+    check('admin can create an event', adminEvent.status === 201);
+
+    const lecturerDeleteOther = await call('DELETE', `/events/${adminEventId}`, { token: lecturerToken });
+    check('lecturer cannot delete an event they did not create', lecturerDeleteOther.status === 403,
+      `got ${lecturerDeleteOther.status}`);
+    check("the admin's event is still there", !!(await findEvent(adminEventId)));
+
+    const badEventId = await call('DELETE', '/events/not-a-number', { token: lecturerToken });
+    check('non-numeric event id returns 404', badEventId.status === 404, `got ${badEventId.status}`);
+
+    const missingEvent = await call('DELETE', '/events/999999', { token: lecturerToken });
+    check('deleting a missing event returns 404', missingEvent.status === 404);
+
+    // An RSVP must not block deletion (it cascades).
+    const rsvpA = await call('POST', `/events/${eventAId}/register`, { token: studentToken });
+    check("student can RSVP to the lecturer's event", rsvpA.status === 201);
+
+    const ownDelete = await call('DELETE', `/events/${eventAId}`, { token: lecturerToken });
+    check('lecturer can delete their own event (with RSVPs)', ownDelete.status === 204, `got ${ownDelete.status}`);
+    if (ownDelete.status === 204) createdEventIds.splice(createdEventIds.indexOf(eventAId), 1);
+    check('deleted event no longer listed', (await findEvent(eventAId)) === undefined);
+
+    const ownDeleteAgain = await call('DELETE', `/events/${eventAId}`, { token: lecturerToken });
+    check('deleting the same event again returns 404', ownDeleteAgain.status === 404);
+
+    const adminDeleteEvent = await call('DELETE', `/events/${eventBId}`, { token: adminToken });
+    check("admin can delete any lecturer's event", adminDeleteEvent.status === 204, `got ${adminDeleteEvent.status}`);
+    if (adminDeleteEvent.status === 204) createdEventIds.splice(createdEventIds.indexOf(eventBId), 1);
+
+    const adminDeleteOwn = await call('DELETE', `/events/${adminEventId}`, { token: adminToken });
+    check('admin can delete their own event', adminDeleteOwn.status === 204, `got ${adminDeleteOwn.status}`);
+    if (adminDeleteOwn.status === 204) createdEventIds.splice(createdEventIds.indexOf(adminEventId), 1);
 
     console.log('\nModule 7 — quizzes');
     const courses = await call('GET', '/courses', { token: studentToken });
@@ -443,6 +545,9 @@ async function run() {
   } finally {
     for (const id of createdQuizIds) {
       await call('DELETE', `/quizzes/${id}`, { token: adminToken });
+    }
+    for (const id of createdEventIds) {
+      await call('DELETE', `/events/${id}`, { token: adminToken });
     }
   }
 

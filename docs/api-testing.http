@@ -137,6 +137,10 @@ Authorization: Bearer {{studentToken}}
 DELETE {{host}}/events/1/register
 Authorization: Bearer {{studentToken}}
 
+### Delete an event (admin: any event; lecturer: only their own)
+DELETE {{host}}/events/1
+Authorization: Bearer {{adminToken}}
+
 ### All clubs, with membership state
 GET {{host}}/clubs
 Authorization: Bearer {{studentToken}}

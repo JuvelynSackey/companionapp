@@ -19,7 +19,7 @@ import {
 } from '../controllers/announcementController.js';
 import { provisionUser, provisionSchema } from '../controllers/authController.js';
 import {
-  listEvents, createEvent, registerForEvent, cancelRegistration,
+  listEvents, createEvent, deleteEvent, registerForEvent, cancelRegistration,
   createEventSchema,
 } from '../controllers/eventController.js';
 import { listClubs, joinClub, leaveClub } from '../controllers/clubController.js';
@@ -68,6 +68,8 @@ router.get('/events', listEvents);
 // Lecturers/club coordinators and admins may publish events; only admins
 // gate the rest of the admin-only surface (schedule, announcements, grades).
 router.post('/events', requireRole('lecturer', 'admin'), validateBody(createEventSchema), createEvent);
+// Admins delete any event; lecturers only their own (checked in the controller).
+router.delete('/events/:id', requireRole('lecturer', 'admin'), deleteEvent);
 router.post('/events/:id/register', registerForEvent);
 router.delete('/events/:id/register', cancelRegistration);
 

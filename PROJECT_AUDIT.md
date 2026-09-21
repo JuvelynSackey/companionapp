@@ -12,7 +12,7 @@ live app is now Flutter; the legacy Kotlin module `app/` was removed (see sectio
 |---|---|
 | `flutter analyze` | No issues |
 | `flutter test` | 93 / 93 pass |
-| Backend `npm run test:smoke` | 92 / 92 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events, clubs, locations, admin provisioning, role permissions and the quiz lifecycle. Re-runnable: it deletes its quizzes, but leaves one `smoke-lecturer-*` account per run. |
+| Backend `npm run test:smoke` | 111 / 111 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events (including lecturer create/delete and ownership), clubs, locations, admin provisioning, role permissions, self-registration never granting a role, and the quiz lifecycle. Re-runnable: it deletes its quizzes and events, but leaves a `smoke-lecturer-*` and a `smoke-register-*` account per run. |
 
 ## 2. Features that work (implemented and wired end to end)
 
@@ -44,9 +44,9 @@ These are what to clean up or finish. Ordered by how likely they are to matter i
 | 4 | **Clubs** | Backend only | `GET /clubs`, join and leave exist, but the mobile app never calls them and has no screen. |
 | 5 | **AI Assistant on the deployed web build** | Local fallback only | `GEMINI_API_KEY` is intentionally not baked into the web build (`render.yaml`), so it always uses the rule engine. In that engine the shuttle, MoMo, wifi, food and stress replies are generic text, not data. |
 | 6 | **Backend grading scale** | Known mismatch | The server computes `summary.gpa` on a fixed 4.0 scale that differs from the UG scale. The app recomputes client-side, so the two GPA numbers can disagree. Open question is in `docs/schema-notes.md`. |
-| 7 | **Unused backend routes** | Dead from the app's side | `GET /schedule/today` and `POST /admin/provision-user` are never called by the mobile app. |
+| 7 | **Unused backend routes** | Dead from the app's side | `GET /schedule/today`, `POST /admin/provision-user` and `DELETE /events/:id` are never called by the mobile app. |
 | 8 | **Default API URL** | Works only on an Android emulator | Defaults to `http://10.0.2.2:4000/api`. A physical device or desktop run needs `--dart-define=API_BASE_URL=...`. |
-| 9 | **Backend tests** | Thin | One smoke script that needs a live server and database. No unit tests. Event creation by a lecturer is only checked up to the role gate (there is no delete-event endpoint to clean up after it). |
+| 9 | **Backend tests** | Thin | One smoke script that needs a live server and database. No unit tests. |
 
 ## 4. Cleanup done
 
