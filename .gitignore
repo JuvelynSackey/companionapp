@@ -29,3 +29,11 @@ mobile/.flutter-plugins-dependencies
 mobile/.pub-cache/
 mobile/.pub/
 mobile/build/
+
+# Firebase. The service-account key is a SECRET (it can send notifications as the
+# app); google-services.json is per-project client config. Neither is committed.
+mobile/android/app/google-services.json
+mobile/ios/Runner/GoogleService-Info.plist
+*-firebase-adminsdk-*.json
+**/service-account*.json
+**/firebase-service-account*.json

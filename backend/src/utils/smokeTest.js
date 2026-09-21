@@ -553,6 +553,93 @@ async function run() {
     check('admin can delete their own event', adminDeleteOwn.status === 204, `got ${adminDeleteOwn.status}`);
     if (adminDeleteOwn.status === 204) createdEventIds.splice(createdEventIds.indexOf(adminEventId), 1);
 
+    console.log('\nModule 3b — push notifications: device tokens and the on/off preference');
+    // Two accounts created earlier in this run stand in for two people who might
+    // share a phone. Everything registered here is unregistered again below.
+    const pushA = { token: boundary.token };
+    const pushB = { token: escalation.data?.token };
+    const tok = (name) => `smoke-${runId}-${name}-`.padEnd(40, 'x');
+    const [tok1, tok2] = [tok('one'), tok('two')];
+    const register = (who, token, platform = 'android') =>
+      call('POST', '/users/me/device-token', { token: who.token, body: { token, platform } });
+    const unregister = (who, token) =>
+      call('DELETE', '/users/me/device-token', { token: who.token, body: { token } });
+    const devices = async (who) =>
+      (await call('GET', '/users/me/notification-preferences', { token: who.token })).data?.registeredDevices;
+
+    const anonRegister = await call('POST', '/users/me/device-token', { body: { token: tok1, platform: 'android' } });
+    check('registering a token requires sign-in', anonRegister.status === 401);
+
+    check('a too-short token is rejected',
+      (await call('POST', '/users/me/device-token', { token: pushA.token, body: { token: 'short', platform: 'android' } })).status === 400);
+    check('an unknown platform is rejected', (await register(pushA, tok1, 'windows-phone')).status === 400);
+    check('a missing platform is rejected',
+      (await call('POST', '/users/me/device-token', { token: pushA.token, body: { token: tok1 } })).status === 400);
+
+    const first = await register(pushA, tok1);
+    check('a device token can be registered', first.status === 200 && first.data?.registered === true);
+    check('the account then has 1 registered device', first.data?.registeredDevices === 1, `got ${first.data?.registeredDevices}`);
+
+    const again = await register(pushA, tok1);
+    check('registering the same token again is harmless (still 1 device)', again.status === 200 && again.data?.registeredDevices === 1,
+      `got ${again.data?.registeredDevices}`);
+
+    check('a second token makes 2 devices', (await register(pushA, tok2, 'ios')).data?.registeredDevices === 2);
+
+    const prefs = await call('GET', '/users/me/notification-preferences', { token: pushA.token });
+    check('push is on by default', prefs.data?.pushEnabled === true);
+    check('preferences report the registered device count', prefs.data?.registeredDevices === 2);
+
+    // Shared phone: the token follows whoever registered it last.
+    const moved = await register(pushB, tok1);
+    check('another account registering the same token takes it over', moved.data?.registeredDevices === 1);
+    check('the previous account lost that token but kept its other one', (await devices(pushA)) === 1, `got ${await devices(pushA)}`);
+
+    await unregister(pushA, tok1);
+    check("one account cannot unregister another's token", (await devices(pushB)) === 1);
+
+    check('unregistering your own token works (204)', (await unregister(pushA, tok2)).status === 204);
+    check('...and the count drops', (await devices(pushA)) === 0);
+    check('unregistering a token that is not registered is still 204 (sign-out never fails)',
+      (await unregister(pushA, tok2)).status === 204);
+    check('unregistering with no token is rejected',
+      (await call('DELETE', '/users/me/device-token', { token: pushA.token, body: {} })).status === 400);
+
+    const off = await call('PUT', '/users/me/notification-preferences', { token: pushA.token, body: { pushEnabled: false } });
+    check('push can be switched off', off.status === 200 && off.data?.pushEnabled === false);
+    check('the setting is remembered',
+      (await call('GET', '/users/me/notification-preferences', { token: pushA.token })).data?.pushEnabled === false);
+    check("switching A off does not switch B off",
+      (await call('GET', '/users/me/notification-preferences', { token: pushB.token })).data?.pushEnabled === true);
+    check('a non-boolean preference is rejected',
+      (await call('PUT', '/users/me/notification-preferences', { token: pushA.token, body: { pushEnabled: 'yes' } })).status === 400);
+    check('push can be switched back on',
+      (await call('PUT', '/users/me/notification-preferences', { token: pushA.token, body: { pushEnabled: true } })).data?.pushEnabled === true);
+
+    // One account cannot hoard rows: only the newest 10 tokens are kept.
+    const many = Array.from({ length: 12 }, (_, i) => tok(`bulk${i}`));
+    for (const t of many) await register(pushA, t);
+    check('an account keeps at most 10 devices', (await devices(pushA)) === 10, `got ${await devices(pushA)}`);
+    for (const t of many) await unregister(pushA, t);
+    await unregister(pushB, tok1);
+    check('everything registered by this test is removed again',
+      (await devices(pushA)) === 0 && (await devices(pushB)) === 0);
+
+    // Posting an announcement while a device is registered must still work, and quickly:
+    // the push runs in the background and can never fail the request.
+    await register(pushA, tok1);
+    const started = Date.now();
+    const pushed = await call('POST', '/announcements', {
+      token: adminToken,
+      body: { title: 'Smoke push notice', message: 'Posted while a device was registered.', category: 'emergency' },
+    });
+    check('an announcement posts fine while devices are registered', pushed.status === 201);
+    check('...without waiting on the push', Date.now() - started < 3000, `took ${Date.now() - started}ms`);
+    if (pushed.data?.announcementId) {
+      await call('DELETE', `/announcements/${pushed.data.announcementId}`, { token: adminToken });
+    }
+    await unregister(pushA, tok1);
+
     console.log('\nModule 7 — quizzes');
     const courses = await call('GET', '/courses', { token: studentToken });
     const courseId = courses.data?.courses?.[0]?.courseId;

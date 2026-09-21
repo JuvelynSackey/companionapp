@@ -15,6 +15,13 @@ services:
         value: 7d
       - key: JWT_SECRET
         generateValue: true
+      # Push notifications stay off until you set FCM_ENABLED=true and paste the
+      # Firebase service-account key JSON into FIREBASE_SERVICE_ACCOUNT in the
+      # Render dashboard (see docs/push-notifications.md). Never put the key here.
+      - key: FCM_ENABLED
+        value: "false"
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
       - key: DB_HOST
         fromDatabase:
           name: campus-companion-db

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/core_providers.dart';
+import '../../core/services/push_coordinator.dart';
 import '../../data/models/app_user.dart';
 
 /// True right after a mid-session or launch-time 401 clears the token — lets
@@ -46,6 +47,8 @@ class SessionController extends AsyncNotifier<AppUser?> {
   }
 
   Future<void> signOut() async {
+    // Before the token is cleared: unregistering the device needs the session.
+    await ref.read(pushCoordinatorProvider).unregisterCurrentDevice();
     await ref.read(authRepositoryProvider).signOut();
     ref.read(sessionExpiredProvider.notifier).state = false;
     state = const AsyncValue.data(null);

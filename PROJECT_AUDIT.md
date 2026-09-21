@@ -11,9 +11,10 @@ live app is now Flutter; the legacy Kotlin module `app/` was removed (see sectio
 | Check | Result |
 |---|---|
 | `flutter analyze` | No issues |
-| `flutter test` | 269 / 269 pass |
-| Backend `npm test` (offline) | 14 / 14 pass: the grading scale in `schema.sql`, the migration and `GRADE_POINTS` all match `docs/grading-scale-ug.json` |
-| Backend `npm run test:smoke` | 154 / 154 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events (including lecturer create/delete and ownership), clubs, locations, admin provisioning, role permissions, self-registration never granting a role, and the quiz lifecycle. Re-runnable: it deletes its quizzes and events, but leaves a `smoke-lecturer-*` and a `smoke-register-*` account per run. |
+| `flutter test` | 332 / 332 pass |
+| Backend `npm test` (offline) | 38 / 38 pass: the grading scale in `schema.sql`, the migration and `GRADE_POINTS` all match `docs/grading-scale-ug.json`; the push fan-out and FCM sender against in-memory fakes |
+| Backend `npm run test:db` | 8 / 8 pass against local Postgres: the device-token and push-preference SQL (cleans up after itself) |
+| Backend `npm run test:smoke` | 180 / 180 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events (including lecturer create/delete and ownership), clubs, locations, admin provisioning, role permissions, self-registration never granting a role, and the quiz lifecycle. Re-runnable: it deletes its quizzes and events, but leaves a `smoke-lecturer-*` and a `smoke-register-*` account per run. |
 
 ## 2. Features that work (implemented and wired end to end)
 
@@ -26,6 +27,7 @@ where noted, tests.
 - **Timetable** — local-first: the student adds, edits, deletes and imports classes (`.ics`/CSV) on the device, and exports to `.ics`; class reminders, the Today list and the walk-time/conflict cards all read that local copy. The server's `/schedule` routes, including `/schedule/today`, are **deliberately unused** by the app and kept working (and smoke-tested) as a possible cloud-backup layer. Wiring the dashboard to `/schedule/today` was considered and rejected: the server timetable is normally empty, so it would replace a student's real classes with nothing. Tested (`schedule_parser`, `ics_exporter`).
 - **Exams** — local exams, countdown, exam mode, `.ics` export, reminder notifications. Stored on the device only.
 - **Alerts / announcements** — feed, admin broadcast, server-side sync cursor, local notifications from a foreground poll.
+- **Push notifications (built, not live)** — device-token registration, a per-user on/off switch (Alerts tab), announcement fan-out from the server (`FCM_ENABLED`-gated, log-only until then), foreground display, tap-to-open-Alerts, unregister on sign-out, dead-token cleanup, and the poll staying quiet while push works. Everything except the Firebase-backed adapter (`firebase_push_messaging.dart`) is tested against fakes, and both the release web build and a debug Android APK compile with the new packages (Flutter warns that `firebase_core` uses the old Kotlin plugin, a future-version notice, not an error). **It cannot deliver anything until you create a Firebase project** — see `docs/push-notifications.md`. Android only.
 - **Events** — list, create (lecturer/admin), register / cancel, and delete with a confirmation dialog: an admin can delete any event, a lecturer only the ones they created (the events API returns `createdBy`, and the button follows the same rule the backend enforces; events with no known creator, including the seeded ones, are admin-only). Creating an event from the app was broken until 21 September (it sent a timestamp with no timezone, which the backend rejects); fixed and covered by a test.
 - **Admin panel** — admins only (Admin panel item in the profile menu): create lecturer or admin accounts via `/admin/provision-user`, with client-side validation, backend errors shown (e.g. duplicate email), and an extra confirmation before creating an admin. The screen and the menu item are hidden from other roles; the backend enforces the role regardless. Tested. The menu item itself is not covered by a widget test.
 - **Clubs** — list with search and an All / My clubs filter, join / leave with optimistic updates and rollback on failure, and a detail screen with the club's upcoming events. Opened from the Clubs icon on the Events screen. Tested (`club`, `clubs_providers`, `clubs_screen`). Not seen running on a device or emulator yet.
@@ -42,7 +44,7 @@ These are what to clean up or finish. Ordered by how likely they are to matter i
 
 | # | Feature | State | Detail |
 |---|---|---|---|
-| 1 | **Push notifications** | Not working as push | No Firebase/FCM. Alerts appear only while the app polls in the foreground. The server-side hook is an open `TODO` in `backend/src/controllers/announcementController.js` (createAnnouncement). |
+| 1 | **Push notifications** | Built, waiting for a Firebase project | The app and server are ready (see section 2), but no Firebase project, `google-services.json` or service-account key exists, so nothing is delivered to a closed app: alerts still arrive only while the app polls in the foreground. Next steps are in `docs/push-notifications.md` (decide the Android app id first: it is `com.example.mobile`, a placeholder Google Play rejects). iOS and web push are not set up. |
 | 2 | **Student Hub — Shuttles, MoMo Dues, Lost & Found** | Simulated | No backend tables. Content is static fixtures (`student_hub_fixtures.dart`). "Paying" a due only writes a fake receipt on the device; no payment gateway. Lost & Found reports are per device and never shared. |
 | 3 | **Resources** — libraries, past papers, academic calendar, handbook | Static content | Hard-coded in `resource_models.dart`. Not editable and not backed by the API. |
 | 4 | **AI Assistant on the deployed web build** | Local fallback only | `GEMINI_API_KEY` is intentionally not baked into the web build (`render.yaml`), so it always uses the rule engine. In that engine the shuttle, MoMo, wifi, food and stress replies are generic text, not data. |
@@ -77,6 +79,6 @@ The August report listed these as problems. They are no longer accurate:
 
 ## 6. Suggested next steps
 
-1. Push notifications: resolve the `TODO` in `announcementController.js` and add an FCM listener in the app.
+1. Push notifications: create the Firebase project and add the credentials (`docs/push-notifications.md`), then check it on a real phone. Decide the Android app id (`com.example.mobile` is a placeholder) before registering.
 2. Student Hub: replace `student_hub_fixtures.dart` with real tables and routes for shuttles, dues and lost & found.
 3. Fix `POST /schedule`'s `userId` if the server timetable is ever used as a cloud backup.

@@ -44,8 +44,13 @@ class NotificationService {
     priority: Priority.high,
   );
 
+  /// Android channel ids. The server names these in its push messages
+  /// (backend/src/services/notificationService.js), so the two must match.
+  static const announcementChannelId = 'announcements';
+  static const emergencyChannelId = 'emergency_announcements';
+
   static const _announcementChannel = AndroidNotificationDetails(
-    'announcements',
+    announcementChannelId,
     'Campus Announcements',
     channelDescription: 'New posts to the campus notice board',
     importance: Importance.high,
@@ -53,7 +58,7 @@ class NotificationService {
   );
 
   static const _emergencyChannel = AndroidNotificationDetails(
-    'emergency_announcements',
+    emergencyChannelId,
     'Emergency Announcements',
     channelDescription: 'Urgent, time-critical campus alerts',
     importance: Importance.max,
@@ -85,6 +90,24 @@ class NotificationService {
         macOS: DarwinInitializationSettings(),
       ),
     );
+
+    // Create the announcement channels up front. A push that arrives while the
+    // app is closed is shown by Android itself, into the channel the server
+    // names; if that channel did not exist yet it would land in a default one
+    // with the wrong importance (an emergency alert must not be silent).
+    final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await android?.createNotificationChannel(const AndroidNotificationChannel(
+      announcementChannelId,
+      'Campus Announcements',
+      description: 'New posts to the campus notice board',
+      importance: Importance.high,
+    ));
+    await android?.createNotificationChannel(const AndroidNotificationChannel(
+      emergencyChannelId,
+      'Emergency Announcements',
+      description: 'Urgent, time-critical campus alerts',
+      importance: Importance.max,
+    ));
     _initialized = true;
   }
 
@@ -145,13 +168,31 @@ class NotificationService {
   /// FCM onMessage/onBackgroundMessage handler, both call this same method
   /// rather than building their own notification. Swapping in real push
   /// later only means replacing the poll with an FCM listener.
-  Future<void> showAnnouncementNotification(Announcement announcement) async {
-    await initialize();
+  Future<void> showAnnouncementNotification(Announcement announcement) {
     final isEmergency = announcement.category == 'emergency';
-    await _plugin.show(
-      id: announcementNotificationId(announcement.announcementId),
+    return showPushAnnouncement(
+      announcementId: announcement.announcementId,
       title: isEmergency ? '🚨 ${announcement.title}' : announcement.title,
       body: announcement.message,
+      isEmergency: isEmergency,
+    );
+  }
+
+  /// The same notification, built from a push message that arrived while the
+  /// app was open (the server already put the 🚨 in an emergency's title). It
+  /// shares the id scheme with [showAnnouncementNotification], so if both the
+  /// push and the poll surface one announcement, the OS shows it once.
+  Future<void> showPushAnnouncement({
+    required int announcementId,
+    required String title,
+    required String body,
+    required bool isEmergency,
+  }) async {
+    await initialize();
+    await _plugin.show(
+      id: announcementNotificationId(announcementId),
+      title: title,
+      body: body,
       notificationDetails: NotificationDetails(
         android: isEmergency ? _emergencyChannel : _announcementChannel,
         iOS: const DarwinNotificationDetails(),

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/providers/core_providers.dart';
+import '../../core/storage/local_prefs.dart';
 import '../../data/models/announcement.dart';
 import '../../widgets/async_value_view.dart';
 import '../auth/session_controller.dart';
 import 'alerts_providers.dart';
 import 'broadcast_alert_dialog.dart';
+import 'push_settings.dart';
 
 Color _categoryColor(BuildContext context, String category) {
   final scheme = Theme.of(context).colorScheme;
@@ -41,7 +43,36 @@ class AlertsScreen extends ConsumerWidget {
     final localPrefs = ref.watch(localPrefsProvider);
 
     return Scaffold(
-      body: RefreshIndicator(
+      body: Column(
+        children: [
+          const PushSettingsTile(),
+          Expanded(child: _buildAlerts(context, ref, announcements, isAdmin, localPrefs)),
+        ],
+      ),
+      floatingActionButton: isAdmin
+          ? FloatingActionButton(
+              heroTag: 'alerts_fab',
+              onPressed: () async {
+                final broadcast = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => const BroadcastAlertDialog(),
+                );
+                if (broadcast == true) ref.invalidate(announcementsProvider);
+              },
+              child: const Icon(Icons.campaign),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildAlerts(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<Announcement>> announcements,
+    bool isAdmin,
+    LocalPrefs localPrefs,
+  ) {
+    return RefreshIndicator(
         onRefresh: () => ref.refresh(announcementsProvider.future),
         child: AsyncValueView<List<Announcement>>(
           value: announcements,
@@ -109,20 +140,6 @@ class AlertsScreen extends ConsumerWidget {
             );
           },
         ),
-      ),
-      floatingActionButton: isAdmin
-          ? FloatingActionButton(
-              heroTag: 'alerts_fab',
-              onPressed: () async {
-                final broadcast = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => const BroadcastAlertDialog(),
-                );
-                if (broadcast == true) ref.invalidate(announcementsProvider);
-              },
-              child: const Icon(Icons.campaign),
-            )
-          : null,
-    );
+      );
   }
 }

@@ -9,6 +9,7 @@ import '../../data/api/auth_api.dart';
 import '../../data/api/club_api.dart';
 import '../../data/api/course_api.dart';
 import '../../data/api/dashboard_api.dart';
+import '../../data/api/device_api.dart';
 import '../../data/api/event_api.dart';
 import '../../data/api/grade_api.dart';
 import '../../data/api/location_api.dart';
@@ -48,6 +49,7 @@ final locationApiProvider = Provider<LocationApi>((ref) => LocationApi(ref.watch
 final eventApiProvider = Provider<EventApi>((ref) => EventApi(ref.watch(apiClientProvider)));
 final clubApiProvider = Provider<ClubApi>((ref) => ClubApi(ref.watch(apiClientProvider)));
 final adminApiProvider = Provider<AdminApi>((ref) => AdminApi(ref.watch(apiClientProvider)));
+final deviceApiProvider = Provider<DeviceApi>((ref) => DeviceApi(ref.watch(apiClientProvider)));
 final gradeApiProvider = Provider<GradeApi>((ref) => GradeApi(ref.watch(apiClientProvider)));
 final quizApiProvider = Provider<QuizApi>((ref) => QuizApi(ref.watch(apiClientProvider)));
 

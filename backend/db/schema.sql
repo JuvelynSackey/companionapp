@@ -4,6 +4,7 @@
 -- with the normalisation notes recorded in docs/schema-notes.md
 -- ============================================================
 
+DROP TABLE IF EXISTS device_tokens     CASCADE;
 DROP TABLE IF EXISTS event_registrations CASCADE;
 DROP TABLE IF EXISTS club_memberships  CASCADE;
 DROP TABLE IF EXISTS announcements     CASCADE;
@@ -36,12 +37,33 @@ CREATE TABLE users (
     -- "never synced" — the first sync baselines to the current max id
     -- instead of notifying for every historical announcement.
     last_synced_announcement_id INTEGER NOT NULL DEFAULT 0,
+    -- Whether this user wants push notifications at all. Checked by the server
+    -- before it sends; the OS-level permission on the device is separate.
+    push_enabled  BOOLEAN       NOT NULL DEFAULT TRUE,
     created_at    TIMESTAMPTZ   NOT NULL DEFAULT now()
 );
 
 -- Email lookups happen on every login, so index the lower-cased form
 -- to keep sign-in case-insensitive without a sequential scan.
 CREATE UNIQUE INDEX idx_users_email_lower ON users (LOWER(email));
+
+-- ------------------------------------------------------------
+-- DEVICE_TOKEN  (push notifications; see docs/push-notifications.md)
+-- One row per app install that has registered for push. The token is unique
+-- across ALL users, so registering it again from another account moves it to
+-- that account: a phone that is signed out and back in as someone else must
+-- stop receiving the previous person's notifications.
+-- ------------------------------------------------------------
+CREATE TABLE device_tokens (
+    token_id   SERIAL PRIMARY KEY,
+    user_id    INTEGER      NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    token      TEXT         NOT NULL UNIQUE,
+    platform   VARCHAR(10)  NOT NULL CHECK (platform IN ('android', 'ios', 'web')),
+    created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_device_tokens_user ON device_tokens (user_id);
 
 -- ------------------------------------------------------------
 -- COURSE  (not in the proposal ERD - see docs/schema-notes.md)

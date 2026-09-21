@@ -31,4 +31,12 @@ export const config = {
     secret: required('JWT_SECRET'),
     expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
   },
+
+  // Push notifications. Off unless FCM_ENABLED=true; then FIREBASE_SERVICE_ACCOUNT
+  // must hold the service-account key JSON (as a single line). If it is missing
+  // or wrong the API still starts and pushes are only logged, see services/pushSenders.js.
+  push: {
+    enabled: process.env.FCM_ENABLED === 'true',
+    serviceAccount: process.env.FIREBASE_SERVICE_ACCOUNT ?? '',
+  },
 };

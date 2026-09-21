@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/providers/core_providers.dart';
 import 'core/services/announcement_push_bridge.dart';
+import 'core/services/push_coordinator.dart';
 import 'core/theme/app_theme.dart';
 import 'data/models/app_user.dart';
 import 'features/auth/auth_status.dart';
@@ -39,11 +40,26 @@ class _RootGate extends ConsumerWidget {
 
     final session = ref.watch(sessionControllerProvider);
 
+    // Real push (when configured): register this device while signed in.
+    // stop() only stops listening; signing out unregisters the device on the
+    // server first (SessionController.signOut), and an expired session cannot.
+    // The listener handles changes (its callbacks never run during a build, so
+    // stop() may safely change state); start() is idempotent, so calling it
+    // below also covers a session that was already restored at launch.
+    ref.listen<AsyncValue<AppUser?>>(sessionControllerProvider, (previous, next) {
+      if (next.valueOrNull != null) {
+        ref.read(pushCoordinatorProvider).start();
+      } else if (next.hasValue) {
+        ref.read(pushCoordinatorProvider).stop();
+      }
+    });
+
     // Starts/stops the announcement push bridge (see its doc comment) as the
     // session resolves — covers both a fresh sign-in and a restored token,
     // since both land here as session.valueOrNull becoming non-null.
     final signedInUser = session.valueOrNull;
     if (signedInUser != null) {
+      ref.read(pushCoordinatorProvider).start();
       ref.read(notificationServiceProvider).requestPermission();
       ref.read(announcementPushBridgeProvider).start();
     } else if (session.hasValue) {

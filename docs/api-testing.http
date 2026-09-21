@@ -141,6 +141,31 @@ Authorization: Bearer {{studentToken}}
 DELETE {{host}}/events/1
 Authorization: Bearer {{adminToken}}
 
+### Push: register this device's token (the app does this on sign-in)
+POST {{host}}/users/me/device-token
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{ "token": "a-real-fcm-token-is-about-160-characters-long-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "platform": "android" }
+
+### Push: unregister it (the app does this on sign-out)
+DELETE {{host}}/users/me/device-token
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{ "token": "a-real-fcm-token-is-about-160-characters-long-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
+
+### Push: the on/off setting and how many devices are registered
+GET {{host}}/users/me/notification-preferences
+Authorization: Bearer {{studentToken}}
+
+### Push: switch it off / on
+PUT {{host}}/users/me/notification-preferences
+Authorization: Bearer {{studentToken}}
+Content-Type: application/json
+
+{ "pushEnabled": false }
+
 ### All clubs, with membership state
 GET {{host}}/clubs
 Authorization: Bearer {{studentToken}}

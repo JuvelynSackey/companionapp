@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { query } from '../config/db.js';
+import { getNotificationService } from '../services/push.js';
 
 export const createAnnouncementSchema = z.object({
   title: z.string().trim().min(3).max(160),
@@ -58,8 +59,17 @@ export async function createAnnouncement(req, res, next) {
       [title, message, category, req.user.userId]
     );
 
-    // TODO (Module 3): fan out a Firebase Cloud Messaging push here so the
-    // alert reaches devices, not just the in-app feed.
+    // Push it to devices, but never make the admin wait for (or fail because
+    // of) the push service: it runs in the background and only logs errors.
+    getNotificationService()
+      .then((notifications) => notifications.notifyAnnouncement({
+        announcementId: rows[0].announcement_id,
+        title,
+        message,
+        category,
+      }))
+      .catch((err) => console.error('Push fan-out failed:', err));
+
     return res.status(201).json({
       announcementId: rows[0].announcement_id,
       datePosted: rows[0].date_posted,

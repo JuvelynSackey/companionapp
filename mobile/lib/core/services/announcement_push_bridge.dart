@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/announcement.dart';
 import '../providers/core_providers.dart';
+import 'push_coordinator.dart';
 
 /// Foreground stand-in for real push notifications on new campus
 /// announcements. No Firebase project is wired up for this app yet (no
@@ -56,7 +57,12 @@ class AnnouncementPushBridge {
     // cursor == 0 means "never synced" — baseline to the current max id
     // without notifying, so a fresh account/device isn't flooded with every
     // historical announcement the moment it first syncs.
-    if (cursor > 0) {
+    //
+    // While this device is registered for real push the server delivers the
+    // notification (the OS shows it when the app is closed, the coordinator
+    // shows it when open), so the poll only advances the cursor. If push is
+    // not active, the poll notifies as it always did.
+    if (cursor > 0 && !_ref.read(pushActiveProvider)) {
       final service = _ref.read(notificationServiceProvider);
       for (final announcement in announcements) {
         if (announcement.announcementId > cursor) {

@@ -26,6 +26,10 @@ import { listClubs, joinClub, leaveClub } from '../controllers/clubController.js
 import { listLocations, listCategories } from '../controllers/locationController.js';
 import { listCourses } from '../controllers/courseController.js';
 import {
+  registerDeviceToken, unregisterDeviceToken, getNotificationPreferences, updateNotificationPreferences,
+  registerDeviceTokenSchema, unregisterDeviceTokenSchema, updatePreferencesSchema,
+} from '../controllers/deviceController.js';
+import {
   listQuizzes, getQuiz, createQuiz, submitAttempt, deleteQuiz,
   createQuizSchema, submitAttemptSchema,
 } from '../controllers/quizController.js';
@@ -79,6 +83,12 @@ router.delete('/events/:id/register', cancelRegistration);
 router.get('/clubs', listClubs);
 router.post('/clubs/:id/join', joinClub);
 router.delete('/clubs/:id/join', leaveClub);
+
+// ---- Push notifications: this device's token, and the user's on/off preference ----
+router.post('/users/me/device-token', validateBody(registerDeviceTokenSchema), registerDeviceToken);
+router.delete('/users/me/device-token', validateBody(unregisterDeviceTokenSchema), unregisterDeviceToken);
+router.get('/users/me/notification-preferences', getNotificationPreferences);
+router.put('/users/me/notification-preferences', validateBody(updatePreferencesSchema), updateNotificationPreferences);
 
 // ---- Module 6: campus map ----
 router.get('/locations', listLocations);
