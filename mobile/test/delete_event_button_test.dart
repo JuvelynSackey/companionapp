@@ -18,7 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'support/admin_fakes.dart';
 import 'support/club_fakes.dart';
 
-CampusEvent _event(int id, String title) => CampusEvent(
+CampusEvent _event(int id, String title, {int? createdBy}) => CampusEvent(
       eventId: id,
       title: title,
       description: 'About $title',
@@ -27,6 +27,7 @@ CampusEvent _event(int id, String title) => CampusEvent(
       clubName: null,
       attendeeCount: 3,
       isRegistered: false,
+      createdBy: createdBy,
     );
 
 class _Env {
@@ -208,6 +209,77 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(env.events.fetchCount, fetchesBefore + 1);
+    });
+  });
+
+  group('who may delete which event (createdBy)', () {
+    final events = [
+      _event(5, 'Lecturer seven event', createdBy: 7),
+      _event(6, 'Lecturer eight event', createdBy: 8),
+      _event(9, 'Admin event', createdBy: 1),
+      _event(10, 'Student three event', createdBy: 3),
+      _event(11, 'Orphaned event'), // creator unknown
+    ];
+    Finder trashOn(String title) =>
+        find.descendant(of: find.widgetWithText(Card, title), matching: find.byIcon(Icons.delete_outline));
+
+    Future<void> open(WidgetTester tester, AppUser user) async {
+      tester.view.physicalSize = const Size(800, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final env = await _env(user, events: events);
+      await tester.pumpWidget(_screenApp(env));
+      await tester.pumpAndSettle();
+      expect(find.byType(Card), findsNWidgets(events.length), reason: 'all events are listed');
+    }
+
+    testWidgets('a lecturer gets the trash icon only on the events they created', (tester) async {
+      await open(tester, lecturerUser); // user id 7
+
+      expect(trashOn('Lecturer seven event'), findsOneWidget);
+      for (final other in ['Lecturer eight event', 'Admin event', 'Student three event', 'Orphaned event']) {
+        expect(trashOn(other), findsNothing, reason: other);
+      }
+      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    });
+
+    testWidgets('a different lecturer gets it only on theirs', (tester) async {
+      await open(tester, userWithRole('lecturer', userId: 8));
+
+      expect(trashOn('Lecturer eight event'), findsOneWidget);
+      expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    });
+
+    testWidgets('an admin gets it on every event, including ones with no known creator', (tester) async {
+      await open(tester, adminUser);
+
+      expect(find.byIcon(Icons.delete_outline), findsNWidgets(events.length));
+      expect(trashOn('Orphaned event'), findsOneWidget);
+    });
+
+    testWidgets('a student gets it on none, even on an event whose creator id matches theirs', (tester) async {
+      await open(tester, studentUser); // user id 3, and 'Student three event' has createdBy 3
+
+      expect(find.byIcon(Icons.delete_outline), findsNothing);
+    });
+
+    testWidgets('a lecturer can delete their own event from the list', (tester) async {
+      tester.view.physicalSize = const Size(800, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final env = await _env(lecturerUser, events: events);
+      env.admin.onDelete = (id) async => env.events.events = env.events.events.where((e) => e.eventId != id).toList();
+      await tester.pumpWidget(_screenApp(env));
+      await tester.pumpAndSettle();
+
+      await tester.tap(trashOn('Lecturer seven event'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+
+      expect(env.admin.deletedEventIds, [5]);
+      expect(find.text('Lecturer seven event'), findsNothing);
+      expect(find.text('Lecturer eight event'), findsOneWidget, reason: 'the others are untouched');
     });
   });
 

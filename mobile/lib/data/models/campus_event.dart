@@ -8,6 +8,7 @@ class CampusEvent {
     required this.clubName,
     required this.attendeeCount,
     required this.isRegistered,
+    this.createdBy,
   });
 
   factory CampusEvent.fromJson(Map<String, dynamic> json) => CampusEvent(
@@ -20,6 +21,7 @@ class CampusEvent {
         attendeeCount: json['attendeeCount'] as int,
         // The backend can return null here (LEFT JOIN with no match) instead of false.
         isRegistered: json['isRegistered'] as bool? ?? false,
+        createdBy: json['createdBy'] as int?,
       );
 
   final int eventId;
@@ -30,4 +32,8 @@ class CampusEvent {
   final String? clubName;
   final int attendeeCount;
   final bool isRegistered;
+
+  /// User id of whoever created the event; null when unknown (the creating
+  /// account was deleted, or an older server that does not send it).
+  final int? createdBy;
 }

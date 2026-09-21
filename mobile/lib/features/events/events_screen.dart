@@ -128,7 +128,7 @@ class _EventCardState extends ConsumerState<_EventCard> {
             Row(
               children: [
                 Expanded(child: Text(event.title, style: Theme.of(context).textTheme.titleMedium)),
-                DeleteEventButton(eventId: event.eventId, eventTitle: event.title),
+                DeleteEventButton(eventId: event.eventId, eventTitle: event.title, createdBy: event.createdBy),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(

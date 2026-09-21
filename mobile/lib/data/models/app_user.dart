@@ -32,6 +32,14 @@ class AppUser {
   /// admins — see requireRole('lecturer', 'admin') on POST /api/events.
   bool get canCreateEvents => permissions.contains('events:create');
 
+  /// Whether this user may delete an event that [createdBy] created: admins
+  /// any event, a lecturer (anyone who can create events) only their own.
+  /// Mirrors deleteEvent in the backend, which is what actually enforces it;
+  /// this only decides whether to show the button. An event with no known
+  /// creator can be deleted by admins only.
+  bool canDeleteEvent(int? createdBy) =>
+      isAdmin || (canCreateEvents && createdBy != null && createdBy == userId);
+
   /// Quiz authoring (manual or past-paper-derived) is open to lecturers too.
   bool get canCreateQuizzes => permissions.contains('quizzes:create');
 }

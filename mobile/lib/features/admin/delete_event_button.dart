@@ -4,16 +4,20 @@ import '../../core/network/api_exception.dart';
 import '../../core/providers/core_providers.dart';
 import '../events/event_pass_controller.dart';
 import '../events/events_providers.dart';
-import 'admin_providers.dart';
+import '../auth/session_controller.dart';
 
-/// Admin-only "delete this event" button with a confirmation step. Renders
-/// nothing for anyone else. After a delete it refreshes the events list and
-/// drops any RSVP pass this device holds for the event.
+/// "Delete this event" button with a confirmation step. Shown to admins on
+/// every event and to a lecturer on the events they created; renders nothing
+/// for anyone else. After a delete it refreshes the events list and drops any
+/// RSVP pass this device holds for the event.
 class DeleteEventButton extends ConsumerWidget {
-  const DeleteEventButton({super.key, required this.eventId, required this.eventTitle});
+  const DeleteEventButton({super.key, required this.eventId, required this.eventTitle, this.createdBy});
 
   final int eventId;
   final String eventTitle;
+
+  /// Who created the event, from the events API (see [AppUser.canDeleteEvent]).
+  final int? createdBy;
 
   Future<void> _confirmAndDelete(BuildContext context) async {
     // Captured up front: the card can be rebuilt away (e.g. a pull-to-refresh)
@@ -57,7 +61,8 @@ class DeleteEventButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!ref.watch(isAdminProvider)) return const SizedBox.shrink();
+    final user = ref.watch(sessionControllerProvider).valueOrNull;
+    if (user == null || !user.canDeleteEvent(createdBy)) return const SizedBox.shrink();
 
     return IconButton(
       icon: const Icon(Icons.delete_outline),

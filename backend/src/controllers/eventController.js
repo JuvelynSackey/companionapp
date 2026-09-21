@@ -19,6 +19,10 @@ function shape(row) {
     clubName: row.club_name,
     attendeeCount: Number(row.attendee_count),
     isRegistered: row.is_registered,
+    // The user id of whoever created the event (null if that account was deleted).
+    // Lets the app show a delete button to a lecturer on their own events only;
+    // the server still enforces this in deleteEvent.
+    createdBy: row.created_by,
   };
 }
 
@@ -32,7 +36,7 @@ export async function listEvents(req, res, next) {
 
   try {
     const { rows } = await query(
-      `SELECT e.event_id, e.title, e.description, e.event_date, e.location,
+      `SELECT e.event_id, e.title, e.description, e.event_date, e.location, e.created_by,
               c.name AS club_name,
               COUNT(r.user_id) AS attendee_count,
               BOOL_OR(r.user_id = $1) AS is_registered

@@ -237,6 +237,11 @@ async function run() {
   check('events returned', events.data?.events?.length >= 2);
   const firstEvent = events.data?.events?.[0];
   check('event carries organising club', !!firstEvent?.clubName);
+  check('every event says who created it (createdBy)',
+    events.data?.events?.every((e) => 'createdBy' in e), 'a createdBy field is missing');
+  check('seeded events were created by the admin',
+    events.data?.events?.every((e) => e.createdBy === adminLogin.data?.user?.userId),
+    `got ${JSON.stringify(events.data?.events?.map((e) => e.createdBy))}`);
 
   const rsvp = await call('POST', `/events/${firstEvent?.eventId}/register`, {
     token: studentToken,
@@ -497,6 +502,9 @@ async function run() {
     if (eventBId) createdEventIds.push(eventBId);
 
     check("student sees the lecturer's event", (await findEvent(eventAId))?.title === `Smoke event A ${runId}`);
+    check('an event carries the lecturer who created it as createdBy',
+      (await findEvent(eventAId))?.createdBy === lecturerLogin.data?.user?.userId,
+      `got ${(await findEvent(eventAId))?.createdBy}, expected ${lecturerLogin.data?.user?.userId}`);
 
     const studentDeleteEvent = await call('DELETE', `/events/${eventAId}`, { token: studentToken });
     check('student cannot delete events', studentDeleteEvent.status === 403);
@@ -510,6 +518,9 @@ async function run() {
     const adminEventId = adminEvent.data?.eventId;
     if (adminEventId) createdEventIds.push(adminEventId);
     check('admin can create an event', adminEvent.status === 201);
+    check("an admin's event carries the admin as createdBy, not the lecturer",
+      (await findEvent(adminEventId))?.createdBy === adminLogin.data?.user?.userId &&
+      (await findEvent(adminEventId))?.createdBy !== lecturerLogin.data?.user?.userId);
 
     const lecturerDeleteOther = await call('DELETE', `/events/${adminEventId}`, { token: lecturerToken });
     check('lecturer cannot delete an event they did not create', lecturerDeleteOther.status === 403,

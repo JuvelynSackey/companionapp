@@ -11,9 +11,9 @@ live app is now Flutter; the legacy Kotlin module `app/` was removed (see sectio
 | Check | Result |
 |---|---|
 | `flutter analyze` | No issues |
-| `flutter test` | 256 / 256 pass |
+| `flutter test` | 269 / 269 pass |
 | Backend `npm test` (offline) | 14 / 14 pass: the grading scale in `schema.sql`, the migration and `GRADE_POINTS` all match `docs/grading-scale-ug.json` |
-| Backend `npm run test:smoke` | 150 / 150 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events (including lecturer create/delete and ownership), clubs, locations, admin provisioning, role permissions, self-registration never granting a role, and the quiz lifecycle. Re-runnable: it deletes its quizzes and events, but leaves a `smoke-lecturer-*` and a `smoke-register-*` account per run. |
+| Backend `npm run test:smoke` | 154 / 154 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events (including lecturer create/delete and ownership), clubs, locations, admin provisioning, role permissions, self-registration never granting a role, and the quiz lifecycle. Re-runnable: it deletes its quizzes and events, but leaves a `smoke-lecturer-*` and a `smoke-register-*` account per run. |
 
 ## 2. Features that work (implemented and wired end to end)
 
@@ -26,7 +26,7 @@ where noted, tests.
 - **Timetable** — local-first: the student adds, edits, deletes and imports classes (`.ics`/CSV) on the device, and exports to `.ics`; class reminders, the Today list and the walk-time/conflict cards all read that local copy. The server's `/schedule` routes, including `/schedule/today`, are **deliberately unused** by the app and kept working (and smoke-tested) as a possible cloud-backup layer. Wiring the dashboard to `/schedule/today` was considered and rejected: the server timetable is normally empty, so it would replace a student's real classes with nothing. Tested (`schedule_parser`, `ics_exporter`).
 - **Exams** — local exams, countdown, exam mode, `.ics` export, reminder notifications. Stored on the device only.
 - **Alerts / announcements** — feed, admin broadcast, server-side sync cursor, local notifications from a foreground poll.
-- **Events** — list, create (lecturer/admin), register / cancel, and delete (admin, with a confirmation dialog). Creating an event from the app was broken until 21 September (it sent a timestamp with no timezone, which the backend rejects); fixed and covered by a test.
+- **Events** — list, create (lecturer/admin), register / cancel, and delete with a confirmation dialog: an admin can delete any event, a lecturer only the ones they created (the events API returns `createdBy`, and the button follows the same rule the backend enforces; events with no known creator, including the seeded ones, are admin-only). Creating an event from the app was broken until 21 September (it sent a timestamp with no timezone, which the backend rejects); fixed and covered by a test.
 - **Admin panel** — admins only (Admin panel item in the profile menu): create lecturer or admin accounts via `/admin/provision-user`, with client-side validation, backend errors shown (e.g. duplicate email), and an extra confirmation before creating an admin. The screen and the menu item are hidden from other roles; the backend enforces the role regardless. Tested. The menu item itself is not covered by a widget test.
 - **Clubs** — list with search and an All / My clubs filter, join / leave with optimistic updates and rollback on failure, and a detail screen with the club's upcoming events. Opened from the Clubs icon on the Events screen. Tested (`club`, `clubs_providers`, `clubs_screen`). Not seen running on a device or emulator yet.
 - **Campus locations and map** — `/locations`, custom painter map, open in Maps. Tested (`map_coordinate_mapper`).
@@ -46,10 +46,9 @@ These are what to clean up or finish. Ordered by how likely they are to matter i
 | 2 | **Student Hub — Shuttles, MoMo Dues, Lost & Found** | Simulated | No backend tables. Content is static fixtures (`student_hub_fixtures.dart`). "Paying" a due only writes a fake receipt on the device; no payment gateway. Lost & Found reports are per device and never shared. |
 | 3 | **Resources** — libraries, past papers, academic calendar, handbook | Static content | Hard-coded in `resource_models.dart`. Not editable and not backed by the API. |
 | 4 | **AI Assistant on the deployed web build** | Local fallback only | `GEMINI_API_KEY` is intentionally not baked into the web build (`render.yaml`), so it always uses the rule engine. In that engine the shuttle, MoMo, wifi, food and stress replies are generic text, not data. |
-| 5 | **Lecturers cannot delete their own events in the app** | Backend only | The backend lets a lecturer delete events they created, but the app offers deletion to admins only, because the events API does not say who created an event. |
-| 6 | **Default API URL** | Works only on an Android emulator | Defaults to `http://10.0.2.2:4000/api`. A physical device or desktop run needs `--dart-define=API_BASE_URL=...`. |
-| 7 | **Backend tests** | Thin | A smoke script that needs a live server and database, plus offline unit tests for the grading scale only. Nothing else has unit tests. |
-| 8 | **`POST /schedule` cannot target another user** | Latent backend bug | `createScheduleEntry` reads `req.body.userId`, but the request schema does not list it, so validation strips it and a class always lands on the caller's own timetable. It has no effect today (the app is local-first) and only matters if the server timetable is ever used. |
+| 5 | **Default API URL** | Works only on an Android emulator | Defaults to `http://10.0.2.2:4000/api`. A physical device or desktop run needs `--dart-define=API_BASE_URL=...`. |
+| 6 | **Backend tests** | Thin | A smoke script that needs a live server and database, plus offline unit tests for the grading scale only. Nothing else has unit tests. |
+| 7 | **`POST /schedule` cannot target another user** | Latent backend bug | `createScheduleEntry` reads `req.body.userId`, but the request schema does not list it, so validation strips it and a class always lands on the caller's own timetable. It has no effect today (the app is local-first) and only matters if the server timetable is ever used. |
 
 ## 4. Cleanup done
 
@@ -80,4 +79,4 @@ The August report listed these as problems. They are no longer accurate:
 
 1. Push notifications: resolve the `TODO` in `announcementController.js` and add an FCM listener in the app.
 2. Student Hub: replace `student_hub_fixtures.dart` with real tables and routes for shuttles, dues and lost & found.
-3. Optionally let lecturers delete their own events in the app (needs `createdBy` in the events API), and fix `POST /schedule`'s `userId` if the server timetable is ever used as a cloud backup.
+3. Fix `POST /schedule`'s `userId` if the server timetable is ever used as a cloud backup.

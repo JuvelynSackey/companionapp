@@ -4,17 +4,25 @@ import 'package:mobile/features/auth/session_controller.dart';
 
 /// Shared fakes for the admin tests.
 
-AppUser userWithRole(String role) => AppUser(
-      userId: 1,
+/// Permissions as the backend derives them from the role (ROLE_PERMISSIONS in
+/// authController.js), limited to the ones the app checks.
+const _permissionsByRole = <String, Set<String>>{
+  'admin': {'events:create', 'quizzes:create'},
+  'lecturer': {'events:create', 'quizzes:create'},
+  'student': <String>{},
+};
+
+AppUser userWithRole(String role, {int userId = 1}) => AppUser(
+      userId: userId,
       fullName: 'Test $role',
       email: '$role@ug.edu.gh',
       role: role,
-      permissions: const {},
+      permissions: _permissionsByRole[role] ?? const {},
     );
 
-final adminUser = userWithRole('admin');
-final lecturerUser = userWithRole('lecturer');
-final studentUser = userWithRole('student');
+final adminUser = userWithRole('admin', userId: 1);
+final lecturerUser = userWithRole('lecturer', userId: 7);
+final studentUser = userWithRole('student', userId: 3);
 
 /// Signed-in user without touching storage or the network.
 class FakeSessionController extends SessionController {

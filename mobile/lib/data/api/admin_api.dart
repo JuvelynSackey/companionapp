@@ -25,8 +25,9 @@ class AdminApi {
         return AppUser.fromJson(res.data['user']);
       });
 
-  /// Deletes any event (RSVPs go with it). Lecturers can delete only their
-  /// own events on the backend; this app offers deletion to admins only.
+  /// Deletes an event (RSVPs go with it). The backend lets an admin delete any
+  /// event and a lecturer only the ones they created (403 otherwise); the app
+  /// shows the button on the same terms (see AppUser.canDeleteEvent).
   Future<void> deleteEvent(int eventId) => _client.guard(() async {
         await _client.dio.delete('/events/$eventId');
       });
