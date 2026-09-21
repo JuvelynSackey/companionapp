@@ -71,25 +71,18 @@ flutterfire configure
 It writes `lib/firebase_options.dart`. If you use it, pass the options in
 `main.dart`: `createPushMessaging(options: DefaultFirebaseOptions.currentPlatform)`.
 
-### 3. Android Gradle (skip if you used `flutterfire configure`)
+### 3. Android Gradle (already done)
 
-The Google-services Gradle plugin turns `google-services.json` into app config.
-It is deliberately **not** applied yet: it needs the file to exist, and adding it
-without one would break every build. Once the file is in place:
+The Google-services Gradle plugin (4.5.0) is applied in
+`mobile/android/settings.gradle.kts` and `mobile/android/app/build.gradle.kts`;
+it turns `google-services.json` into app config at build time. Consequence: **the
+Android app will not build without `mobile/android/app/google-services.json`**, and
+that file is git-ignored, so a fresh clone (or a teammate's machine) needs it
+copied in from the Firebase console (Project settings > Your apps > Android).
+The web build and the backend do not need it.
 
-`mobile/android/settings.gradle.kts`, inside `plugins { ... }`:
-
-```kotlin
-id("com.google.gms.google-services") version "<current version>" apply false
-```
-
-`mobile/android/app/build.gradle.kts`, inside `plugins { ... }`:
-
-```kotlin
-id("com.google.gms.google-services")
-```
-
-Use the version the FlutterFire docs currently list.
+The file's `package_name` must equal the app's `applicationId`
+(`com.example.mobile`); a mismatch fails the build with "No matching client found".
 
 ### 4. Give the server permission to send
 
