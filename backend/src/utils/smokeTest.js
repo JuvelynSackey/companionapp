@@ -6,6 +6,12 @@
  * Walks the whole student journey from the proposal's system-testing example
  * (login -> dashboard -> schedule -> grades -> events) plus the admin paths,
  * and checks that authorisation is actually enforced rather than assumed.
+ * Also covers admin provisioning of lecturer accounts, role permissions, and
+ * the quiz lifecycle (create -> fetch without answer key -> attempt -> delete).
+ *
+ * Needs the seeded demo accounts (`npm run db:setup`). Safe to re-run: quizzes
+ * are deleted at the end; each run leaves one smoke-lecturer-*@ug.edu.gh
+ * account behind, since there is no delete-user endpoint.
  */
 const BASE = process.env.API_BASE ?? 'http://localhost:4000/api';
 
@@ -204,6 +210,241 @@ async function run() {
 
   const badCategory = await call('GET', '/locations?category=nonsense', { token: studentToken });
   check('invalid category rejected', badCategory.status === 400);
+
+  // Quizzes created below are tracked so they are removed even if a check
+  // throws part-way. Deleting a quiz cascades to its questions and attempts.
+  // Provisioned accounts are NOT cleaned up (there is no delete-user
+  // endpoint), so each run leaves one smoke-lecturer-*@ug.edu.gh row behind;
+  // `npm run db:setup` resets it.
+  const createdQuizIds = [];
+  try {
+    console.log('\nAdmin — provisioning elevated accounts');
+    const runId = Date.now();
+    const lecturerAccount = {
+      fullName: 'Smoke Test Lecturer',
+      email: `smoke-lecturer-${runId}@ug.edu.gh`,
+      password: 'smokepass123',
+      role: 'lecturer',
+    };
+
+    const noTokenProvision = await call('POST', '/admin/provision-user', { body: lecturerAccount });
+    check('provisioning rejects a missing token', noTokenProvision.status === 401);
+
+    const studentProvision = await call('POST', '/admin/provision-user', {
+      token: studentToken,
+      body: lecturerAccount,
+    });
+    check('student cannot provision accounts', studentProvision.status === 403);
+
+    const badRole = await call('POST', '/admin/provision-user', {
+      token: adminToken,
+      body: { ...lecturerAccount, role: 'student' },
+    });
+    check('provisioning rejects role "student"', badRole.status === 400);
+
+    const weakProvision = await call('POST', '/admin/provision-user', {
+      token: adminToken,
+      body: { ...lecturerAccount, password: 'abc' },
+    });
+    check('provisioning rejects a short password', weakProvision.status === 400);
+
+    const provisioned = await call('POST', '/admin/provision-user', {
+      token: adminToken,
+      body: lecturerAccount,
+    });
+    check('admin can provision a lecturer', provisioned.status === 201);
+    check('provisioned user has the lecturer role', provisioned.data?.user?.role === 'lecturer',
+      `got ${provisioned.data?.user?.role}`);
+    check('provisioning never leaks the password hash',
+      !JSON.stringify(provisioned.data ?? {}).includes('password'));
+
+    const duplicateProvision = await call('POST', '/admin/provision-user', {
+      token: adminToken,
+      body: lecturerAccount,
+    });
+    check('provisioning a duplicate email is rejected', duplicateProvision.status === 409);
+
+    console.log('\nRoles & permissions');
+    const lecturerLogin = await call('POST', '/auth/login', {
+      body: { email: lecturerAccount.email, password: lecturerAccount.password },
+    });
+    check('provisioned lecturer can log in', lecturerLogin.status === 200 && !!lecturerLogin.data?.token);
+    const lecturerToken = lecturerLogin.data?.token;
+
+    check('login reports the lecturer role', lecturerLogin.data?.user?.role === 'lecturer');
+    check('lecturer holds quizzes:create',
+      lecturerLogin.data?.user?.permissions?.includes('quizzes:create') === true);
+    check('lecturer holds events:create',
+      lecturerLogin.data?.user?.permissions?.includes('events:create') === true);
+    check('lecturer does not hold admin permissions',
+      !lecturerLogin.data?.user?.permissions?.includes('announcements:write'));
+    check('student does not hold quizzes:create',
+      login.data?.user?.permissions?.includes('quizzes:create') === false);
+
+    const lecturerMe = await call('GET', '/auth/me', { token: lecturerToken });
+    check('me returns the lecturer', lecturerMe.data?.user?.email === lecturerAccount.email);
+
+    const lecturerProvision = await call('POST', '/admin/provision-user', {
+      token: lecturerToken,
+      body: { ...lecturerAccount, email: `smoke-other-${runId}@ug.edu.gh` },
+    });
+    check('lecturer cannot provision accounts', lecturerProvision.status === 403);
+
+    const lecturerAnn = await call('POST', '/announcements', {
+      token: lecturerToken,
+      body: { title: 'Lecturer notice', message: 'Should be blocked' },
+    });
+    check('lecturer cannot post announcements', lecturerAnn.status === 403);
+
+    const lecturerGrade = await call('POST', '/grades', {
+      token: lecturerToken,
+      body: { userId: 1, courseId: 1, score: 100 },
+    });
+    check('lecturer cannot post grades', lecturerGrade.status === 403);
+
+    // Events: there is no delete-event endpoint, so a successful create would
+    // leave a row behind and skew later runs. An invalid body proves the role
+    // gate was passed (400 from validation, not 403 from the role check).
+    const studentEvent = await call('POST', '/events', { token: studentToken, body: {} });
+    check('student cannot create events (403)', studentEvent.status === 403);
+
+    const lecturerEvent = await call('POST', '/events', { token: lecturerToken, body: {} });
+    check('lecturer passes the event role gate (400, not 403)', lecturerEvent.status === 400,
+      `got ${lecturerEvent.status}`);
+
+    console.log('\nModule 7 — quizzes');
+    const courses = await call('GET', '/courses', { token: studentToken });
+    const courseId = courses.data?.courses?.[0]?.courseId;
+    check('course catalog available for quizzes', typeof courseId === 'number');
+
+    const mcq = (questionText, options, correctOption) => ({
+      questionType: 'multiple_choice', questionText, options, correctOption,
+    });
+    const quizBody = {
+      courseId,
+      title: `Smoke test quiz ${runId}`,
+      questions: [
+        mcq('Which planet is closest to the Sun?', ['Venus', 'Mercury', 'Mars'], 1),
+        mcq('What is 2 + 2?', ['4', '5', '6'], 0),
+        { questionType: 'open_ended', questionText: 'Name one renewable energy source.', modelAnswer: 'Solar' },
+      ],
+    };
+
+    const studentQuiz = await call('POST', '/quizzes', { token: studentToken, body: quizBody });
+    if (studentQuiz.data?.quizId) createdQuizIds.push(studentQuiz.data.quizId);
+    check('student cannot create quizzes', studentQuiz.status === 403, `got ${studentQuiz.status}`);
+
+    const badMcq = await call('POST', '/quizzes', {
+      token: lecturerToken,
+      body: { ...quizBody, questions: [mcq('Out-of-range answer?', ['A', 'B'], 5)] },
+    });
+    check('multiple-choice answer index out of range rejected', badMcq.status === 400);
+
+    const badOpen = await call('POST', '/quizzes', {
+      token: lecturerToken,
+      body: { ...quizBody, questions: [{ questionType: 'open_ended', questionText: 'No model answer?' }] },
+    });
+    check('open-ended question without a model answer rejected', badOpen.status === 400);
+
+    const unknownCourse = await call('POST', '/quizzes', {
+      token: lecturerToken,
+      body: { ...quizBody, courseId: 999999 },
+    });
+    check('quiz for an unknown course rejected', unknownCourse.status === 400);
+
+    const created = await call('POST', '/quizzes', { token: lecturerToken, body: quizBody });
+    check('lecturer can create a quiz', created.status === 201 && typeof created.data?.quizId === 'number');
+    const quizId = created.data?.quizId;
+    if (quizId) createdQuizIds.push(quizId);
+
+    const quizList = await call('GET', `/quizzes?courseId=${courseId}`, { token: studentToken });
+    const listed = quizList.data?.quizzes?.find((q) => q.quizId === quizId);
+    check('student sees the quiz in the list', !!listed);
+    check('list reports the question count', listed?.questionCount === 3, `got ${listed?.questionCount}`);
+
+    const quiz = await call('GET', `/quizzes/${quizId}`, { token: studentToken });
+    check('student can fetch the quiz', quiz.status === 200 && quiz.data?.title === quizBody.title);
+    check('quiz has all 3 questions', quiz.data?.questions?.length === 3);
+    check('questions keep their authored order',
+      quiz.data?.questions?.[0]?.questionText === quizBody.questions[0].questionText);
+
+    const serialised = JSON.stringify(quiz.data ?? {});
+    check('fetched quiz hides multiple-choice answer keys',
+      !/correctOption|correct_option/.test(serialised));
+    check('fetched quiz hides open-ended model answers',
+      !/modelAnswer|model_answer|Solar/.test(serialised));
+
+    const [q1, q2, q3] = quiz.data?.questions ?? [];
+
+    const emptyAttempt = await call('POST', `/quizzes/${quizId}/attempts`, {
+      token: studentToken,
+      body: { answers: [] },
+    });
+    check('attempt with no answers rejected', emptyAttempt.status === 400);
+
+    const missingQuizAttempt = await call('POST', '/quizzes/999999/attempts', {
+      token: studentToken,
+      body: { answers: [{ questionId: 1, selectedOption: 0 }] },
+    });
+    check('attempt on a missing quiz returns 404', missingQuizAttempt.status === 404);
+
+    // Q1 correct (1), Q2 wrong (picks 1, key is 0), open-ended is not graded.
+    const attempt = await call('POST', `/quizzes/${quizId}/attempts`, {
+      token: studentToken,
+      body: {
+        answers: [
+          { questionId: q1?.questionId, selectedOption: 1 },
+          { questionId: q2?.questionId, selectedOption: 1 },
+          { questionId: q3?.questionId, freeTextAnswer: 'Wind' },
+        ],
+      },
+    });
+    check('student can submit an attempt', attempt.status === 201 && typeof attempt.data?.attemptId === 'number');
+    check('score is 50 (1 of 2 multiple-choice correct)', attempt.data?.score === 50,
+      `got ${attempt.data?.score}`);
+    check('only multiple-choice questions are graded', attempt.data?.totalGraded === 2,
+      `got ${attempt.data?.totalGraded}`);
+
+    const byQuestion = (id) => attempt.data?.results?.find((r) => r.questionId === id);
+    check('correct answer marked correct', byQuestion(q1?.questionId)?.isCorrect === true);
+    check('wrong answer marked incorrect', byQuestion(q2?.questionId)?.isCorrect === false);
+    check('attempt reveals the correct option for a wrong answer',
+      byQuestion(q2?.questionId)?.correctOption === 0);
+    check('open-ended answer is not auto-graded', byQuestion(q3?.questionId)?.isCorrect === null);
+    check('attempt reveals the open-ended model answer', byQuestion(q3?.questionId)?.modelAnswer === 'Solar');
+
+    const perfect = await call('POST', `/quizzes/${quizId}/attempts`, {
+      token: studentToken,
+      body: {
+        answers: [
+          { questionId: q1?.questionId, selectedOption: 1 },
+          { questionId: q2?.questionId, selectedOption: 0 },
+        ],
+      },
+    });
+    check('a second attempt is allowed and scores 100', perfect.status === 201 && perfect.data?.score === 100,
+      `got ${perfect.data?.score}`);
+
+    const studentDelete = await call('DELETE', `/quizzes/${quizId}`, { token: studentToken });
+    check('student cannot delete quizzes', studentDelete.status === 403);
+
+    const lecturerDelete = await call('DELETE', `/quizzes/${quizId}`, { token: lecturerToken });
+    check('lecturer cannot delete quizzes (admin only)', lecturerDelete.status === 403);
+
+    const adminDelete = await call('DELETE', `/quizzes/${quizId}`, { token: adminToken });
+    check('admin can delete a quiz', adminDelete.status === 204);
+    if (adminDelete.status === 204) createdQuizIds.splice(createdQuizIds.indexOf(quizId), 1);
+
+    const afterDelete = await call('GET', `/quizzes/${quizId}`, { token: studentToken });
+    check('deleted quiz returns 404', afterDelete.status === 404);
+
+    const deleteAgain = await call('DELETE', `/quizzes/${quizId}`, { token: adminToken });
+    check('deleting a missing quiz returns 404', deleteAgain.status === 404);
+  } finally {
+    for (const id of createdQuizIds) {
+      await call('DELETE', `/quizzes/${id}`, { token: adminToken });
+    }
+  }
 
   console.log(`\n${passed} passed, ${failed} failed\n`);
   process.exitCode = failed === 0 ? 0 : 1;

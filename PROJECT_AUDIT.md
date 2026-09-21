@@ -12,7 +12,7 @@ live app is now Flutter; the legacy Kotlin module `app/` was removed (see sectio
 |---|---|
 | `flutter analyze` | No issues |
 | `flutter test` | 93 / 93 pass |
-| Backend `npm run test:smoke` | 43 / 43 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events, clubs and locations. **Quizzes, the lecturer role and `/admin/provision-user` have no smoke coverage.** |
+| Backend `npm run test:smoke` | 92 / 92 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events, clubs, locations, admin provisioning, role permissions and the quiz lifecycle. Re-runnable: it deletes its quizzes, but leaves one `smoke-lecturer-*` account per run. |
 
 ## 2. Features that work (implemented and wired end to end)
 
@@ -46,7 +46,7 @@ These are what to clean up or finish. Ordered by how likely they are to matter i
 | 6 | **Backend grading scale** | Known mismatch | The server computes `summary.gpa` on a fixed 4.0 scale that differs from the UG scale. The app recomputes client-side, so the two GPA numbers can disagree. Open question is in `docs/schema-notes.md`. |
 | 7 | **Unused backend routes** | Dead from the app's side | `GET /schedule/today` and `POST /admin/provision-user` are never called by the mobile app. |
 | 8 | **Default API URL** | Works only on an Android emulator | Defaults to `http://10.0.2.2:4000/api`. A physical device or desktop run needs `--dart-define=API_BASE_URL=...`. |
-| 9 | **Backend tests** | Thin | One smoke script that needs a live server and database. No unit tests. |
+| 9 | **Backend tests** | Thin | One smoke script that needs a live server and database. No unit tests. Event creation by a lecturer is only checked up to the role gate (there is no delete-event endpoint to clean up after it). |
 
 ## 4. Cleanup done
 
@@ -80,4 +80,3 @@ The August report listed these as problems. They are no longer accurate:
 3. Student Hub: replace `student_hub_fixtures.dart` with real tables and routes for shuttles, dues and lost & found.
 4. Unused routes: use `/schedule/today` in the app and add an admin screen for `/admin/provision-user`.
 5. Settle the grading scale so server and client GPA agree.
-6. Add smoke coverage for quizzes, the lecturer role and provisioning.
