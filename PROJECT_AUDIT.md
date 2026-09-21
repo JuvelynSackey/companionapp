@@ -11,7 +11,7 @@ live app is now Flutter; the legacy Kotlin module `app/` was removed (see sectio
 | Check | Result |
 |---|---|
 | `flutter analyze` | No issues |
-| `flutter test` | 190 / 190 pass |
+| `flutter test` | 256 / 256 pass |
 | Backend `npm test` (offline) | 14 / 14 pass: the grading scale in `schema.sql`, the migration and `GRADE_POINTS` all match `docs/grading-scale-ug.json` |
 | Backend `npm run test:smoke` | 150 / 150 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events (including lecturer create/delete and ownership), clubs, locations, admin provisioning, role permissions, self-registration never granting a role, and the quiz lifecycle. Re-runnable: it deletes its quizzes and events, but leaves a `smoke-lecturer-*` and a `smoke-register-*` account per run. |
 
@@ -33,7 +33,7 @@ where noted, tests.
 - **Grades and GPA** — the server and the app now use the same University of Ghana scale (A 80+ … F below 45; E and F do not pass, so the pass mark is 50, while E still earns 0.5 grade points; GPA = Σ points × credits / Σ credits). Before 21 September the server graded on the proposal's simplified scale, so a 55 showed as a fail (F) next to a GPA that counted it as D+. Guarded by `docs/grading-scale-ug.json`, which the backend tests and the Flutter parity test both read. Existing databases need `npm run db:apply -- db/migrations/2026-09-ug-grading-scale.sql`. For non-UG institutions in the app (5.0, 4.3, CWA) the per-course letter label is still the UG one.
 - **Analytics** — GPA/CWA, honours class and target-class predictor, computed client-side per institution. Tested (`grade_prediction_engine`, `academic_engine`).
 - **Quizzes** — create, take, submit attempts; import a past-paper PDF and extract questions with Gemini. Tested (`past_paper_extraction`).
-- **AI Assistant / AI Tutor** — Gemini when a key is supplied, otherwise a local rule engine. Tested (`assistant_engine`).
+- **AI Assistant / AI Tutor** — Gemini when a key is supplied, otherwise a local rule engine. Follow-up questions work (the last 10 messages are sent to Gemini), replies render bold/italic/bullets instead of raw `**`, answers can be selected and copied, and there is a New chat button. **It keeps working when the server is unreachable**: today's classes and exams are local, and each of the four server-backed sources (grades, events, alerts, locations) fails on its own; the assistant then says it can't reach the server for that topic instead of reporting "no grades" or "no events". Before 21 September any one failed server call made every question answer "couldn't load your campus data". Tested (`assistant_engine`, `assistant_controller`, `assistant_context_offline`, `gemini_assistant_service`, `chat_view`, `assistant_screen`, `message_text`). Not seen running against a live Gemini key or on a device.
 - **Digital Student ID** — flippable card with QR code. Tested.
 
 ## 3. Features that are partial, simulated or not working

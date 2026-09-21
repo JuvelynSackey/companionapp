@@ -22,7 +22,14 @@ class AssistantScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI Assistant'),
-        actions: const [Padding(padding: EdgeInsets.only(right: 16), child: Center(child: _StatusBadge()))],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_comment_outlined),
+            tooltip: 'New chat',
+            onPressed: messages.isEmpty || isSending ? null : () => ref.read(assistantControllerProvider.notifier).clear(),
+          ),
+          const Padding(padding: EdgeInsets.only(right: 16), child: Center(child: _StatusBadge())),
+        ],
       ),
       body: ChatView(
         messages: messages,
@@ -56,7 +63,7 @@ class _StatusBadge extends StatelessWidget {
           Icon(Icons.circle, size: 8, color: color),
           const SizedBox(width: 6),
           Text(
-            online ? 'Online (Gemini)' : 'Offline Mode',
+            online ? 'Gemini' : 'Local engine',
             style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11),
           ),
         ],

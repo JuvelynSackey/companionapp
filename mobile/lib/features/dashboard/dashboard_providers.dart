@@ -11,12 +11,10 @@ final dashboardProvider = FutureProvider.autoDispose<DashboardData>((ref) {
   return ref.watch(dashboardApiProvider).fetch();
 });
 
-/// Backend DashboardData still supplies announcements/upcomingEvents, but
-/// its classesToday/todaysClasses fields reflect the (now-unused)
-/// /api/schedule table, not the student's local timetable — this provider
-/// overrides just those two with locally-computed values.
-final dashboardViewProvider = FutureProvider.autoDispose<DashboardData>((ref) async {
-  final backend = await ref.watch(dashboardProvider.future);
+/// Today's classes, taken from the student's own (local) timetable, ordered
+/// by start time. Needs no network, so anything that only wants today's
+/// classes (the assistant, for one) still works offline.
+final localTodaysClassesProvider = Provider.autoDispose<List<TodayClass>>((ref) {
   final schedule = ref.watch(timetableControllerProvider);
 
   final now = DateTime.now();
@@ -30,24 +28,35 @@ final dashboardViewProvider = FutureProvider.autoDispose<DashboardData>((ref) as
     return nowMinutes >= start && nowMinutes < end;
   }
 
+  return [
+    for (final e in todaysClasses)
+      TodayClass(
+        scheduleId: e.scheduleId,
+        courseTitle: e.courseTitle,
+        lecturer: e.lecturer,
+        room: e.room,
+        startTime: e.startTime,
+        endTime: e.endTime,
+        inProgress: isInProgress(e.startTime, e.endTime),
+      ),
+  ];
+});
+
+/// Backend DashboardData still supplies announcements/upcomingEvents, but
+/// its classesToday/todaysClasses fields reflect the (now-unused)
+/// /api/schedule table, not the student's local timetable — this provider
+/// overrides just those two with the local ones.
+final dashboardViewProvider = FutureProvider.autoDispose<DashboardData>((ref) async {
+  final backend = await ref.watch(dashboardProvider.future);
+  final todaysClasses = ref.watch(localTodaysClassesProvider);
+
   return DashboardData(
     stats: DashboardStats(
       classesToday: todaysClasses.length,
       announcements: backend.stats.announcements,
       upcomingEvents: backend.stats.upcomingEvents,
     ),
-    todaysClasses: [
-      for (final e in todaysClasses)
-        TodayClass(
-          scheduleId: e.scheduleId,
-          courseTitle: e.courseTitle,
-          lecturer: e.lecturer,
-          room: e.room,
-          startTime: e.startTime,
-          endTime: e.endTime,
-          inProgress: isInProgress(e.startTime, e.endTime),
-        ),
-    ],
+    todaysClasses: todaysClasses,
     announcements: backend.announcements,
     upcomingEvents: backend.upcomingEvents,
   );

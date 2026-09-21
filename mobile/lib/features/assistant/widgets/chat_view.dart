@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/campus_companion_theme.dart';
 import '../models/assistant_message.dart';
+import 'message_text.dart';
 
 /// Shared chat UI (message list, typing indicator, quick-suggestion chips,
 /// input bar) — extracted from the original AssistantScreen so the
@@ -37,7 +38,7 @@ class _ChatViewState extends State<ChatView> {
   @override
   void didUpdateWidget(covariant ChatView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.messages.length != oldWidget.messages.length) {
+    if (widget.messages.length != oldWidget.messages.length || widget.isSending != oldWidget.isSending) {
       _scrollToBottom();
     }
   }
@@ -62,7 +63,7 @@ class _ChatViewState extends State<ChatView> {
   }
 
   void _send(String text) {
-    if (text.trim().isEmpty) return;
+    if (text.trim().isEmpty || widget.isSending) return;
     _inputController.clear();
     widget.onSend(text);
     _scrollToBottom();
@@ -100,7 +101,7 @@ class _ChatViewState extends State<ChatView> {
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     child: ActionChip(
                       label: Text(suggestion),
-                      onPressed: () => _send(suggestion),
+                      onPressed: widget.isSending ? null : () => _send(suggestion),
                       backgroundColor: campus.cardBackground,
                       side: BorderSide(color: campus.subtleBorder),
                       labelStyle: TextStyle(color: campus.accentGlow, fontWeight: FontWeight.w600),
@@ -209,7 +210,12 @@ class _ChatBubble extends StatelessWidget {
                 width: isUser ? 1.5 : 1,
               ),
             ),
-            child: Text(message.text, style: TextStyle(color: colorScheme.onSurface)),
+            child: SelectableText.rich(
+              TextSpan(
+                style: TextStyle(color: colorScheme.onSurface),
+                children: formatMessage(message.text, TextStyle(color: colorScheme.onSurface)),
+              ),
+            ),
           ),
           if (message.isFallback)
             Container(

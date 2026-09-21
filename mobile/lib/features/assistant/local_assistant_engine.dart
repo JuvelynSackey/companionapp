@@ -19,6 +19,7 @@ class LocalAssistantEngine {
       return _examResponse(context);
     }
     if (q.contains('event') || q.contains('club') || q.contains('happening')) {
+      if (context.unavailable.contains(ContextSource.events)) return _unavailableResponse('events');
       return _eventsResponse(context);
     }
     if (q.contains('class') || q.contains('schedule') || q.contains('today') || q.contains('timetable') || q.contains('lecture')) {
@@ -27,6 +28,7 @@ class LocalAssistantEngine {
     final matchedLocation = _matchLocation(q, context);
     if (matchedLocation != null) return matchedLocation;
     if (q.contains('gpa') || q.contains('cgpa') || q.contains('cwa') || q.contains('grade') || q.contains('first class') || q.contains('calculate')) {
+      if (context.unavailable.contains(ContextSource.grades)) return _unavailableResponse('grades');
       return _gpaResponse(context);
     }
     if (q.contains('registration') || q.contains('register') || q.contains('portal') || q.contains('sakai') || q.contains('mis web') || q.contains('osis') || q.contains('aim')) {
@@ -73,6 +75,13 @@ class LocalAssistantEngine {
         '4. *"How do I register on my student portal?"*\n'
         '5. *"Calculate my ${context.academicMetric.isPercentage ? 'CWA' : 'GPA'}"*\n'
         '6. *"Connect to campus Wi-Fi"*';
+  }
+
+  /// For data that lives on the server when the server could not be reached.
+  /// Better to say so than to report "no grades" or "no events".
+  static String _unavailableResponse(String what) {
+    return "📡 I can't reach the server to read your $what right now, so I'd only be guessing. "
+        'Please try again when you have a connection.';
   }
 
   static String _libraryResponse(AssistantContext context) {

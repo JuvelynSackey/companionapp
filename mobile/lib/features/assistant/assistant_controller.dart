@@ -17,10 +17,19 @@ class AssistantController extends Notifier<List<AssistantMessage>> {
   @override
   List<AssistantMessage> build() => [];
 
+  /// Starts a fresh conversation. Ignored while a reply is loading, so a
+  /// late answer cannot land in an empty chat.
+  void clear() {
+    if (ref.read(assistantSendingProvider)) return;
+    state = [];
+  }
+
   Future<void> sendMessage(String query) async {
     if (query.trim().isEmpty || ref.read(assistantSendingProvider)) return;
     ref.read(assistantSendingProvider.notifier).state = true;
 
+    // What was said before this question, so a follow-up has something to follow.
+    final history = state;
     state = [
       ...state,
       AssistantMessage(id: _newId(), text: query.trim(), sender: MessageSender.user, timestamp: DateTime.now()),
@@ -31,6 +40,7 @@ class AssistantController extends Notifier<List<AssistantMessage>> {
       final geminiReply = await ref.read(geminiAssistantServiceProvider).ask(
             systemPrompt: context.toSystemPrompt(),
             query: query.trim(),
+            history: history,
           );
 
       final replyText = geminiReply ?? LocalAssistantEngine.respond(query, context);

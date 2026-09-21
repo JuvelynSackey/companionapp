@@ -22,6 +22,7 @@ class TutorController extends FamilyNotifier<List<AssistantMessage>, int> {
     if (query.trim().isEmpty || ref.read(tutorSendingProvider(courseId))) return;
     ref.read(tutorSendingProvider(courseId).notifier).state = true;
 
+    final history = state; // what was said before this question, for follow-ups
     state = [
       ...state,
       AssistantMessage(id: _newId(), text: query.trim(), sender: MessageSender.user, timestamp: DateTime.now()),
@@ -32,6 +33,7 @@ class TutorController extends FamilyNotifier<List<AssistantMessage>, int> {
       final geminiReply = await ref.read(geminiAssistantServiceProvider).ask(
             systemPrompt: context.toSystemPrompt(),
             query: query.trim(),
+            history: history,
           );
 
       final replyText = geminiReply ?? LocalTutorEngine.respond(query, context);
