@@ -7,6 +7,7 @@ import '../../data/models/event_pass.dart';
 import '../../data/models/student_identity.dart';
 import '../../widgets/async_value_view.dart';
 import '../auth/session_controller.dart';
+import '../clubs/clubs_screen.dart';
 import '../onboarding/institution_controller.dart';
 import 'create_event_dialog.dart';
 import 'event_pass_controller.dart';
@@ -22,7 +23,16 @@ class EventsScreen extends ConsumerWidget {
     final canCreateEvents = ref.watch(sessionControllerProvider).valueOrNull?.canCreateEvents ?? false;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Campus Events')),
+      appBar: AppBar(
+        title: const Text('Campus Events'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.groups_outlined),
+            tooltip: 'Clubs',
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ClubsScreen())),
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(eventsProvider.future),
         child: AsyncValueView<List<CampusEvent>>(

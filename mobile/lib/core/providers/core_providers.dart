@@ -5,6 +5,7 @@ import '../storage/local_prefs.dart';
 import '../storage/token_storage.dart';
 import '../../data/api/announcement_api.dart';
 import '../../data/api/auth_api.dart';
+import '../../data/api/club_api.dart';
 import '../../data/api/course_api.dart';
 import '../../data/api/dashboard_api.dart';
 import '../../data/api/event_api.dart';
@@ -44,6 +45,7 @@ final announcementApiProvider =
     Provider<AnnouncementApi>((ref) => AnnouncementApi(ref.watch(apiClientProvider)));
 final locationApiProvider = Provider<LocationApi>((ref) => LocationApi(ref.watch(apiClientProvider)));
 final eventApiProvider = Provider<EventApi>((ref) => EventApi(ref.watch(apiClientProvider)));
+final clubApiProvider = Provider<ClubApi>((ref) => ClubApi(ref.watch(apiClientProvider)));
 final gradeApiProvider = Provider<GradeApi>((ref) => GradeApi(ref.watch(apiClientProvider)));
 final quizApiProvider = Provider<QuizApi>((ref) => QuizApi(ref.watch(apiClientProvider)));
 
