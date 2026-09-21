@@ -20,8 +20,16 @@ export const GRADE_POINTS = {
   F: 0.0,
 };
 
-/** F (below 45) is the only failing grade. */
-export const FAILING_LETTER = 'F';
+/**
+ * Letters that do not pass: E (45-49) and F (below 45), i.e. anything under
+ * 50. E still earns its 0.5 grade points in the GPA (see GRADE_POINTS); it just
+ * does not count as a pass. Also marked per band in docs/grading-scale-ug.json.
+ */
+export const FAILING_LETTERS = new Set(['E', 'F']);
+
+export function isPassing(letter) {
+  return !FAILING_LETTERS.has(letter);
+}
 
 /**
  * Cumulative GPA = sum(grade point x credit hours) / sum(credit hours) — a

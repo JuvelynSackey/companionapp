@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { calculateGpa, GRADE_POINTS, FAILING_LETTER } from './grading.js';
+import { calculateGpa, GRADE_POINTS, isPassing } from './grading.js';
 
 const read = (relative) => readFile(new URL(relative, import.meta.url), 'utf8');
 const fixture = JSON.parse(await read('../../../docs/grading-scale-ug.json'));
@@ -48,9 +48,26 @@ test('every letter the SQL can produce has grade points (so none is silently ski
   }
 });
 
-test('only F is failing', () => {
-  assert.equal(FAILING_LETTER, 'F');
-  assert.equal(fixture.scale.filter((b) => b.points === 0).map((b) => b.letter).join(), 'F');
+test('isPassing agrees with the fixture for every letter', () => {
+  for (const band of fixture.scale) {
+    assert.equal(isPassing(band.letter), band.passes, `${band.letter} passes: ${band.passes}`);
+  }
+});
+
+test('E and F fail; D (50) is the lowest pass', () => {
+  assert.deepEqual(fixture.scale.filter((b) => !b.passes).map((b) => b.letter), ['E', 'F']);
+  assert.equal(isPassing('D'), true);
+  assert.equal(isPassing('E'), false);
+  assert.equal(isPassing('F'), false);
+});
+
+test('a failing E still earns its 0.5 grade points in the GPA', () => {
+  // (0.5 x 3 + 4.0 x 3) / 6 = 13.5 / 6 = 2.25
+  assert.equal(GRADE_POINTS.E, 0.5);
+  assert.equal(calculateGpa([
+    { letter_grade: 'E', credit_hours: 3 },
+    { letter_grade: 'A', credit_hours: 3 },
+  ]), 2.25);
 });
 
 for (const transcript of fixture.transcripts) {

@@ -47,6 +47,9 @@ router.post('/admin/provision-user', requireAdmin, validateBody(provisionSchema)
 router.get('/dashboard', getDashboard);
 router.get('/courses', listCourses);
 router.get('/schedule', listSchedule);
+// The mobile app keeps the timetable on the device (student-managed, so its reminders,
+// walk-time cards and Today list all work offline) and deliberately does not call the
+// /schedule routes. They are kept working and smoke-tested as a possible cloud-backup layer.
 router.get('/schedule/today', listToday);
 router.post('/schedule', requireAdmin, validateBody(createScheduleSchema), createScheduleEntry);
 router.delete('/schedule/:id', requireAdmin, deleteScheduleEntry);

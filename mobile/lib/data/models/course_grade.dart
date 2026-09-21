@@ -1,5 +1,6 @@
 /// Matches GET /api/grades' per-course shape. `letterGrade` and `passed` are
-/// the backend's University of Ghana labels — display only. The GPA/CWA number
+/// the backend's University of Ghana labels (`passed` is false for E and F,
+/// i.e. below 50) — display only. The GPA/CWA number
 /// shown to the user is computed institution-aware by AcademicEngine from
 /// `score`.
 class CourseGrade {

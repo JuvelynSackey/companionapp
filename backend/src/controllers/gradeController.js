@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { query } from '../config/db.js';
-import { calculateGpa, FAILING_LETTER } from '../utils/grading.js';
+import { calculateGpa, isPassing } from '../utils/grading.js';
 
 /** Must match the DEFAULT on grades.semester in schema.sql. */
 const CURRENT_SEMESTER = 'Semester 1 - 2025/2026';
@@ -33,7 +33,7 @@ export async function listGrades(req, res, next) {
       score: Number(row.score),
       letterGrade: row.letter_grade,
       semester: row.semester,
-      passed: row.letter_grade !== FAILING_LETTER,
+      passed: isPassing(row.letter_grade),
     }));
 
     const averageScore = grades.length

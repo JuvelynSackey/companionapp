@@ -1,15 +1,15 @@
 {
-  "_comment": "Single reference for the University of Ghana undergraduate grading scale. Read by the backend smoke test (backend/src/utils/smokeTest.js) and the Flutter test (mobile/test/grading_scale_parity_test.dart) so the server's letter grades / GPA and the app's GPA cannot drift apart. The scale itself lives in backend/db/schema.sql (letter_grade), backend/src/controllers/gradeController.js (GRADE_POINTS) and mobile/lib/data/logic/academic_engine.dart (_gpa4_0Breakpoints); change all of them and this file together. Expected GPAs below were worked out by hand: sum(points x credits) / sum(credits), rounded to 2 dp. A grade of F (below 45) is the only fail.",
+  "_comment": "Single reference for the University of Ghana undergraduate grading scale. Read by the backend smoke test (backend/src/utils/smokeTest.js) and the Flutter test (mobile/test/grading_scale_parity_test.dart) so the server's letter grades / GPA and the app's GPA cannot drift apart. The scale itself lives in backend/db/schema.sql (letter_grade), backend/src/controllers/gradeController.js (GRADE_POINTS) and mobile/lib/data/logic/academic_engine.dart (_gpa4_0Breakpoints); change all of them and this file together. Expected GPAs below were worked out by hand: sum(points x credits) / sum(credits), rounded to 2 dp. E (45-49) and F (below 45) do not pass: \"passes\" is false for them. E still earns 0.5 points in the GPA.",
   "scale": [
-    { "letter": "A",  "min": 80, "points": 4.0 },
-    { "letter": "B+", "min": 75, "points": 3.5 },
-    { "letter": "B",  "min": 70, "points": 3.0 },
-    { "letter": "C+", "min": 65, "points": 2.5 },
-    { "letter": "C",  "min": 60, "points": 2.0 },
-    { "letter": "D+", "min": 55, "points": 1.5 },
-    { "letter": "D",  "min": 50, "points": 1.0 },
-    { "letter": "E",  "min": 45, "points": 0.5 },
-    { "letter": "F",  "min": 0,  "points": 0.0 }
+    { "letter": "A",  "min": 80, "points": 4.0, "passes": true },
+    { "letter": "B+", "min": 75, "points": 3.5, "passes": true },
+    { "letter": "B",  "min": 70, "points": 3.0, "passes": true },
+    { "letter": "C+", "min": 65, "points": 2.5, "passes": true },
+    { "letter": "C",  "min": 60, "points": 2.0, "passes": true },
+    { "letter": "D+", "min": 55, "points": 1.5, "passes": true },
+    { "letter": "D",  "min": 50, "points": 1.0, "passes": true },
+    { "letter": "E",  "min": 45, "points": 0.5, "passes": false },
+    { "letter": "F",  "min": 0,  "points": 0.0, "passes": false }
   ],
   "boundaryScores": [100, 80, 79.99, 75, 74.99, 70, 69.99, 65, 64.99, 60, 59.99, 55, 54.99, 50, 49.99, 45, 44.99, 0],
   "transcripts": [

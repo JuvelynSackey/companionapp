@@ -11,9 +11,9 @@ live app is now Flutter; the legacy Kotlin module `app/` was removed (see sectio
 | Check | Result |
 |---|---|
 | `flutter analyze` | No issues |
-| `flutter test` | 188 / 188 pass |
-| Backend `npm test` (offline) | 12 / 12 pass: the grading scale in `schema.sql`, the migration and `GRADE_POINTS` all match `docs/grading-scale-ug.json` |
-| Backend `npm run test:smoke` | 138 / 138 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events (including lecturer create/delete and ownership), clubs, locations, admin provisioning, role permissions, self-registration never granting a role, and the quiz lifecycle. Re-runnable: it deletes its quizzes and events, but leaves a `smoke-lecturer-*` and a `smoke-register-*` account per run. |
+| `flutter test` | 190 / 190 pass |
+| Backend `npm test` (offline) | 14 / 14 pass: the grading scale in `schema.sql`, the migration and `GRADE_POINTS` all match `docs/grading-scale-ug.json` |
+| Backend `npm run test:smoke` | 150 / 150 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events (including lecturer create/delete and ownership), clubs, locations, admin provisioning, role permissions, self-registration never granting a role, and the quiz lifecycle. Re-runnable: it deletes its quizzes and events, but leaves a `smoke-lecturer-*` and a `smoke-register-*` account per run. |
 
 ## 2. Features that work (implemented and wired end to end)
 
@@ -23,14 +23,14 @@ where noted, tests.
 - **Auth** — register, login, session restore, 401 handling (`/auth/*`). Roles: student, lecturer, admin.
 - **Onboarding** — institution picker and profile setup; per-institution branding.
 - **Dashboard** — aggregated backend data (`/dashboard`).
-- **Timetable** — list, add, delete (admin), import from `.ics`/CSV, export to `.ics`, class reminders. Tested (`schedule_parser`, `ics_exporter`).
+- **Timetable** — local-first: the student adds, edits, deletes and imports classes (`.ics`/CSV) on the device, and exports to `.ics`; class reminders, the Today list and the walk-time/conflict cards all read that local copy. The server's `/schedule` routes, including `/schedule/today`, are **deliberately unused** by the app and kept working (and smoke-tested) as a possible cloud-backup layer. Wiring the dashboard to `/schedule/today` was considered and rejected: the server timetable is normally empty, so it would replace a student's real classes with nothing. Tested (`schedule_parser`, `ics_exporter`).
 - **Exams** — local exams, countdown, exam mode, `.ics` export, reminder notifications. Stored on the device only.
 - **Alerts / announcements** — feed, admin broadcast, server-side sync cursor, local notifications from a foreground poll.
 - **Events** — list, create (lecturer/admin), register / cancel, and delete (admin, with a confirmation dialog). Creating an event from the app was broken until 21 September (it sent a timestamp with no timezone, which the backend rejects); fixed and covered by a test.
 - **Admin panel** — admins only (Admin panel item in the profile menu): create lecturer or admin accounts via `/admin/provision-user`, with client-side validation, backend errors shown (e.g. duplicate email), and an extra confirmation before creating an admin. The screen and the menu item are hidden from other roles; the backend enforces the role regardless. Tested. The menu item itself is not covered by a widget test.
 - **Clubs** — list with search and an All / My clubs filter, join / leave with optimistic updates and rollback on failure, and a detail screen with the club's upcoming events. Opened from the Clubs icon on the Events screen. Tested (`club`, `clubs_providers`, `clubs_screen`). Not seen running on a device or emulator yet.
 - **Campus locations and map** — `/locations`, custom painter map, open in Maps. Tested (`map_coordinate_mapper`).
-- **Grades and GPA** — the server and the app now use the same University of Ghana scale (A 80+ … F below 45, F the only fail; GPA = Σ points × credits / Σ credits). Before 21 September the server graded on the proposal's simplified scale, so a 55 showed as a fail (F) next to a GPA that counted it as D+. Guarded by `docs/grading-scale-ug.json`, which the backend tests and the Flutter parity test both read. Existing databases need `npm run db:apply -- db/migrations/2026-09-ug-grading-scale.sql`. For non-UG institutions in the app (5.0, 4.3, CWA) the per-course letter label is still the UG one.
+- **Grades and GPA** — the server and the app now use the same University of Ghana scale (A 80+ … F below 45; E and F do not pass, so the pass mark is 50, while E still earns 0.5 grade points; GPA = Σ points × credits / Σ credits). Before 21 September the server graded on the proposal's simplified scale, so a 55 showed as a fail (F) next to a GPA that counted it as D+. Guarded by `docs/grading-scale-ug.json`, which the backend tests and the Flutter parity test both read. Existing databases need `npm run db:apply -- db/migrations/2026-09-ug-grading-scale.sql`. For non-UG institutions in the app (5.0, 4.3, CWA) the per-course letter label is still the UG one.
 - **Analytics** — GPA/CWA, honours class and target-class predictor, computed client-side per institution. Tested (`grade_prediction_engine`, `academic_engine`).
 - **Quizzes** — create, take, submit attempts; import a past-paper PDF and extract questions with Gemini. Tested (`past_paper_extraction`).
 - **AI Assistant / AI Tutor** — Gemini when a key is supplied, otherwise a local rule engine. Tested (`assistant_engine`).
@@ -46,9 +46,10 @@ These are what to clean up or finish. Ordered by how likely they are to matter i
 | 2 | **Student Hub — Shuttles, MoMo Dues, Lost & Found** | Simulated | No backend tables. Content is static fixtures (`student_hub_fixtures.dart`). "Paying" a due only writes a fake receipt on the device; no payment gateway. Lost & Found reports are per device and never shared. |
 | 3 | **Resources** — libraries, past papers, academic calendar, handbook | Static content | Hard-coded in `resource_models.dart`. Not editable and not backed by the API. |
 | 4 | **AI Assistant on the deployed web build** | Local fallback only | `GEMINI_API_KEY` is intentionally not baked into the web build (`render.yaml`), so it always uses the rule engine. In that engine the shuttle, MoMo, wifi, food and stress replies are generic text, not data. |
-| 5 | **Unused backend routes** | Dead from the app's side | `GET /schedule/today` is never called by the mobile app. Lecturers can delete their own events on the backend, but the app offers deletion to admins only (the events API does not say who created an event). (The backend has no `GET /clubs/:id`, club leadership or categories, so the Clubs screens do not show them.) |
+| 5 | **Lecturers cannot delete their own events in the app** | Backend only | The backend lets a lecturer delete events they created, but the app offers deletion to admins only, because the events API does not say who created an event. |
 | 6 | **Default API URL** | Works only on an Android emulator | Defaults to `http://10.0.2.2:4000/api`. A physical device or desktop run needs `--dart-define=API_BASE_URL=...`. |
 | 7 | **Backend tests** | Thin | A smoke script that needs a live server and database, plus offline unit tests for the grading scale only. Nothing else has unit tests. |
+| 8 | **`POST /schedule` cannot target another user** | Latent backend bug | `createScheduleEntry` reads `req.body.userId`, but the request schema does not list it, so validation strips it and a class always lands on the caller's own timetable. It has no effect today (the app is local-first) and only matters if the server timetable is ever used. |
 
 ## 4. Cleanup done
 
@@ -79,4 +80,4 @@ The August report listed these as problems. They are no longer accurate:
 
 1. Push notifications: resolve the `TODO` in `announcementController.js` and add an FCM listener in the app.
 2. Student Hub: replace `student_hub_fixtures.dart` with real tables and routes for shuttles, dues and lost & found.
-3. Unused route: use `/schedule/today` in the app. Optionally let lecturers delete their own events (needs `createdBy` in the events API).
+3. Optionally let lecturers delete their own events in the app (needs `createdBy` in the events API), and fix `POST /schedule`'s `userId` if the server timetable is ever used as a cloud backup.

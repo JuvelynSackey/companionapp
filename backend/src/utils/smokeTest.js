@@ -179,10 +179,14 @@ async function run() {
   const boundaryRows = boundaryList.data?.grades ?? [];
   check('all boundary marks are listed', boundaryRows.length === ug.boundaryScores.length,
     `got ${boundaryRows.length}`);
-  check('only a grade of F is a fail (passed flag)',
-    boundaryRows.every((g) => g.passed === (g.letterGrade !== 'F')));
+  check('passed flag matches the fixture for every mark (E and F fail)',
+    boundaryRows.every((g) => g.passed === bandFor(g.score).passes));
   check('a mark of 55 passes (it failed under the old proposal scale)',
     boundaryRows.find((g) => g.score === 55)?.passed === true);
+  check('50 (D) is the lowest pass', boundaryRows.find((g) => g.score === 50)?.passed === true);
+  check('49.99 (E) does not pass', boundaryRows.find((g) => g.score === 49.99)?.passed === false);
+  check('45 (E) does not pass but earns 0.5 points',
+    boundaryRows.find((g) => g.score === 45)?.passed === false && bandFor(45).points === 0.5);
   // Same course and credits for every row, so the credit weighting cancels out.
   const expectedBoundaryGpa = round2(
     ug.boundaryScores.reduce((sum, score) => sum + bandFor(score).points, 0) / ug.boundaryScores.length);
@@ -291,7 +295,61 @@ async function run() {
   // resets them.
   const createdQuizIds = [];
   const createdEventIds = [];
+  const createdScheduleIds = [];
   try {
+    console.log('\nModule 2b — GET /schedule/today (server timetable; the app is local-first and does not call it)');
+    // The server decides what "today" is, so give the admin account two classes on
+    // every weekday: exactly two must come back whichever day it is. Created out of
+    // time order to check the sorting, and deleted again below.
+    const slots = [
+      { code: 'DCIT 202', start: '10:00', end: '11:00' },
+      { code: 'DCIT 201', start: '08:00', end: '09:00' },
+    ];
+    for (let day = 1; day <= 7; day++) {
+      for (const slot of slots) {
+        const res = await call('POST', '/schedule', {
+          token: adminToken,
+          body: {
+            courseId: courseByCode.get(slot.code)?.courseId,
+            dayOfWeek: day,
+            startTime: slot.start,
+            endTime: slot.end,
+            room: 'Smoke Room',
+          },
+        });
+        if (res.data?.scheduleId) createdScheduleIds.push(res.data.scheduleId);
+      }
+    }
+    check('14 test classes created for the admin (2 per weekday)', createdScheduleIds.length === 14,
+      `got ${createdScheduleIds.length}`);
+
+    const todayAnon = await call('GET', '/schedule/today');
+    check('today requires a token', todayAnon.status === 401);
+
+    const todayRes = await call('GET', '/schedule/today', { token: adminToken });
+    const today = todayRes.data?.schedule ?? [];
+    check("today returns exactly that day's two classes", todayRes.status === 200 && today.length === 2,
+      `got ${today.length}`);
+    check('both classes are on the same weekday', today.length === 2 && today[0].dayOfWeek === today[1].dayOfWeek);
+    check('today is ordered by start time', today.map((c) => c.startTime).join() === '08:00,10:00');
+    check('today carries course, lecturer and room',
+      today[0]?.courseCode === 'DCIT 201' && !!today[0]?.lecturer && today[0]?.room === 'Smoke Room');
+
+    const sameDay = await call('GET', `/schedule?day=${today[0]?.dayOfWeek}`, { token: adminToken });
+    check('today matches GET /schedule?day=<that weekday>',
+      JSON.stringify(sameDay.data?.schedule) === JSON.stringify(today));
+
+    const studentToday = await call('GET', '/schedule/today', { token: studentToken });
+    const leaked = (studentToday.data?.schedule ?? []).some((c) => createdScheduleIds.includes(c.scheduleId));
+    check("today never includes another user's classes", studentToday.status === 200 && !leaked);
+
+    for (const id of createdScheduleIds.splice(0)) {
+      await call('DELETE', `/schedule/${id}`, { token: adminToken });
+    }
+    const cleared = await call('GET', '/schedule/today', { token: adminToken });
+    check('after deleting them, today is empty again', cleared.data?.schedule?.length === 0,
+      `got ${cleared.data?.schedule?.length}`);
+
     console.log('\nAdmin — provisioning elevated accounts');
     const runId = Date.now();
     const lecturerAccount = {
@@ -618,6 +676,9 @@ async function run() {
     }
     for (const id of createdEventIds) {
       await call('DELETE', `/events/${id}`, { token: adminToken });
+    }
+    for (const id of createdScheduleIds) {
+      await call('DELETE', `/schedule/${id}`, { token: adminToken });
     }
   }
 

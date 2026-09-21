@@ -95,12 +95,15 @@ student scoring 55 failed. The implementation now uses the real UG scale:
 | E     | 45–49   | 0.5    |
 | F     | 0–44    | 0.0    |
 
-F is the only failing grade. A cumulative GPA is
+E and F do not pass, so the pass mark is 50. A failed E still earns its 0.5
+points, and its credit hours still count, in the cumulative GPA:
 sum(points × credit hours) / sum(credit hours).
 
 **Where it lives.** The letter is the generated `grades.letter_grade` column in
 `schema.sql`; the points are `GRADE_POINTS` in `backend/src/utils/grading.js`;
-the app's copy is `_gpa4_0Breakpoints` in `academic_engine.dart`. The whole table
+the app's copy is `_gpa4_0Breakpoints` in `academic_engine.dart`. Which grades
+pass is `FAILING_LETTERS` in the same `grading.js` (the app only displays the
+server's `passed` flag). The whole table
 is also in `docs/grading-scale-ug.json`, and every one of those is tested
 against that file (backend `npm test` and `npm run test:smoke`, Flutter
 `grading_scale_parity_test.dart`), so they cannot drift apart unnoticed.
@@ -109,6 +112,12 @@ against that file (backend `npm test` and `npm run test:smoke`, Flutter
 `npm run db:apply -- db/migrations/2026-09-ug-grading-scale.sql`, which
 preserves every recorded score. A fresh `npm run db:setup` already has the new
 scale.
+
+**Check before submitting:** treating E as a fail is a pass-mark rule the
+project owner asked for; confirm it against the department's written
+regulations. Changing it means editing `FAILING_LETTERS` and the `passes` flags
+in `docs/grading-scale-ug.json` — the tests then tell you everything else that
+needs to follow.
 
 **For the report:** this deliberately differs from the proposal's mock-up. Say
 so in Chapter 4, and update the Grades screenshot/table if the report reprints

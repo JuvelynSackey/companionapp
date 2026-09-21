@@ -1,22 +1,13 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/logic/academic_engine.dart';
 import 'package:mobile/data/models/course_grade.dart';
 import 'package:mobile/data/models/institution_profile.dart';
 
+import 'support/grading_fixture.dart';
+
 /// Checks the app's GPA engine against docs/grading-scale-ug.json, the same
 /// file the backend smoke test checks the server against. If the two ever
 /// disagree about a mark or a transcript, one of these two suites fails.
-Map<String, dynamic> _loadFixture() {
-  for (final path in ['../docs/grading-scale-ug.json', 'docs/grading-scale-ug.json']) {
-    final file = File(path);
-    if (file.existsSync()) return jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-  }
-  throw StateError('docs/grading-scale-ug.json not found (run flutter test from mobile/)');
-}
-
 CourseGrade _grade(double score, {int credits = 3, String code = 'DCIT 201'}) => CourseGrade(
       gradeId: 1,
       courseCode: code,
@@ -29,7 +20,7 @@ CourseGrade _grade(double score, {int credits = 3, String code = 'DCIT 201'}) =>
     );
 
 void main() {
-  final fixture = _loadFixture();
+  final fixture = loadGradingFixture();
   final scale = (fixture['scale'] as List).cast<Map<String, dynamic>>();
   final boundaryScores = (fixture['boundaryScores'] as List).map((s) => (s as num).toDouble()).toList();
   final transcripts = (fixture['transcripts'] as List).cast<Map<String, dynamic>>();
@@ -45,6 +36,12 @@ void main() {
         expect(result.scoreValue, pointsFor(score));
       });
     }
+
+    test('the fixture marks E and F, and only the lowest bands, as not passing', () {
+      final flags = scale.map((b) => b['passes'] as bool).toList();
+      expect(flags, [true, true, true, true, true, true, true, false, false]);
+      expect(scale.where((b) => b['passes'] == false).map((b) => b['letter']), ['E', 'F']);
+    });
 
     test('the fixture is a complete scale: A down to a floor of 0, high to low', () {
       expect(scale.first['letter'], 'A');
