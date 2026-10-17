@@ -49,7 +49,7 @@ These are what to clean up or finish. Ordered by how likely they are to matter i
 | 3 | **Resources** — libraries, past papers, academic calendar, handbook | Static content | Hard-coded in `resource_models.dart`. Not editable and not backed by the API. |
 | 4 | **AI Assistant on the deployed web build** | Local fallback only | `GEMINI_API_KEY` is intentionally not baked into the web build (`render.yaml`), so it always uses the rule engine. In that engine the shuttle, MoMo, wifi, food and stress replies are generic text, not data. |
 | 5 | **Default API URL** | Works only on an Android emulator | Defaults to `http://10.0.2.2:4000/api`. A physical device or desktop run needs `--dart-define=API_BASE_URL=...`. |
-| 6 | **Backend tests** | Thin | A smoke script that needs a live server and database, plus offline unit tests for the grading scale only. Nothing else has unit tests. |
+| 6 | **Backend tests** | Thin | A smoke script that needs a live server and database, plus offline unit tests for the grading scale and the push fan-out/sender. Nothing else (auth, events, clubs, quizzes, locations) has unit tests — they're only covered by the smoke script. |
 | 7 | **`POST /schedule` cannot target another user** | Latent backend bug | `createScheduleEntry` reads `req.body.userId`, but the request schema does not list it, so validation strips it and a class always lands on the caller's own timetable. It has no effect today (the app is local-first) and only matters if the server timetable is ever used. |
 
 ## 4. Cleanup done
