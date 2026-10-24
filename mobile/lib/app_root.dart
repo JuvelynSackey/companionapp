@@ -8,8 +8,8 @@ import 'data/models/app_user.dart';
 import 'features/auth/auth_status.dart';
 import 'features/auth/session_controller.dart';
 import 'features/auth/sign_in_screen.dart';
+import 'features/auth/welcome_screen.dart';
 import 'features/onboarding/institution_controller.dart';
-import 'features/onboarding/institution_picker_screen.dart';
 import 'features/shell/app_shell.dart';
 import 'widgets/async_value_view.dart';
 
@@ -35,7 +35,10 @@ class _RootGate extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final onboardingCompleted = ref.watch(onboardingControllerProvider);
     if (!onboardingCompleted) {
-      return const InstitutionPickerScreen();
+      // Signing in with Google here (WelcomeScreen) still lands back on this
+      // gate afterward with onboarding still incomplete, so the institution
+      // picker always runs once per device — see WelcomeScreen's doc comment.
+      return const WelcomeScreen();
     }
 
     final session = ref.watch(sessionControllerProvider);

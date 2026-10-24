@@ -39,6 +39,12 @@ Built and tested, but **off** until a Firebase project exists. See
 [docs/push-notifications.md](docs/push-notifications.md) for what to create and
 where to put it.
 
+## Google Sign-In
+
+Built and tested, reusing the same Firebase project as push, but **off** until
+the Google provider is enabled there. See
+[docs/google-sign-in.md](docs/google-sign-in.md) for the remaining steps.
+
 ## Deploy
 
 `render.yaml` defines the API, the Flutter web build and a Postgres database on Render.

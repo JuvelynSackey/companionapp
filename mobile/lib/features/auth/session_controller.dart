@@ -34,6 +34,15 @@ class SessionController extends AsyncNotifier<AppUser?> {
     if (state.hasValue) ref.read(sessionExpiredProvider.notifier).state = false;
   }
 
+  /// If the person cancels the Google account picker, this leaves [state] as
+  /// `AsyncValue.data(null)` — the same "not signed in" state as before the
+  /// tap, not an error, so the UI shows nothing extra and just stays put.
+  Future<void> loginWithGoogle() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() => ref.read(authRepositoryProvider).loginWithGoogle());
+    if (state.hasValue && state.value != null) ref.read(sessionExpiredProvider.notifier).state = false;
+  }
+
   Future<void> register({
     required String fullName,
     required String email,

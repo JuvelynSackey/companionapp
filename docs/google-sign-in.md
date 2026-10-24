@@ -117,23 +117,41 @@ use, so this confirms it works independently.
 
 ### 5. Turn it on for the app
 
-The "Web client ID" from the re-downloaded `google-services.json` (not a
-secret — it identifies the app to Google, the same way a package name does)
-goes into `GoogleAuthService`'s configuration. Once you've done step 3, tell
-me and I'll read the new file and wire it in, then build with:
+The app side is fully built: a Welcome screen (shown before onboarding) and
+the Login screen both carry a "Continue with Google" button
+(`features/auth/widgets/social_auth_buttons.dart`), wired through
+`GoogleAuthService` to `POST /api/auth/google`. What's missing is one value:
+the "Web client (auto created by Google Service)" OAuth client ID from the
+re-downloaded `google-services.json` (not a secret — it identifies the app to
+Google, the same way a package name does). Once you've done step 3, tell me
+the file's path and I'll read it and give you the exact value to pass below
+(or ask me to run the build for you):
 
 ```
 cd mobile
-flutter run --dart-define=GOOGLE_SIGN_IN_ENABLED=true --dart-define=API_BASE_URL=http://<host>:4000/api
+flutter run \
+  --dart-define=GOOGLE_SIGN_IN_ENABLED=true \
+  --dart-define=GOOGLE_SERVER_CLIENT_ID=<the Web client ID> \
+  --dart-define=API_BASE_URL=http://<host>:4000/api
 ```
 
-Without the flag, Firebase Auth/Google Sign-In are never touched and the
-button stays disabled — same off-by-default pattern as push.
+Without `GOOGLE_SIGN_IN_ENABLED=true`, Firebase Auth/Google Sign-In are never
+touched and the button stays disabled, labelled "Coming soon" — same
+off-by-default pattern as push. `GOOGLE_SERVER_CLIENT_ID` can technically be
+left out, but on Android the native picker is unlikely to return a usable ID
+token without it (see `google_auth_bootstrap.dart`).
 
 ## Checking it works end to end
 
-1. Steps 1-5 above done, app built with the flag.
-2. Tap **Continue with Google**, pick an account in the native picker.
+1. Steps 1-5 above done, app built with both dart-defines.
+2. Fresh install, or clear app data, so the **Welcome screen** shows (it only
+   shows once per device, before the one-time institution picker). Tap
+   **Continue with Google** there and pick an account in the native picker —
+   this is the fastest way to see it work, since it skips institution
+   picking being in the way; see WelcomeScreen's doc comment for why that is
+   safe. Alternatively, tap "Get Started" or "Already have an account? Log
+   in" to go through institution picking first and reach the same button on
+   the redesigned **Login screen** instead.
 3. You land signed in. `GET /api/auth/me` (`docs/api-testing.http`) shows the
    account; its `role` is `student` unless it's one that already existed with
    a different role.

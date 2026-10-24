@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'firebase_bootstrap.dart';
 import 'firebase_push_messaging.dart';
 import 'push_messaging.dart';
 
@@ -22,7 +23,7 @@ Future<PushMessaging> createPushMessaging({FirebaseOptions? options}) async {
   if (!_pushEnabled) return const NoopPushMessaging();
 
   try {
-    await Firebase.initializeApp(options: options);
+    await ensureFirebaseInitialized(options: options);
     return FirebasePushMessaging();
   } catch (error) {
     debugPrint('Push notifications disabled: Firebase could not start ($error).');

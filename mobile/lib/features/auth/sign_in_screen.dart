@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_exception.dart';
-import '../../core/theme/campus_companion_theme.dart';
+import '../../core/theme/landing_theme.dart';
 import 'session_controller.dart';
 import 'sign_up_screen.dart';
+import 'widgets/social_auth_buttons.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key, this.showExpiredNotice = false});
@@ -22,6 +23,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _submitting = false;
+  bool _obscurePassword = true;
   String? _error;
 
   @override
@@ -51,10 +53,16 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
   }
 
+  void _comingSoon(String feature) {
+    ScaffoldMessenger.of(context)
+      ..removeCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text('$feature is coming soon.')));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final campus = Theme.of(context).campusTheme;
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -66,26 +74,22 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(Icons.school, size: 56, color: campus.accentGlow),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 24),
                     Text(
-                      'Campus Companion',
-                      style: Theme.of(context).textTheme.headlineSmall,
+                      'Login',
                       textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            color: LandingColors.green900,
+                            fontWeight: FontWeight.w800,
+                          ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Sign in to continue',
-                      style: TextStyle(color: campus.textMuted),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 28),
                     if (widget.showExpiredNotice) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
                           color: Colors.orange.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(campus.innerRadius),
+                          borderRadius: BorderRadius.circular(LandingStyle.fieldRadius),
                         ),
                         child: Row(
                           children: [
@@ -105,40 +109,82 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: campus.inputDecoration(label: 'Email', icon: Icons.email_outlined),
+                      decoration: LandingStyle.fieldDecoration(label: 'Email', icon: Icons.email_outlined),
                       validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
-                      decoration: campus.inputDecoration(label: 'Password', icon: Icons.lock_outline),
+                      obscureText: _obscurePassword,
+                      decoration: LandingStyle.fieldDecoration(
+                        label: 'Password',
+                        icon: Icons.lock_outline,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                            color: LandingColors.inkMuted,
+                          ),
+                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        ),
+                      ),
                       validator: (v) => (v == null || v.length < 8) ? 'Minimum 8 characters' : null,
                     ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => _comingSoon('Password reset'),
+                        child: const Text('Forgot Password?', style: TextStyle(color: LandingColors.inkMuted)),
+                      ),
+                    ),
                     if (_error != null) ...[
-                      const SizedBox(height: 16),
-                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      const SizedBox(height: 8),
+                      Text(_error!, style: const TextStyle(color: LandingColors.error)),
                     ],
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     FilledButton(
-                      style: campus.primaryButtonStyle,
+                      style: LandingStyle.primaryButtonStyle,
                       onPressed: _submitting ? null : _submit,
                       child: _submitting
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             )
-                          : const Text('Sign In'),
+                          : const Text('Login'),
                     ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: _submitting
-                          ? null
-                          : () => Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const SignUpScreen()),
+                    const SizedBox(height: 20),
+                    Row(children: const [
+                      Expanded(child: Divider(color: LandingColors.border)),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('or', style: TextStyle(color: LandingColors.inkMuted)),
+                      ),
+                      Expanded(child: Divider(color: LandingColors.border)),
+                    ]),
+                    const SizedBox(height: 16),
+                    const SocialAuthButtons(),
+                    const SizedBox(height: 20),
+                    Center(
+                      child: TextButton(
+                        onPressed: _submitting
+                            ? null
+                            : () => Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const SignUpScreen()),
+                                ),
+                        child: RichText(
+                          text: const TextSpan(
+                            style: TextStyle(color: LandingColors.inkMuted, fontSize: 14),
+                            children: [
+                              TextSpan(text: 'Need an account? '),
+                              TextSpan(
+                                text: 'Sign up',
+                                style: TextStyle(color: LandingColors.green700, fontWeight: FontWeight.w700),
                               ),
-                      child: const Text("Don't have an account? Sign up"),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

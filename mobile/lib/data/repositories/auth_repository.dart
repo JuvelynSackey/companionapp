@@ -1,4 +1,5 @@
 import '../../core/network/api_exception.dart';
+import '../../core/services/google_auth_service.dart';
 import '../../core/storage/token_storage.dart';
 import '../api/auth_api.dart';
 import '../models/app_user.dart';
@@ -14,10 +15,12 @@ class SessionRestoreResult {
 }
 
 class AuthRepository {
-  AuthRepository(this._api, this._tokenStorage);
+  AuthRepository(this._api, this._tokenStorage, {GoogleAuthService? googleAuth})
+      : _googleAuth = googleAuth ?? const NoopGoogleAuthService();
 
   final AuthApi _api;
   final TokenStorage _tokenStorage;
+  final GoogleAuthService _googleAuth;
 
   Future<AppUser> register({
     required String fullName,
@@ -31,6 +34,18 @@ class AuthRepository {
 
   Future<AppUser> login({required String email, required String password}) async {
     final result = await _api.login(email: email, password: password);
+    await _tokenStorage.saveToken(result.token);
+    return result.user;
+  }
+
+  /// Returns null if the person cancelled the Google account picker — not a
+  /// failure, just no sign-in happened. Any other problem (network, an
+  /// invalid/expired token the backend rejected) throws, same as [login].
+  Future<AppUser?> loginWithGoogle() async {
+    final firebaseIdToken = await _googleAuth.signIn();
+    if (firebaseIdToken == null) return null;
+
+    final result = await _api.googleSignIn(firebaseIdToken);
     await _tokenStorage.saveToken(result.token);
     return result.user;
   }

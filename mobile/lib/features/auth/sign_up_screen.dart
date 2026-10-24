@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_exception.dart';
-import '../../core/theme/campus_companion_theme.dart';
+import '../../core/theme/landing_theme.dart';
 import 'session_controller.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
@@ -17,6 +17,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _submitting = false;
+  bool _obscurePassword = true;
   String? _error;
 
   @override
@@ -52,9 +53,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final campus = Theme.of(context).campusTheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: LandingColors.ink,
+        elevation: 0,
+        title: const Text('Create Account'),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -68,36 +74,46 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   children: [
                     TextFormField(
                       controller: _nameController,
-                      decoration: campus.inputDecoration(label: 'Full name', icon: Icons.person_outline),
+                      decoration: LandingStyle.fieldDecoration(label: 'Full name', icon: Icons.person_outline),
                       validator: (v) => (v == null || v.trim().length < 2) ? 'Enter your full name' : null,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: campus.inputDecoration(label: 'Email', icon: Icons.email_outlined),
+                      decoration: LandingStyle.fieldDecoration(label: 'Email', icon: Icons.email_outlined),
                       validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
                     TextFormField(
                       controller: _passwordController,
-                      obscureText: true,
-                      decoration: campus.inputDecoration(label: 'Password', icon: Icons.lock_outline),
+                      obscureText: _obscurePassword,
+                      decoration: LandingStyle.fieldDecoration(
+                        label: 'Password',
+                        icon: Icons.lock_outline,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                            color: LandingColors.inkMuted,
+                          ),
+                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        ),
+                      ),
                       validator: (v) => (v == null || v.length < 8) ? 'Minimum 8 characters' : null,
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 16),
-                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      Text(_error!, style: const TextStyle(color: LandingColors.error)),
                     ],
                     const SizedBox(height: 24),
                     FilledButton(
-                      style: campus.primaryButtonStyle,
+                      style: LandingStyle.primaryButtonStyle,
                       onPressed: _submitting ? null : _submit,
                       child: _submitting
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             )
                           : const Text('Create Account'),
                     ),

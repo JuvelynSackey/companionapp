@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../network/api_client.dart';
+import '../services/google_auth_service.dart';
 import '../services/notification_service.dart';
 import '../storage/local_prefs.dart';
 import '../storage/token_storage.dart';
@@ -57,8 +58,16 @@ final quizApiProvider = Provider<QuizApi>((ref) => QuizApi(ref.watch(apiClientPr
 final coursesProvider = FutureProvider<List<Course>>((ref) => ref.watch(courseApiProvider).fetch());
 
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => AuthRepository(ref.watch(authApiProvider), ref.watch(tokenStorageProvider)),
+  (ref) => AuthRepository(
+    ref.watch(authApiProvider),
+    ref.watch(tokenStorageProvider),
+    googleAuth: ref.watch(googleAuthServiceProvider),
+  ),
 );
+
+/// The Google sign-in transport. NoopGoogleAuthService until main() swaps in
+/// the real one (see google_auth_bootstrap.dart) — mirrors pushMessagingProvider.
+final googleAuthServiceProvider = Provider<GoogleAuthService>((ref) => const NoopGoogleAuthService());
 
 final examsRepositoryProvider =
     Provider<ExamsRepository>((ref) => ExamsRepository(ref.watch(localPrefsProvider)));

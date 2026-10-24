@@ -1,6 +1,6 @@
 # Campus Companion — Project Audit
 
-**Updated:** 21 September 2026 (after backend verification and legacy cleanup)
+**Updated:** 24 October 2026 (after Google Sign-In + the Welcome/Login redesign)
 **Stack:** Flutter app (`mobile/`) + Node/Express API (`backend/`) + PostgreSQL
 
 This replaces the August audit, which described an Android/Kotlin/Firebase app. The
@@ -11,17 +11,18 @@ live app is now Flutter; the legacy Kotlin module `app/` was removed (see sectio
 | Check | Result |
 |---|---|
 | `flutter analyze` | No issues |
-| `flutter test` | 332 / 332 pass |
-| Backend `npm test` (offline) | 38 / 38 pass: the grading scale in `schema.sql`, the migration and `GRADE_POINTS` all match `docs/grading-scale-ug.json`; the push fan-out and FCM sender against in-memory fakes |
-| Backend `npm run test:db` | 8 / 8 pass against local Postgres: the device-token and push-preference SQL (cleans up after itself) |
-| Backend `npm run test:smoke` | 180 / 180 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth, dashboard, schedule, grades, announcements, events (including lecturer create/delete and ownership), clubs, locations, admin provisioning, role permissions, self-registration never granting a role, and the quiz lifecycle. Re-runnable: it deletes its quizzes and events, but leaves a `smoke-lecturer-*` and a `smoke-register-*` account per run. |
+| `flutter test` | 366 / 366 pass |
+| Backend `npm test` (offline) | 50 / 50 pass: the grading scale in `schema.sql`, the migration and `GRADE_POINTS` all match `docs/grading-scale-ug.json`; the push fan-out and FCM sender against in-memory fakes; the Google ID token verifier (including that push and Google sign-in share one Firebase app) |
+| Backend `npm run test:db` | 14 / 14 pass against local Postgres: the device-token/push-preference SQL, and the Google user-store SQL (linking, create, the uniqueness conflict) — both clean up after themselves |
+| Backend `npm run test:smoke` | 182 / 182 pass against local Postgres (port 5433) after `npm run db:setup`. It covers auth (including `POST /auth/google` against the **live** Firebase credential — a garbage token comes back 401, not 503), dashboard, schedule, grades, announcements, events (including lecturer create/delete and ownership), clubs, locations, admin provisioning, role permissions, self-registration never granting a role, and the quiz lifecycle. Re-runnable: it deletes its quizzes and events, but leaves a `smoke-lecturer-*` and a `smoke-register-*` account per run. |
 
 ## 2. Features that work (implemented and wired end to end)
 
 Each of these has a UI in `mobile/lib/features/`, an API client or local store, and,
 where noted, tests.
 
-- **Auth** — register, login, session restore, 401 handling (`/auth/*`). Roles: student, lecturer, admin.
+- **Auth** — register, login, session restore, 401 handling (`/auth/*`). Roles: student, lecturer, admin. A new Welcome screen (shown once per device, before onboarding) and a redesigned Login/Create-account flow, in a green/light look deliberately separate from the rest of the app's cyan/slate theme (`core/theme/landing_theme.dart`) — the user asked for this specific visual direction for the pre-sign-in screens only. "Continue with Apple" and "Continue as Guest" are shown to match the design but are not built — tapping either says "Coming soon" rather than doing nothing. Tested (`sign_in_screen`, `sign_up_screen`, `welcome_screen`).
+- **Google Sign-In (built, not live)** — "Continue with Google" on both the Welcome and Login screens, wired through `GoogleAuthService` (Noop by default, a Firebase-backed adapter behind `--dart-define=GOOGLE_SIGN_IN_ENABLED=true`) to `POST /api/auth/google`. An existing password account is linked by email (adds a login method, nothing is overwritten); a new one is always a student. `POST /auth/google` was verified against the **live** Firebase credential (see the smoke-test row above). Everything except the Firebase-backed adapter itself (`firebase_google_auth_service.dart` — needs a real Firebase project and Google Play services, the same exemption `firebase_push_messaging.dart` has) is tested against fakes, including the cancel/success/error paths and the UI's loading/disabled states. **It cannot sign anyone in until the Google provider is enabled in the same Firebase project push notifications already use, and one more value (the Web client ID) is read out of a re-downloaded `google-services.json`** — see `docs/google-sign-in.md`. Android only.
 - **Onboarding** — institution picker and profile setup; per-institution branding.
 - **Dashboard** — aggregated backend data (`/dashboard`).
 - **Timetable** — local-first: the student adds, edits, deletes and imports classes (`.ics`/CSV) on the device, and exports to `.ics`; class reminders, the Today list and the walk-time/conflict cards all read that local copy. The server's `/schedule` routes, including `/schedule/today`, are **deliberately unused** by the app and kept working (and smoke-tested) as a possible cloud-backup layer. Wiring the dashboard to `/schedule/today` was considered and rejected: the server timetable is normally empty, so it would replace a student's real classes with nothing. Tested (`schedule_parser`, `ics_exporter`).
@@ -45,12 +46,13 @@ These are what to clean up or finish. Ordered by how likely they are to matter i
 | # | Feature | State | Detail |
 |---|---|---|---|
 | 1 | **Push notifications** | Built, waiting for a Firebase project | The app and server are ready (see section 2). A Firebase project exists (`campus-companion-61eb5`) and `google-services.json` is in place locally (git-ignored), with the Gradle plugin applied and a debug APK building against it. Still to do: put the service-account key on the server (`FCM_ENABLED`, `FIREBASE_SERVICE_ACCOUNT`), apply the migrations to the production database, deploy, and check on a real phone. Until then nothing is delivered to a closed app: alerts still arrive only while the app polls in the foreground. Next steps are in `docs/push-notifications.md` (decide the Android app id first: it is `com.example.mobile`, a placeholder Google Play rejects). iOS and web push are not set up. |
-| 2 | **Student Hub — Shuttles, MoMo Dues, Lost & Found** | Simulated | No backend tables. Content is static fixtures (`student_hub_fixtures.dart`). "Paying" a due only writes a fake receipt on the device; no payment gateway. Lost & Found reports are per device and never shared. |
-| 3 | **Resources** — libraries, past papers, academic calendar, handbook | Static content | Hard-coded in `resource_models.dart`. Not editable and not backed by the API. |
-| 4 | **AI Assistant on the deployed web build** | Local fallback only | `GEMINI_API_KEY` is intentionally not baked into the web build (`render.yaml`), so it always uses the rule engine. In that engine the shuttle, MoMo, wifi, food and stress replies are generic text, not data. |
-| 5 | **Default API URL** | Works only on an Android emulator | Defaults to `http://10.0.2.2:4000/api`. A physical device or desktop run needs `--dart-define=API_BASE_URL=...`. |
-| 6 | **Backend tests** | Thin | A smoke script that needs a live server and database, plus offline unit tests for the grading scale and the push fan-out/sender. Nothing else (auth, events, clubs, quizzes, locations) has unit tests — they're only covered by the smoke script. |
-| 7 | **`POST /schedule` cannot target another user** | Latent backend bug | `createScheduleEntry` reads `req.body.userId`, but the request schema does not list it, so validation strips it and a class always lands on the caller's own timetable. It has no effect today (the app is local-first) and only matters if the server timetable is ever used. |
+| 2 | **Google Sign-In** | Built, waiting for one console step + one value | Same Firebase project and credential as push (already confirmed live for auth verification too — see the smoke-test row above). Still to do: enable Google as a sign-in provider, register the app's debug SHA-1/SHA-256 fingerprint, re-download `google-services.json`, and give the app the Web client ID from it. Until then the button shows, disabled, labelled "Coming soon". Exact steps and the computed fingerprint are in `docs/google-sign-in.md`. Android only; Apple and Guest are not built (see section 2). |
+| 3 | **Student Hub — Shuttles, MoMo Dues, Lost & Found** | Simulated | No backend tables. Content is static fixtures (`student_hub_fixtures.dart`). "Paying" a due only writes a fake receipt on the device; no payment gateway. Lost & Found reports are per device and never shared. |
+| 4 | **Resources** — libraries, past papers, academic calendar, handbook | Static content | Hard-coded in `resource_models.dart`. Not editable and not backed by the API. |
+| 5 | **AI Assistant on the deployed web build** | Local fallback only | `GEMINI_API_KEY` is intentionally not baked into the web build (`render.yaml`), so it always uses the rule engine. In that engine the shuttle, MoMo, wifi, food and stress replies are generic text, not data. |
+| 6 | **Default API URL** | Works only on an Android emulator | Defaults to `http://10.0.2.2:4000/api`. A physical device or desktop run needs `--dart-define=API_BASE_URL=...`. |
+| 7 | **Backend tests** | Thin | A smoke script that needs a live server and database, plus offline unit tests for the grading scale, the push fan-out/sender and the Google ID token verifier. Events, clubs, quizzes, locations and the find-or-create-by-email logic in `register`/`login` have no unit tests — they're only covered by the smoke script. |
+| 8 | **`POST /schedule` cannot target another user** | Latent backend bug | `createScheduleEntry` reads `req.body.userId`, but the request schema does not list it, so validation strips it and a class always lands on the caller's own timetable. It has no effect today (the app is local-first) and only matters if the server timetable is ever used. |
 
 ## 4. Cleanup done
 
@@ -85,6 +87,7 @@ The August report listed these as problems. They are no longer accurate:
 
 ## 6. Suggested next steps
 
-1. Push notifications: create the Firebase project and add the credentials (`docs/push-notifications.md`), then check it on a real phone. Decide the Android app id (`com.example.mobile` is a placeholder) before registering.
-2. Student Hub: replace `student_hub_fixtures.dart` with real tables and routes for shuttles, dues and lost & found.
-3. Fix `POST /schedule`'s `userId` if the server timetable is ever used as a cloud backup.
+1. Push notifications: put the service-account key on the server, apply the migrations to the production database, deploy, and check it on a real phone (`docs/push-notifications.md`).
+2. Google Sign-In: enable the provider and register the fingerprint in the same Firebase project (`docs/google-sign-in.md`), then check it on a real phone.
+3. Student Hub: replace `student_hub_fixtures.dart` with real tables and routes for shuttles, dues and lost & found.
+4. Fix `POST /schedule`'s `userId` if the server timetable is ever used as a cloud backup.

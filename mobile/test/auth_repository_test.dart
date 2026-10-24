@@ -6,6 +6,8 @@ import 'package:mobile/data/api/auth_api.dart';
 import 'package:mobile/data/models/app_user.dart';
 import 'package:mobile/data/repositories/auth_repository.dart';
 
+import 'support/google_auth_fakes.dart';
+
 /// In-memory fake — never touches the real FlutterSecureStorage platform
 /// channel, so it's safe to use in a plain `flutter test` unit test.
 class _FakeTokenStorage extends TokenStorage {
@@ -91,6 +93,52 @@ void main() {
       expect(result.user, isNull);
       expect(result.expired, isFalse);
       expect(calls, 0);
+    });
+  });
+
+  group('AuthRepository.loginWithGoogle', () {
+    test('a cancelled picker returns null without ever calling the backend', () async {
+      final google = FakeGoogleAuthService(idToken: null);
+      final api = FakeGoogleAuthApi();
+      final repo = AuthRepository(api, _FakeTokenStorage(), googleAuth: google);
+
+      final user = await repo.loginWithGoogle();
+
+      expect(user, isNull);
+      expect(api.idTokensSent, isEmpty);
+    });
+
+    test('a successful sign-in sends the Firebase ID token, saves the JWT and returns the user', () async {
+      final google = FakeGoogleAuthService(idToken: 'a-firebase-id-token');
+      final tokenStorage = _FakeTokenStorage();
+      final api = FakeGoogleAuthApi(
+        result: AuthResult('backend-jwt', AppUser(userId: 7, fullName: 'Ama', email: 'ama@ug.edu.gh', role: 'student', permissions: const {})),
+      );
+      final repo = AuthRepository(api, tokenStorage, googleAuth: google);
+
+      final user = await repo.loginWithGoogle();
+
+      expect(api.idTokensSent, ['a-firebase-id-token']);
+      expect(user?.email, 'ama@ug.edu.gh');
+      expect(await tokenStorage.readToken(), 'backend-jwt');
+    });
+
+    test('a backend rejection (e.g. an invalid token) throws, same as login()', () async {
+      final google = FakeGoogleAuthService();
+      final tokenStorage = _FakeTokenStorage();
+      final api = FakeGoogleAuthApi()..error = ApiException('Invalid or expired Google sign-in token', statusCode: 401);
+      final repo = AuthRepository(api, tokenStorage, googleAuth: google);
+
+      await expectLater(repo.loginWithGoogle(), throwsA(isA<ApiException>()));
+      expect(await tokenStorage.readToken(), isNull, reason: 'nothing saved on failure');
+    });
+
+    test('without a GoogleAuthService supplied, it behaves like the no-op (cancels immediately)', () async {
+      final api = FakeGoogleAuthApi();
+      final repo = AuthRepository(api, _FakeTokenStorage());
+
+      expect(await repo.loginWithGoogle(), isNull);
+      expect(api.idTokensSent, isEmpty);
     });
   });
 }
