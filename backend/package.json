@@ -10,7 +10,7 @@
     "db:setup": "node src/utils/setupDb.js",
     "db:apply": "node src/utils/applySql.js",
     "test": "node --test",
-    "test:db": "node --test src/services/deviceTokenStore.integration.js",
+    "test:db": "node --test src/services/deviceTokenStore.integration.js src/services/googleUserStore.integration.js",
     "test:smoke": "node src/utils/smokeTest.js"
   },
   "engines": {

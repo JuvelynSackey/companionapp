@@ -39,4 +39,12 @@ export const config = {
     enabled: process.env.FCM_ENABLED === 'true',
     serviceAccount: process.env.FIREBASE_SERVICE_ACCOUNT ?? '',
   },
+
+  // Google Sign-In. Off unless GOOGLE_SIGN_IN_ENABLED=true; shares
+  // FIREBASE_SERVICE_ACCOUNT with push (see services/googleIdTokenVerifier.js).
+  // A wrong or missing key logs a warning and leaves it off, same as push.
+  googleSignIn: {
+    enabled: process.env.GOOGLE_SIGN_IN_ENABLED === 'true',
+    serviceAccount: process.env.FIREBASE_SERVICE_ACCOUNT ?? '',
+  },
 };

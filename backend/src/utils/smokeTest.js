@@ -97,6 +97,23 @@ async function run() {
   });
   check('duplicate email rejected', duplicate.status === 409);
 
+  console.log('\nModule 1b — Google sign-in (POST /auth/google)');
+  const missingToken = await call('POST', '/auth/google', { body: {} });
+  check('missing idToken rejected (400)', missingToken.status === 400);
+
+  // Exercises the real Firebase credential, not a fake — assumes this dev
+  // environment has GOOGLE_SIGN_IN_ENABLED=true like FCM_ENABLED (see
+  // docs/google-sign-in.md). A garbage token must come back 401, proving
+  // Firebase accepted the service-account credential for auth verification
+  // (a separate permission scope from the one push notifications uses) and
+  // then genuinely rejected the token, rather than the endpoint being
+  // unreachable (503, meaning the credential/flag is not actually set here).
+  const garbageToken = await call('POST', '/auth/google', {
+    body: { idToken: 'not-a-real-token-at-all-just-garbage-xxxxxxxxxxxxxxxxxxxxxxxxxx' },
+  });
+  check('a garbage idToken is rejected by real Firebase verification (401, not 503)',
+    garbageToken.status === 401, `got ${garbageToken.status}: ${JSON.stringify(garbageToken.data)}`);
+
   console.log('\nModule 2 — dashboard & schedule');
   const dash = await call('GET', '/dashboard', { token: studentToken });
   check('dashboard returns stats', typeof dash.data?.stats?.classesToday === 'number');

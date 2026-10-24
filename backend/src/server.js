@@ -5,6 +5,7 @@ import { config } from './config/env.js';
 import { pool } from './config/db.js';
 import apiRoutes from './routes/index.js';
 import { getNotificationService } from './services/push.js';
+import { getGoogleIdTokenVerifier } from './services/googleAuth.js';
 
 const app = express();
 
@@ -37,7 +38,9 @@ app.use((err, _req, res, _next) => {
 
 app.listen(config.port, () => {
   console.log(`Campus Companion API listening on http://localhost:${config.port}`);
-  // Build the push service now so a misconfigured key shows up in the boot log,
-  // not on the first announcement.
+  // Build these now so a misconfigured key shows up in the boot log, not on
+  // the first announcement / first Google sign-in attempt. Both share one
+  // Firebase app (services/firebaseAdminApp.js) and the same credential.
   getNotificationService().catch((err) => console.error('Push service failed to start:', err));
+  getGoogleIdTokenVerifier().catch((err) => console.error('Google sign-in failed to start:', err));
 });

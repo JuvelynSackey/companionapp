@@ -27,7 +27,13 @@ CREATE TABLE users (
     user_id       SERIAL PRIMARY KEY,
     full_name     VARCHAR(120)  NOT NULL,
     email         VARCHAR(160)  NOT NULL UNIQUE,
-    password_hash VARCHAR(255)  NOT NULL,   -- bcrypt hash, never the raw password
+    -- bcrypt hash, never the raw password. Nullable: an account created via
+    -- Google Sign-In has no password until the student sets one (not built
+    -- yet — see docs/google-sign-in.md).
+    password_hash VARCHAR(255),
+    -- Firebase UID once this account is linked to a Google identity. Unique
+    -- so the same Google account can never be attached to two rows.
+    google_uid    VARCHAR(128)  UNIQUE,
     role          VARCHAR(20)   NOT NULL DEFAULT 'student'
                   CHECK (role IN ('student', 'lecturer', 'admin')),
     -- Durable per-user watermark for AnnouncementPushBridge: the highest
@@ -40,7 +46,11 @@ CREATE TABLE users (
     -- Whether this user wants push notifications at all. Checked by the server
     -- before it sends; the OS-level permission on the device is separate.
     push_enabled  BOOLEAN       NOT NULL DEFAULT TRUE,
-    created_at    TIMESTAMPTZ   NOT NULL DEFAULT now()
+    created_at    TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    -- Every account needs at least one way to sign in. password_hash alone
+    -- (today's accounts), google_uid alone (Google-only), or both (a
+    -- password account that later links Google) are all fine; neither is not.
+    CONSTRAINT chk_has_a_login_method CHECK (password_hash IS NOT NULL OR google_uid IS NOT NULL)
 );
 
 -- Email lookups happen on every login, so index the lower-cased form

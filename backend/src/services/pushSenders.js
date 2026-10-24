@@ -12,6 +12,7 @@
  *
  * No database or config imports here, so both can be unit-tested alone.
  */
+import { getSharedFirebaseApp } from './firebaseAdminApp.js';
 
 /** FCM error codes that mean the token is dead and should be forgotten. */
 export const INVALID_TOKEN_CODES = new Set([
@@ -94,17 +95,18 @@ export async function createPushSender({
 
   if (!config.serviceAccount) return fallback('FIREBASE_SERVICE_ACCOUNT is not set');
 
-  let credentials;
   try {
-    credentials = JSON.parse(config.serviceAccount);
+    JSON.parse(config.serviceAccount);
   } catch {
     return fallback('FIREBASE_SERVICE_ACCOUNT is not valid JSON (paste the key file as a single line)');
   }
 
   try {
-    const { initializeApp, cert, getMessaging } = await loadFirebaseAdmin();
-    const app = initializeApp({ credential: cert(credentials) }, 'campus-companion');
-    logger.log(`Push notifications: on (Firebase project ${credentials.project_id ?? 'unknown'}).`);
+    // Shared with googleIdTokenVerifier.js: one Firebase app, one credential,
+    // whichever feature needs it first initialises it.
+    const { app, projectId } = await getSharedFirebaseApp(config.serviceAccount, loadFirebaseAdmin);
+    const { getMessaging } = await loadFirebaseAdmin();
+    logger.log(`Push notifications: on (Firebase project ${projectId ?? 'unknown'}).`);
     return new FcmSender(getMessaging(app));
   } catch (err) {
     return fallback(`Firebase could not be initialised (${err.message})`);

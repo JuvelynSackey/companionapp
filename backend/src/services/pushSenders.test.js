@@ -2,9 +2,15 @@
  * Offline tests for the push senders and how one is chosen:  npm test
  * Firebase itself is never loaded; a fake stands in for it.
  */
-import { test } from 'node:test';
+import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createPushSender, FcmSender, LogSender, INVALID_TOKEN_CODES } from './pushSenders.js';
+import { _resetSharedFirebaseAppForTests } from './firebaseAdminApp.js';
+
+// createPushSender shares one Firebase app (firebaseAdminApp.js) across calls
+// in the real process, so a test that initialises it (or fails to) does not
+// leak into the next test in this file.
+beforeEach(_resetSharedFirebaseAppForTests);
 
 /** Collects what would have been printed. */
 function recordingLogger() {

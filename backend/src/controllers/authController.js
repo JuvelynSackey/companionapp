@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { query } from '../config/db.js';
 import { config } from '../config/env.js';
+import { getGoogleIdTokenVerifier } from '../services/googleAuth.js';
+import { findOrCreateGoogleUser } from '../services/googleUserStore.js';
 
 const SALT_ROUNDS = 12;
 
@@ -18,6 +20,14 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email('Enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
+});
+
+export const googleSignInSchema = z.object({
+  // A Firebase ID token, not a raw Google one — see docs/google-sign-in.md.
+  // No format check beyond "non-trivial string"; verifyGoogleIdToken() is
+  // what actually validates it, and rejecting garbage early just duplicates
+  // that check with a worse error message.
+  idToken: z.string().min(20, 'Missing or malformed idToken'),
 });
 
 /**
@@ -138,6 +148,41 @@ export async function login(req, res, next) {
 
     return res.json({ token: issueToken(user), user: publicUser(user) });
   } catch (err) {
+    return next(err);
+  }
+}
+
+/**
+ * POST /api/auth/google — { idToken } from Firebase (the app signs into
+ * Firebase with a Google credential first — see mobile's google_auth_service.dart).
+ *
+ * Three independent failure shapes, each meaning something different to the
+ * client: 503 is "ask the admin to finish setup", 401 is "that token is no
+ * good, try signing in again", 409 is the one Postgres itself catches (the
+ * google_uid UNIQUE constraint) when two concurrent requests try to link the
+ * same Google account to two different rows.
+ */
+export async function googleSignIn(req, res, next) {
+  const verifier = await getGoogleIdTokenVerifier();
+  if (!verifier) {
+    return res.status(503).json({ error: 'Google sign-in is not configured on this server' });
+  }
+
+  let identity;
+  try {
+    identity = await verifier(req.body.idToken);
+  } catch (err) {
+    console.warn('Google sign-in token rejected:', err.message);
+    return res.status(401).json({ error: 'Invalid or expired Google sign-in token' });
+  }
+
+  try {
+    const user = await findOrCreateGoogleUser(identity);
+    return res.json({ token: issueToken(user), user: publicUser(user) });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'That Google account is already linked to a different user' });
+    }
     return next(err);
   }
 }

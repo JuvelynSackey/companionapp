@@ -48,6 +48,20 @@ Content-Type: application/json
 GET {{host}}/auth/me
 Authorization: Bearer {{studentToken}}
 
+### Sign in with Google — a Firebase ID token, not a raw Google one.
+### Needs GOOGLE_SIGN_IN_ENABLED=true + FIREBASE_SERVICE_ACCOUNT (see
+### docs/google-sign-in.md). There is no way to get a real token from this
+### .http file; a real one only comes from the app signing into Firebase.
+### A garbage/expired token still exercises the live credential and should
+### come back 401, not 503 (which would mean sign-in is actually disabled
+### here) or 500.
+POST {{host}}/auth/google
+Content-Type: application/json
+
+{
+  "idToken": "not-a-real-token"
+}
+
 
 ############################################################
 # Module 2 — dashboard & schedule

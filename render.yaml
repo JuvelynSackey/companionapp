@@ -15,10 +15,14 @@ services:
         value: 7d
       - key: JWT_SECRET
         generateValue: true
-      # Push notifications stay off until you set FCM_ENABLED=true and paste the
-      # Firebase service-account key JSON into FIREBASE_SERVICE_ACCOUNT in the
-      # Render dashboard (see docs/push-notifications.md). Never put the key here.
+      # Push notifications and Google Sign-In both stay off until you set their
+      # flag to true and paste the Firebase service-account key JSON into
+      # FIREBASE_SERVICE_ACCOUNT in the Render dashboard (see
+      # docs/push-notifications.md and docs/google-sign-in.md). Never put the
+      # key here; the two features share one credential.
       - key: FCM_ENABLED
+        value: "false"
+      - key: GOOGLE_SIGN_IN_ENABLED
         value: "false"
       - key: FIREBASE_SERVICE_ACCOUNT
         sync: false
