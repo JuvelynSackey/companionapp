@@ -2,20 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../admin/admin_dashboard_screen.dart';
 import '../alerts/alerts_screen.dart';
-import '../analytics/analytics_screen.dart';
 import '../assistant/assistant_screen.dart';
 import '../auth/session_controller.dart';
 import '../dashboard/dashboard_screen.dart';
-import '../events/events_screen.dart';
 import '../exams/exams_screen.dart';
-import '../locations/locations_screen.dart';
 import '../onboarding/institution_controller.dart';
 import '../profile/digital_id_screen.dart';
 import '../resources/resources_screen.dart';
-import '../student_hub/student_hub_screen.dart';
 import '../timetable/timetable_screen.dart';
-import '../tutor/tutor_screen.dart';
+import '../student_hub/student_hub_screen.dart';
 import 'nav_providers.dart';
+
+String _initials(String? fullName) {
+  final parts = (fullName ?? '').trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+  if (parts.isEmpty) return '?';
+  final first = parts.first[0];
+  final last = parts.length > 1 ? parts.last[0] : '';
+  return (first + last).toUpperCase();
+}
 
 const _tabTitles = {
   AppTab.dashboard: 'Dashboard',
@@ -52,39 +56,24 @@ class AppShell extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.place_outlined),
-            tooltip: 'Campus Locations',
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LocationsScreen())),
-          ),
-          IconButton(
-            icon: const Icon(Icons.event_outlined),
-            tooltip: 'Events',
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EventsScreen())),
-          ),
-          IconButton(
-            icon: const Icon(Icons.storefront_outlined),
-            tooltip: 'Student Hub',
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentHubScreen())),
-          ),
-          IconButton(
-            icon: const Icon(Icons.insights_outlined),
-            tooltip: 'Analytics',
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AnalyticsScreen())),
-          ),
-          IconButton(
             icon: const Icon(Icons.auto_awesome_outlined),
             tooltip: 'AI Assistant',
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AssistantScreen())),
           ),
-          IconButton(
-            icon: const Icon(Icons.school_outlined),
-            tooltip: 'AI Tutor',
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const TutorScreen())),
-          ),
           PopupMenuButton<String>(
-            icon: const CircleAvatar(child: Icon(Icons.person)),
+            tooltip: 'Account',
+            icon: CircleAvatar(
+              radius: 17,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: Text(
+                _initials(user?.fullName),
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+            ),
             onSelected: (value) {
-              if (value == 'signOut') {
+              if (value == 'studentHub') {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentHubScreen()));
+              } else if (value == 'signOut') {
                 ref.read(sessionControllerProvider.notifier).signOut();
               } else if (value == 'digitalId') {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DigitalIdScreen()));
@@ -99,6 +88,7 @@ class AppShell extends ConsumerWidget {
               ),
               const PopupMenuDivider(),
               const PopupMenuItem(value: 'digitalId', child: Text('Digital Student ID')),
+              const PopupMenuItem(value: 'studentHub', child: Text('Student Hub')),
               if (user?.isAdmin ?? false) const PopupMenuItem(value: 'admin', child: Text('Admin panel')),
               const PopupMenuItem(value: 'signOut', child: Text('Sign out')),
             ],

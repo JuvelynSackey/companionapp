@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// Campus Companion Design System — charcoal/slate canvas with a cyan
-/// "intelligence accent" as the signature primary color in both light and
-/// dark mode. Institution branding is demoted to a secondary accent
-/// (badges, chips, the Digital ID card) rather than driving the primary
-/// color scheme, per the design system decision.
+/// Campus Companion Design System — slate neutrals with one brand green,
+/// the same green as the Welcome/Login screens (LandingColors), so the app
+/// reads as one product before and after sign-in. Institution branding is a
+/// secondary accent (badges, chips, the Digital ID card), not the primary
+/// color scheme.
 class CampusColors {
   CampusColors._();
 
@@ -19,9 +19,12 @@ class CampusColors {
   static const slate800 = Color(0xFF1E293B);
   static const slate900 = Color(0xFF0F172A);
 
-  /// The signature "intelligence accent" — same hue in both themes.
-  static const cyan = Color(0xFF06B6D4);
-  static const sky = Color(0xFF38BDF8);
+  static const brand = Color(0xFF2E7D32);
+  static const brandDeep = Color(0xFF0B2E13);
+  /// Lighter brand tint, readable on dark backgrounds.
+  static const brandLight = Color(0xFF81C784);
+  static const brandSoft = Color(0xFFE8F5E9);
+  static const canvas = Color(0xFFF4F7F4);
 
   static const error = Color(0xFFDC2626);
 }
@@ -46,14 +49,14 @@ class CampusCompanionTheme extends ThemeExtension<CampusCompanionTheme> {
 
   static const dark = CampusCompanionTheme(
     cardBackground: CampusColors.slate800,
-    accentGlow: CampusColors.cyan,
+    accentGlow: CampusColors.brandLight,
     textMuted: CampusColors.slate400,
     subtleBorder: Color(0x1FFFFFFF), // ~12% white
   );
 
   static const light = CampusCompanionTheme(
     cardBackground: Colors.white,
-    accentGlow: CampusColors.cyan,
+    accentGlow: CampusColors.brand,
     textMuted: CampusColors.slate500,
     subtleBorder: Color(0x14000000), // ~8% black
   );

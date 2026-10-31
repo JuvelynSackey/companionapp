@@ -29,10 +29,15 @@ class _InstitutionPickerScreenState extends ConsumerState<InstitutionPickerScree
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Welcome to Campus Companion', style: Theme.of(context).textTheme.headlineSmall),
+                  Text(
+                    'STEP 1 OF 2',
+                    style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700, fontSize: 12, letterSpacing: 1.1),
+                  ),
+                  const SizedBox(height: 6),
+                  Text('Choose your institution', style: Theme.of(context).textTheme.headlineSmall),
                   const SizedBox(height: 8),
                   Text(
-                    'Pick your institution to personalize your branding.',
+                    "This sets your grading scale and your institution's branding.",
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
@@ -85,7 +90,9 @@ class _InstitutionPickerScreenState extends ConsumerState<InstitutionPickerScree
             Padding(
               padding: const EdgeInsets.all(16),
               child: FilledButton(
-                style: Theme.of(context).campusTheme.primaryButtonStyle,
+                style: Theme.of(context).campusTheme.primaryButtonStyle.copyWith(
+                      minimumSize: const WidgetStatePropertyAll(Size.fromHeight(54)),
+                    ),
                 onPressed: _selected == null || _confirming
                     ? null
                     : () async {

@@ -69,33 +69,37 @@ class _RootGate extends ConsumerWidget {
       ref.read(announcementPushBridgeProvider).stop();
     }
 
-    // A restore failure here means the backend couldn't be reached to
-    // validate the token (not that the token was rejected — a 401 is
-    // handled inside AuthRepository.restoreSession and surfaces as a plain
-    // signed-out state, not an error) — so this offers a retry instead of
-    // dumping the student at Sign In as if they'd been logged out.
-    return Scaffold(
-      body: AsyncValueView<AppUser?>(
-        value: session,
-        onRetry: () => ref.invalidate(sessionControllerProvider),
-        data: (context, user) {
-          final expired = ref.watch(sessionExpiredProvider);
-          final status = user != null
-              ? AuthStatus.authenticated
-              : (expired ? AuthStatus.sessionExpired : AuthStatus.unauthenticated);
+    Widget gate(BuildContext context, AppUser? user) {
+      final expired = ref.watch(sessionExpiredProvider);
+      final status = user != null
+          ? AuthStatus.authenticated
+          : (expired ? AuthStatus.sessionExpired : AuthStatus.unauthenticated);
 
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            child: switch (status) {
-              AuthStatus.authenticated => const AppShell(key: ValueKey('shell')),
-              AuthStatus.sessionExpired =>
-                const SignInScreen(key: ValueKey('signin-expired'), showExpiredNotice: true),
-              AuthStatus.unauthenticated || AuthStatus.initializing =>
-                const SignInScreen(key: ValueKey('signin')),
-            },
-          );
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: switch (status) {
+          AuthStatus.authenticated => const AppShell(key: ValueKey('shell')),
+          AuthStatus.sessionExpired => const SignInScreen(key: ValueKey('signin-expired'), showExpiredNotice: true),
+          AuthStatus.unauthenticated || AuthStatus.initializing => const SignInScreen(key: ValueKey('signin')),
         },
-      ),
+      );
+    }
+
+    // Once the session has a value, a loading or error state is a sign-in
+    // attempt in progress or failed (SessionController keeps the previous value
+    // for those), and the sign-in screen shows its own spinner and message.
+    // Without a value, the restore at launch is still loading, or failed
+    // because the backend couldn't be reached to validate the token (a 401 is
+    // handled inside AuthRepository.restoreSession as a plain signed-out
+    // state): that offers a retry rather than dumping the student at Sign In.
+    return Scaffold(
+      body: session.hasValue
+          ? gate(context, session.valueOrNull)
+          : AsyncValueView<AppUser?>(
+              value: session,
+              onRetry: () => ref.invalidate(sessionControllerProvider),
+              data: gate,
+            ),
     );
   }
 }

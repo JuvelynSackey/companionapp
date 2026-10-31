@@ -42,20 +42,21 @@ Future<Widget> _app({required FakeGoogleAuthService google, required FakeGoogleA
 Finder get _googleButton => find.widgetWithText(OutlinedButton, 'Continue with Google');
 
 void main() {
-  testWidgets('not configured: the Google button is disabled and says Coming soon', (tester) async {
+  testWidgets('not configured: the Google button keeps its normal label and stays tappable', (tester) async {
     await tester.pumpWidget(await _app(google: FakeGoogleAuthService(available: false), api: FakeGoogleAuthApi()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Continue with Google (Coming soon)'), findsOneWidget);
-    final button = tester.widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Continue with Google (Coming soon)'));
-    expect(button.onPressed, isNotNull, reason: 'tappable so it can show the Coming soon message');
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.textContaining('Coming soon'), findsNothing);
+    final button = tester.widget<OutlinedButton>(_googleButton);
+    expect(button.onPressed, isNotNull, reason: 'tappable so it can show the coming-soon notice');
   });
 
   testWidgets('tapping it while not configured shows a Coming soon message', (tester) async {
     await tester.pumpWidget(await _app(google: FakeGoogleAuthService(available: false), api: FakeGoogleAuthApi()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Continue with Google (Coming soon)'));
+    await tester.tap(find.text('Continue with Google'));
     await tester.pump();
 
     expect(find.text('Google sign-in is coming soon.'), findsOneWidget);

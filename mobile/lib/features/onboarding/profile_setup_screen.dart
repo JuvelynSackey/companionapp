@@ -38,14 +38,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           programme: _programmeController.text.trim(),
         ));
     await ref.read(onboardingControllerProvider.notifier).complete();
-    // _RootGate (below this pushed route) has now rebuilt to show the app
-    // shell — pop so that becomes visible instead of staying on this screen.
-    if (mounted) Navigator.of(context).pop();
+    _backToRoot();
+  }
+
+  /// _RootGate (the first route) has now rebuilt past onboarding. The picker
+  /// and this screen are both pushed routes above it (Welcome pushes the
+  /// picker, the picker pushes this), so clear both, not just this one.
+  void _backToRoot() {
+    if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   Future<void> _skip() async {
     await ref.read(onboardingControllerProvider.notifier).complete();
-    if (mounted) Navigator.of(context).pop();
+    _backToRoot();
   }
 
   @override
@@ -58,7 +63,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Your Profile', style: Theme.of(context).textTheme.headlineSmall),
+              Text(
+                'STEP 2 OF 2',
+                style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700, fontSize: 12, letterSpacing: 1.1),
+              ),
+              const SizedBox(height: 6),
+              Text('Your profile', style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 8),
               Text(
                 'Optional — personalizes your Digital ID card. Stored on this device only, never sent anywhere.',

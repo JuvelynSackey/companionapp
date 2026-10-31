@@ -72,8 +72,8 @@ class _ExamModeScreenState extends ConsumerState<ExamModeScreen> {
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: CampusColors.sky,
-                    side: const BorderSide(color: CampusColors.sky),
+                    foregroundColor: CampusColors.brandLight,
+                    side: const BorderSide(color: CampusColors.brandLight),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   icon: const Icon(Icons.directions_outlined),
@@ -120,7 +120,7 @@ class _Countdown extends StatelessWidget {
       children: [
         Text(
           isPast ? 'Exam has started' : 'Starts in',
-          style: TextStyle(color: isPast ? Colors.redAccent : CampusColors.sky, fontSize: 14),
+          style: TextStyle(color: isPast ? Colors.redAccent : CampusColors.brandLight, fontSize: 14),
         ),
         const SizedBox(height: 8),
         Text(

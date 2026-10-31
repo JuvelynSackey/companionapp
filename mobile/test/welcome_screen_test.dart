@@ -58,7 +58,7 @@ void main() {
 
     expect(find.text('Campus Companion'), findsOneWidget);
     expect(find.text('Get Started'), findsOneWidget);
-    expect(find.text('Continue with Google (Coming soon)'), findsOneWidget, reason: 'no GoogleAuthService override: not available');
+    expect(find.text('Continue with Google'), findsOneWidget, reason: 'same label whether or not Google is configured');
   });
 
   testWidgets('Get Started proceeds to the institution picker', (tester) async {
@@ -83,34 +83,34 @@ void main() {
     expect(find.byType(InstitutionPickerScreen), findsOneWidget);
   });
 
-  testWidgets('when Google sign-in is configured, the button is enabled and says so', (tester) async {
+  testWidgets('when Google sign-in is configured, the button shows its normal label', (tester) async {
     _tallScreen(tester);
     await tester.pumpWidget(await _app(google: FakeGoogleAuthService()));
     await tester.pumpAndSettle();
 
     expect(find.text('Continue with Google'), findsOneWidget);
-    expect(find.text('Continue with Google (Coming soon)'), findsNothing);
   });
 
-  testWidgets('Apple and Guest are always shown disabled, labelled Coming soon', (tester) async {
+  testWidgets('Apple and Guest show their normal labels, with no "Coming soon" anywhere', (tester) async {
     _tallScreen(tester);
     await tester.pumpWidget(await _app(google: FakeGoogleAuthService()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Continue with Apple (Coming soon)'), findsOneWidget);
-    expect(find.text('Continue as Guest (Coming soon)'), findsOneWidget);
+    expect(find.text('Continue with Apple'), findsOneWidget);
+    expect(find.text('Continue as Guest'), findsOneWidget);
+    expect(find.textContaining('Coming soon'), findsNothing);
   });
 
-  testWidgets('tapping Apple or Guest shows a Coming soon message, not nothing', (tester) async {
+  testWidgets('tapping Apple or Guest (not built yet) shows a notice, not nothing', (tester) async {
     _tallScreen(tester);
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Continue with Apple (Coming soon)'));
+    await tester.tap(find.text('Continue with Apple'));
     await tester.pump();
     expect(find.text('Apple sign-in is coming soon.'), findsOneWidget);
 
-    await tester.tap(find.text('Continue as Guest (Coming soon)'));
+    await tester.tap(find.text('Continue as Guest'));
     await tester.pump();
     expect(find.text('Guest mode is coming soon.'), findsOneWidget);
   });

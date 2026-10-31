@@ -26,21 +26,27 @@ class SessionController extends AsyncNotifier<AppUser?> {
     return result.user;
   }
 
+  /// Runs a sign-in action while keeping the current (signed-out) value under
+  /// the loading and error states. AppRoot's gate only shows its full-page
+  /// error/spinner when there is no value at all (a failed session restore);
+  /// a failed login keeps a value, so the form stays on screen with its error.
+  Future<void> _attempt(Future<AppUser?> Function() action) async {
+    final previous = state;
+    state = const AsyncLoading<AppUser?>().copyWithPrevious(previous);
+    state = (await AsyncValue.guard(action)).copyWithPrevious(previous);
+  }
+
   Future<void> login({required String email, required String password}) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(
-      () => ref.read(authRepositoryProvider).login(email: email, password: password),
-    );
-    if (state.hasValue) ref.read(sessionExpiredProvider.notifier).state = false;
+    await _attempt(() => ref.read(authRepositoryProvider).login(email: email, password: password));
+    if (!state.hasError) ref.read(sessionExpiredProvider.notifier).state = false;
   }
 
   /// If the person cancels the Google account picker, this leaves [state] as
   /// `AsyncValue.data(null)` — the same "not signed in" state as before the
   /// tap, not an error, so the UI shows nothing extra and just stays put.
   Future<void> loginWithGoogle() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => ref.read(authRepositoryProvider).loginWithGoogle());
-    if (state.hasValue && state.value != null) ref.read(sessionExpiredProvider.notifier).state = false;
+    await _attempt(() => ref.read(authRepositoryProvider).loginWithGoogle());
+    if (!state.hasError && state.value != null) ref.read(sessionExpiredProvider.notifier).state = false;
   }
 
   Future<void> register({
@@ -48,11 +54,10 @@ class SessionController extends AsyncNotifier<AppUser?> {
     required String email,
     required String password,
   }) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(
+    await _attempt(
       () => ref.read(authRepositoryProvider).register(fullName: fullName, email: email, password: password),
     );
-    if (state.hasValue) ref.read(sessionExpiredProvider.notifier).state = false;
+    if (!state.hasError) ref.read(sessionExpiredProvider.notifier).state = false;
   }
 
   Future<void> signOut() async {

@@ -39,12 +39,12 @@ class LandingStyle {
         textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
       );
 
-  static ButtonStyle outlinedButtonStyle({bool disabled = false}) => OutlinedButton.styleFrom(
-        backgroundColor: disabled ? LandingColors.fieldFill : LandingColors.green100,
-        foregroundColor: disabled ? LandingColors.inkMuted : LandingColors.ink,
+  static ButtonStyle get outlinedButtonStyle => OutlinedButton.styleFrom(
+        backgroundColor: LandingColors.green100,
+        foregroundColor: LandingColors.ink,
         disabledForegroundColor: LandingColors.inkMuted,
         minimumSize: const Size.fromHeight(52),
-        side: BorderSide(color: disabled ? LandingColors.border : LandingColors.green200),
+        side: const BorderSide(color: LandingColors.green200),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(buttonRadius)),
         textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       );

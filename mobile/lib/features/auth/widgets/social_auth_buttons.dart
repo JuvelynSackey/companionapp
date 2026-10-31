@@ -7,10 +7,10 @@ import '../session_controller.dart';
 
 /// The Google / Apple / Guest row shared by WelcomeScreen and SignInScreen.
 /// Google is wired to the real sign-in flow (see docs/google-sign-in.md for
-/// what's needed to turn it on); Apple and Guest are shown to match the
-/// design but are not built — see PROJECT_AUDIT.md. Tapping either shows a
-/// "Coming soon" message rather than silently doing nothing, so it's clear
-/// the button was noticed, not broken.
+/// what's needed to turn it on); Apple and Guest are not built yet — see
+/// PROJECT_AUDIT.md. The labels carry no "(Coming soon)" suffix, but tapping
+/// a button whose feature isn't available still shows a short notice rather
+/// than silently doing nothing.
 class SocialAuthButtons extends ConsumerWidget {
   const SocialAuthButtons({super.key});
 
@@ -42,7 +42,7 @@ class SocialAuthButtons extends ConsumerWidget {
     return Column(
       children: [
         OutlinedButton.icon(
-          style: LandingStyle.outlinedButtonStyle(disabled: !googleAvailable),
+          style: LandingStyle.outlinedButtonStyle,
           icon: submitting
               ? const SizedBox(
                   height: 16,
@@ -50,7 +50,7 @@ class SocialAuthButtons extends ConsumerWidget {
                   child: CircularProgressIndicator(strokeWidth: 2, color: LandingColors.inkMuted),
                 )
               : const _LetterBadge('G', color: Color(0xFF4285F4)),
-          label: Text(googleAvailable ? 'Continue with Google' : 'Continue with Google (Coming soon)'),
+          label: const Text('Continue with Google'),
           onPressed: submitting
               ? null
               : googleAvailable
@@ -59,16 +59,16 @@ class SocialAuthButtons extends ConsumerWidget {
         ),
         const SizedBox(height: 10),
         OutlinedButton.icon(
-          style: LandingStyle.outlinedButtonStyle(disabled: true),
+          style: LandingStyle.outlinedButtonStyle,
           icon: const Icon(Icons.apple, size: 20),
-          label: const Text('Continue with Apple (Coming soon)'),
+          label: const Text('Continue with Apple'),
           onPressed: () => _comingSoon(context, 'Apple sign-in'),
         ),
         const SizedBox(height: 10),
         OutlinedButton.icon(
-          style: LandingStyle.outlinedButtonStyle(disabled: true),
+          style: LandingStyle.outlinedButtonStyle,
           icon: const Icon(Icons.person_outline, size: 20),
-          label: const Text('Continue as Guest (Coming soon)'),
+          label: const Text('Continue as Guest'),
           onPressed: () => _comingSoon(context, 'Guest mode'),
         ),
       ],

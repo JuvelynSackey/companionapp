@@ -175,11 +175,11 @@ void main() {
     expect(find.byType(SignUpScreen), findsOneWidget);
   });
 
-  testWidgets('the Google row is present, disabled without a GoogleAuthService override', (tester) async {
+  testWidgets('the Google row is present without a GoogleAuthService override', (tester) async {
     _tallScreen(tester);
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
 
-    expect(find.text('Continue with Google (Coming soon)'), findsOneWidget);
+    expect(find.text('Continue with Google'), findsOneWidget);
   });
 }
