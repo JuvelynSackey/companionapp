@@ -7,8 +7,16 @@ provider in the console, and register this app's signing fingerprint so
 Google will talk to it.
 
 Everything on the code side is built and tested. Until you do the console
-step, Google sign-in is **off** and the app behaves exactly as before:
-"Continue with Google" shows, but is disabled, labelled "Coming soon."
+step, Google sign-in is **off**: "Continue with Google" still shows, and
+tapping it says Google sign-in isn't switched on in this version and suggests
+email and password.
+
+**Status on 3 November 2026** (`cd backend && npm run verify:integrations`):
+the service-account credential loads and real Firebase rejects an invalid
+ID token (both verified), but **Google is not enabled as a sign-in provider**
+in Firebase Authentication. No real Google sign-in has been done yet. Re-run
+that command after the console step: the "Google sign-in provider" line should
+change to ENABLED.
 
 ## How it works
 
@@ -52,9 +60,9 @@ A few deliberate choices:
 * **One Google account can only ever belong to one user.** The database
   enforces this (`google_uid` is `UNIQUE`); a conflict comes back as 409, not
   a corrupted link.
-* **Apple sign-in is not built.** Its button is shown in the UI, styled to
-  match, and says "coming soon" when tapped. (Guest mode is built: it is not
-  a sign-in, so it needs nothing from Firebase.)
+* **Apple sign-in is out of scope**, and the app shows no button for it.
+  (Guest mode is built: it is not a sign-in, so it needs nothing from
+  Firebase.)
 
 ## What you need to do
 
@@ -136,8 +144,8 @@ flutter run \
 ```
 
 Without `GOOGLE_SIGN_IN_ENABLED=true`, Firebase Auth/Google Sign-In are never
-touched and the button stays disabled, labelled "Coming soon" — same
-off-by-default pattern as push. `GOOGLE_SERVER_CLIENT_ID` can technically be
+touched and tapping the button only shows the "isn't switched on" message:
+the same off-by-default pattern as push. `GOOGLE_SERVER_CLIENT_ID` can technically be
 left out, but on Android the native picker is unlikely to return a usable ID
 token without it (see `google_auth_bootstrap.dart`).
 
@@ -176,6 +184,7 @@ token without it (see `google_auth_bootstrap.dart`).
   setup for the native picker; not done.
 * No password-reset or "set a password" flow for a Google-only account yet —
   it signs in with Google and nothing else until one is added.
-* Apple sign-in is visual only ("coming soon"): see the note at the top.
+* No Apple sign-in, and no in-app password reset (the Login screen has no
+  "Forgot Password?" link).
 * No account unlinking in the app yet (removing a Google link while keeping
   the password, or vice versa).
