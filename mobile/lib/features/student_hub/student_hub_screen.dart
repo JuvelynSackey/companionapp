@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/campus_companion_theme.dart';
 import '../../data/models/student_hub_models.dart';
 import '../../widgets/campus_card_tile.dart';
+import '../../widgets/demo_data_banner.dart';
 import 'momo_payment_dialog.dart';
 import 'report_lost_found_dialog.dart';
 import 'student_hub_providers.dart';
@@ -30,8 +31,14 @@ class StudentHubScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: const TabBarView(
-          children: [_ShuttlesTab(), _DuesTab(), _LostFoundTab()],
+        body: const Column(
+          children: [
+            DemoDataBanner(
+              'Shuttle times, dues and lost-and-found items are samples built into the app, not live data. '
+              'MoMo payments are simulated: no money moves.',
+            ),
+            Expanded(child: TabBarView(children: [_ShuttlesTab(), _DuesTab(), _LostFoundTab()])),
+          ],
         ),
       ),
     );
@@ -167,7 +174,7 @@ class _DuesTab extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
-                      child: Text('PAID', style: TextStyle(color: Colors.green.shade700, fontWeight: FontWeight.bold, fontSize: 11)),
+                      child: Text('PAID (SIMULATED)', style: TextStyle(color: Colors.green.shade700, fontWeight: FontWeight.bold, fontSize: 11)),
                     ),
                 ],
               ),

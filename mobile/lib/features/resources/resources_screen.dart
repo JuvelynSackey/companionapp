@@ -6,6 +6,7 @@ import '../../core/theme/campus_companion_theme.dart';
 import '../../data/models/institution_profile.dart';
 import '../../data/models/resource_models.dart';
 import '../../widgets/campus_card_tile.dart';
+import '../../widgets/demo_data_banner.dart';
 import '../onboarding/institution_controller.dart';
 import '../quizzes/quizzes_screen.dart';
 import 'resources_providers.dart';
@@ -72,6 +73,13 @@ class _LibrariesTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final campus = Theme.of(context).campusTheme;
+    return Column(children: [
+      const DemoDataBanner('Sample libraries and seat counts, not live occupancy.'),
+      Expanded(child: _librariesList(campus)),
+    ]);
+  }
+
+  Widget _librariesList(CampusCompanionTheme campus) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: ResourceFixtures.libraries.length,
@@ -119,6 +127,13 @@ class _PastPapersTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final campus = Theme.of(context).campusTheme;
+    return Column(children: [
+      const DemoDataBanner('A sample list of past papers built into the app. To turn a real past paper into a quiz, use the Quizzes tab.'),
+      Expanded(child: _pastPapersList(campus)),
+    ]);
+  }
+
+  Widget _pastPapersList(CampusCompanionTheme campus) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: ResourceFixtures.pastPapers.length,
@@ -200,6 +215,16 @@ class _DocumentsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final campus = Theme.of(context).campusTheme;
+    return Column(children: [
+      const DemoDataBanner(
+        'Document requests are only saved on this phone. Nothing is sent to Academic Affairs: '
+        "apply through your institution's official portal.",
+      ),
+      Expanded(child: _documentsList(context, campus)),
+    ]);
+  }
+
+  Widget _documentsList(BuildContext context, CampusCompanionTheme campus) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -242,8 +267,11 @@ class _DocumentsTab extends StatelessWidget {
         const SizedBox(height: 16),
         Text('Student Handbook', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
-        Container(
+        // CampusCardTile, not a bare decorated Container: the ExpansionTiles'
+        // ListTiles need a Material between them and the card's colour.
+        CampusCardTile(
           decoration: campus.cardDecoration(),
+          radius: campus.cardRadius,
           child: Column(
             children: [
               for (final section in ResourceFixtures.handbookSections)
@@ -292,9 +320,9 @@ class _DocumentRequestCard extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Request logged · Ref: ${latest.referenceNumber}', style: TextStyle(color: campus.accentGlow, fontWeight: FontWeight.bold, fontSize: 12)),
+                  Text('Demo request saved · Ref: ${latest.referenceNumber}', style: TextStyle(color: campus.accentGlow, fontWeight: FontWeight.bold, fontSize: 12)),
                   Text(
-                    'Submitted ${DateFormat('MMM d, h:mm a').format(latest.requestedAt)} — collect the certified copy from Academic Affairs.',
+                    'Saved on this phone ${DateFormat('MMM d, h:mm a').format(latest.requestedAt)}. Not sent to Academic Affairs.',
                     style: TextStyle(color: campus.textMuted, fontSize: 11),
                   ),
                 ],
@@ -309,7 +337,7 @@ class _DocumentRequestCard extends ConsumerWidget {
                 final request = await ref.read(documentRequestControllerProvider.notifier).request(type);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Request logged — reference ${request.referenceNumber}')),
+                    SnackBar(content: Text('Demo request saved on this phone (ref ${request.referenceNumber}). Nothing was sent.')),
                   );
                 }
               },

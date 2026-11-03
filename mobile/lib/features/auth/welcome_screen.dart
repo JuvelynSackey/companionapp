@@ -4,8 +4,8 @@ import '../onboarding/institution_picker_screen.dart';
 import 'widgets/social_auth_buttons.dart';
 
 /// The very first screen the app shows, before onboarding or sign-in —
-/// styled after the reference design (illustration, headline, Google/Apple/
-/// Guest row). "Get Started" and "Already have an account? Log in" both lead
+/// styled after the reference design (illustration, headline, Google/Guest
+/// row). "Get Started" and "Already have an account? Log in" both lead
 /// into the existing onboarding flow (InstitutionPickerScreen) first: this
 /// app's institution/branding choice is local to the device, not the
 /// account, so even a returning user on a new device still needs to make it

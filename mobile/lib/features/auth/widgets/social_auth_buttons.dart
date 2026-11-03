@@ -7,12 +7,15 @@ import '../../onboarding/institution_controller.dart';
 import '../../onboarding/institution_picker_screen.dart';
 import '../session_controller.dart';
 
-/// The Google / Apple / Guest row shared by WelcomeScreen and SignInScreen.
-/// Google is wired to the real sign-in flow (see docs/google-sign-in.md for
-/// what's needed to turn it on); Guest opens the GuestShell; Apple is not
-/// built yet — see PROJECT_AUDIT.md. The labels carry no "(Coming soon)"
-/// suffix, but tapping a button whose feature isn't available still shows a
-/// short notice rather than silently doing nothing.
+/// The Google / Guest row shared by WelcomeScreen and SignInScreen. Google is
+/// wired to the real sign-in flow (see docs/google-sign-in.md for what's
+/// needed to turn it on); until that is done in a build, tapping it says so
+/// instead of silently doing nothing. Guest opens the GuestShell. There is no
+/// Apple button: Apple sign-in is out of scope, and the app shows no button
+/// for a sign-in method it does not have.
+/// Shown when Google is tapped in a build where it isn't configured yet.
+const googleNotEnabledMessage = "Google sign-in isn't switched on in this version yet. Use email and password.";
+
 class SocialAuthButtons extends ConsumerWidget {
   const SocialAuthButtons({super.key});
 
@@ -40,10 +43,10 @@ class SocialAuthButtons extends ConsumerWidget {
     }
   }
 
-  void _comingSoon(BuildContext context, String feature) {
+  void _googleNotEnabled(BuildContext context) {
     ScaffoldMessenger.of(context)
       ..removeCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('$feature is coming soon.')));
+      ..showSnackBar(const SnackBar(content: Text(googleNotEnabledMessage)));
   }
 
   @override
@@ -67,14 +70,7 @@ class SocialAuthButtons extends ConsumerWidget {
               ? null
               : googleAvailable
                   ? () => _continueWithGoogle(context, ref)
-                  : () => _comingSoon(context, 'Google sign-in'),
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
-          style: LandingStyle.outlinedButtonStyle,
-          icon: const Icon(Icons.apple, size: 20),
-          label: const Text('Continue with Apple'),
-          onPressed: () => _comingSoon(context, 'Apple sign-in'),
+                  : () => _googleNotEnabled(context),
         ),
         const SizedBox(height: 10),
         OutlinedButton.icon(

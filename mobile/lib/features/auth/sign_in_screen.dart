@@ -53,12 +53,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
   }
 
-  void _comingSoon(String feature) {
-    ScaffoldMessenger.of(context)
-      ..removeCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('$feature is coming soon.')));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -129,14 +123,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       ),
                       validator: (v) => (v == null || v.length < 8) ? 'Minimum 8 characters' : null,
                     ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () => _comingSoon('Password reset'),
-                        child: const Text('Forgot Password?', style: TextStyle(color: LandingColors.inkMuted)),
-                      ),
-                    ),
+                    // No "Forgot Password?" link: password reset is not built,
+                    // and the screen offers nothing it cannot do.
                     if (_error != null) ...[
                       const SizedBox(height: 8),
                       Text(_error!, style: const TextStyle(color: LandingColors.error)),

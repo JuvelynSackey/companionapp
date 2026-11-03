@@ -75,7 +75,6 @@ void main() {
     expect(find.text('Login'), findsNWidgets(2), reason: 'the headline and the submit button both say "Login"');
     expect(_email, findsOneWidget);
     expect(_password, findsOneWidget);
-    expect(find.text('Forgot Password?'), findsOneWidget);
   });
 
   testWidgets('the expired-session notice shows only when asked for', (tester) async {
@@ -153,15 +152,15 @@ void main() {
     expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
   });
 
-  testWidgets('tapping Forgot Password shows a Coming soon message', (tester) async {
+  testWidgets('offers no Forgot Password or Apple sign-in, since neither is built', (tester) async {
     _tallScreen(tester);
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Forgot Password?'));
-    await tester.pump();
-
-    expect(find.text('Password reset is coming soon.'), findsOneWidget);
+    expect(find.text('Forgot Password?'), findsNothing);
+    expect(find.textContaining('Apple'), findsNothing);
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.text('Continue as Guest'), findsOneWidget);
   });
 
   testWidgets('"Need an account? Sign up" opens the sign-up screen', (tester) async {

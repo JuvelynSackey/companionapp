@@ -49,17 +49,17 @@ void main() {
     expect(find.text('Continue with Google'), findsOneWidget);
     expect(find.textContaining('Coming soon'), findsNothing);
     final button = tester.widget<OutlinedButton>(_googleButton);
-    expect(button.onPressed, isNotNull, reason: 'tappable so it can show the coming-soon notice');
+    expect(button.onPressed, isNotNull, reason: 'tappable so it can say why it does nothing yet');
   });
 
-  testWidgets('tapping it while not configured shows a Coming soon message', (tester) async {
+  testWidgets('tapping it while not configured says it is not switched on, and points to email', (tester) async {
     await tester.pumpWidget(await _app(google: FakeGoogleAuthService(available: false), api: FakeGoogleAuthApi()));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Continue with Google'));
     await tester.pump();
 
-    expect(find.text('Google sign-in is coming soon.'), findsOneWidget);
+    expect(find.text(googleNotEnabledMessage), findsOneWidget);
   });
 
   testWidgets('configured: tapping signs in, no error shown', (tester) async {

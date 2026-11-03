@@ -92,24 +92,15 @@ void main() {
     expect(find.text('Continue with Google'), findsOneWidget);
   });
 
-  testWidgets('Apple and Guest show their normal labels, with no "Coming soon" anywhere', (tester) async {
+  testWidgets('offers Google and Guest only: no button for a sign-in method that is not built', (tester) async {
     _tallScreen(tester);
     await tester.pumpWidget(await _app(google: FakeGoogleAuthService()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Continue with Apple'), findsOneWidget);
     expect(find.text('Continue as Guest'), findsOneWidget);
-    expect(find.textContaining('Coming soon'), findsNothing);
-  });
-
-  testWidgets('tapping Apple (not built yet) shows a notice, not nothing', (tester) async {
-    _tallScreen(tester);
-    await tester.pumpWidget(await _app());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Continue with Apple'));
-    await tester.pump();
-    expect(find.text('Apple sign-in is coming soon.'), findsOneWidget);
+    expect(find.textContaining('Apple'), findsNothing);
+    expect(find.byIcon(Icons.apple), findsNothing);
+    expect(find.textContaining('oming soon'), findsNothing);
   });
 
   testWidgets('Continue as Guest turns on guest mode and goes on to the institution picker', (tester) async {
