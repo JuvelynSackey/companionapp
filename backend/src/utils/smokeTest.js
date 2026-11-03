@@ -389,6 +389,45 @@ async function run() {
     const leaked = (studentToday.data?.schedule ?? []).some((c) => createdScheduleIds.includes(c.scheduleId));
     check("today never includes another user's classes", studentToday.status === 200 && !leaked);
 
+    console.log('\nModule 2c — schedule ownership (the owner comes from the token, never the request)');
+    const studentId = me.data?.user?.userId;
+    const studentWeekBefore = (await call('GET', '/schedule', { token: studentToken })).data?.schedule ?? [];
+    const spoofed = await call('POST', '/schedule', {
+      token: adminToken,
+      body: { userId: studentId, courseId: courseByCode.get('DCIT 201')?.courseId, dayOfWeek: 6, startTime: '18:00', endTime: '19:00', room: 'Spoof Room' },
+    });
+    if (spoofed.data?.scheduleId) createdScheduleIds.push(spoofed.data.scheduleId);
+    const studentWeekAfter = (await call('GET', '/schedule', { token: studentToken })).data?.schedule ?? [];
+    const adminSaturday = (await call('GET', '/schedule?day=6', { token: adminToken })).data?.schedule ?? [];
+    check('a userId in the request body is ignored: nothing lands on that user\'s timetable',
+      spoofed.status === 201 && studentWeekAfter.length === studentWeekBefore.length
+        && !studentWeekAfter.some((c) => c.scheduleId === spoofed.data?.scheduleId),
+      `status ${spoofed.status}, student classes ${studentWeekBefore.length} -> ${studentWeekAfter.length}`);
+    check('...the entry goes on the caller\'s own timetable instead',
+      adminSaturday.some((c) => c.scheduleId === spoofed.data?.scheduleId));
+
+    const studentCreate = await call('POST', '/schedule', {
+      token: studentToken,
+      body: { courseId: courseByCode.get('DCIT 201')?.courseId, dayOfWeek: 6, startTime: '20:00', endTime: '21:00' },
+    });
+    check('a student cannot create schedule entries (403)', studentCreate.status === 403, `got ${studentCreate.status}`);
+    const anonCreate = await call('POST', '/schedule', {
+      body: { courseId: courseByCode.get('DCIT 201')?.courseId, dayOfWeek: 6, startTime: '20:00', endTime: '21:00' },
+    });
+    check('creating a schedule entry requires a token (401)', anonCreate.status === 401, `got ${anonCreate.status}`);
+
+    const studentScheduleDelete = await call('DELETE', `/schedule/${spoofed.data?.scheduleId}`, { token: studentToken });
+    check('a student cannot delete schedule entries (403)', studentScheduleDelete.status === 403, `got ${studentScheduleDelete.status}`);
+    const anonDelete = await call('DELETE', `/schedule/${spoofed.data?.scheduleId}`);
+    check('deleting a schedule entry requires a token (401)', anonDelete.status === 401, `got ${anonDelete.status}`);
+
+    const studentEntryId = studentWeekBefore[0]?.scheduleId;
+    const crossDelete = await call('DELETE', `/schedule/${studentEntryId}`, { token: adminToken });
+    const studentWeekStill = (await call('GET', '/schedule', { token: studentToken })).data?.schedule ?? [];
+    check("an admin cannot delete another user's entry (404, and it is still there)",
+      !!studentEntryId && crossDelete.status === 404 && studentWeekStill.some((c) => c.scheduleId === studentEntryId),
+      `status ${crossDelete.status}`);
+
     for (const id of createdScheduleIds.splice(0)) {
       await call('DELETE', `/schedule/${id}`, { token: adminToken });
     }

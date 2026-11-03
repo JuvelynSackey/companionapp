@@ -83,10 +83,15 @@ export async function listToday(req, res, next) {
   }
 }
 
-/** POST /api/schedule - admin only, per the proposal's "Update schedules". */
+/**
+ * POST /api/schedule - admin only, per the proposal's "Update schedules".
+ * The entry always goes on the caller's own timetable: the owner comes from
+ * the verified token, never from the request body (createScheduleSchema has
+ * no userId, so a supplied one is stripped before this runs).
+ */
 export async function createScheduleEntry(req, res, next) {
   const { courseId, dayOfWeek, startTime, endTime, room } = req.body;
-  const targetUserId = req.body.userId ?? req.user.userId;
+  const ownerId = req.user.userId;
 
   if (endTime <= startTime) {
     return res.status(400).json({ error: 'endTime must be after startTime' });
@@ -97,13 +102,13 @@ export async function createScheduleEntry(req, res, next) {
       `INSERT INTO schedules (user_id, course_id, day_of_week, start_time, end_time, room)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING schedule_id`,
-      [targetUserId, courseId, dayOfWeek, startTime, endTime, room ?? null]
+      [ownerId, courseId, dayOfWeek, startTime, endTime, room ?? null]
     );
 
     return res.status(201).json({ scheduleId: rows[0].schedule_id });
   } catch (err) {
     if (err.code === '23503') {
-      return res.status(400).json({ error: 'Unknown course or user' });
+      return res.status(400).json({ error: 'Unknown course' });
     }
     if (err.code === '23505') {
       return res.status(409).json({ error: 'That class is already on the timetable' });
@@ -112,12 +117,16 @@ export async function createScheduleEntry(req, res, next) {
   }
 }
 
-/** DELETE /api/schedule/:id */
+/**
+ * DELETE /api/schedule/:id - admin only, and only the caller's own entries.
+ * Another user's entry gets the same 404 as a missing one, so the route
+ * does not reveal which ids exist on other timetables.
+ */
 export async function deleteScheduleEntry(req, res, next) {
   try {
     const { rowCount } = await query(
-      'DELETE FROM schedules WHERE schedule_id = $1',
-      [req.params.id]
+      'DELETE FROM schedules WHERE schedule_id = $1 AND user_id = $2',
+      [req.params.id, req.user.userId]
     );
 
     if (rowCount === 0) {

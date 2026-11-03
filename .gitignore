@@ -29,6 +29,7 @@ mobile/.flutter-plugins-dependencies
 mobile/.pub-cache/
 mobile/.pub/
 mobile/build/
+mobile/android/build/
 
 # Firebase. The service-account key is a SECRET (it can send notifications as the
 # app); google-services.json is per-project client config. Neither is committed.
