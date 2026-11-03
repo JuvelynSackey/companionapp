@@ -44,11 +44,15 @@ class ApiClient {
   /// every call site to notice and do it themselves. onSessionExpired then
   /// propagates this to the app state immediately, rather than leaving the
   /// student on a broken screen until the next app launch.
+  ///
+  /// Only a 401 on a request that carried a token counts: a guest (no token)
+  /// hitting an account-only route has no session to expire, and must not be
+  /// thrown onto the "your session expired" screen.
   Future<T> guard<T>(Future<T> Function() request) async {
     try {
       return await request();
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
+      if (e.response?.statusCode == 401 && e.requestOptions.headers['Authorization'] != null) {
         await _tokenStorage.clearToken();
         onSessionExpired?.call();
       }

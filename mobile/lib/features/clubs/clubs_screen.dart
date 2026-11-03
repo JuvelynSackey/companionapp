@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/club.dart';
 import '../../widgets/async_value_view.dart';
+import '../auth/session_controller.dart';
 import 'club_detail_screen.dart';
 import 'club_membership_button.dart';
 import 'clubs_providers.dart';
@@ -59,6 +60,8 @@ class _SearchAndFilters extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(clubFilterProvider);
+    // A guest has no clubs, so "My clubs" would always be empty.
+    final signedIn = ref.watch(sessionControllerProvider).valueOrNull != null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
@@ -73,25 +76,27 @@ class _SearchAndFilters extends ConsumerWidget {
             ),
             onChanged: (value) => ref.read(clubSearchQueryProvider.notifier).state = value,
           ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Wrap(
-              spacing: 8,
-              children: [
-                ChoiceChip(
-                  label: const Text('All'),
-                  selected: filter == ClubFilter.all,
-                  onSelected: (_) => ref.read(clubFilterProvider.notifier).state = ClubFilter.all,
-                ),
-                ChoiceChip(
-                  label: const Text('My clubs'),
-                  selected: filter == ClubFilter.mine,
-                  onSelected: (_) => ref.read(clubFilterProvider.notifier).state = ClubFilter.mine,
-                ),
-              ],
+          if (signedIn) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('All'),
+                    selected: filter == ClubFilter.all,
+                    onSelected: (_) => ref.read(clubFilterProvider.notifier).state = ClubFilter.all,
+                  ),
+                  ChoiceChip(
+                    label: const Text('My clubs'),
+                    selected: filter == ClubFilter.mine,
+                    onSelected: (_) => ref.read(clubFilterProvider.notifier).state = ClubFilter.mine,
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

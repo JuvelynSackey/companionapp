@@ -52,9 +52,9 @@ A few deliberate choices:
 * **One Google account can only ever belong to one user.** The database
   enforces this (`google_uid` is `UNIQUE`); a conflict comes back as 409, not
   a corrupted link.
-* **Backend only — Apple sign-in and Guest mode are not built.** They're shown
-  in the UI, styled to match, but disabled ("Coming soon") until there is a
-  reason to build them for real.
+* **Apple sign-in is not built.** Its button is shown in the UI, styled to
+  match, and says "coming soon" when tapped. (Guest mode is built: it is not
+  a sign-in, so it needs nothing from Firebase.)
 
 ## What you need to do
 
@@ -176,7 +176,6 @@ token without it (see `google_auth_bootstrap.dart`).
   setup for the native picker; not done.
 * No password-reset or "set a password" flow for a Google-only account yet —
   it signs in with Google and nothing else until one is added.
-* Apple sign-in and Guest mode are visual only (disabled, "Coming soon") — see
-  the note at the top. Say if you want either built for real.
+* Apple sign-in is visual only ("coming soon"): see the note at the top.
 * No account unlinking in the app yet (removing a Google link while keeping
   the password, or vice versa).

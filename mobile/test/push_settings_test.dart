@@ -9,11 +9,14 @@ import 'package:mobile/core/services/push_coordinator.dart';
 import 'package:mobile/core/services/push_messaging.dart';
 import 'package:mobile/data/models/notification_preferences.dart';
 import 'package:mobile/features/alerts/push_settings.dart';
+import 'package:mobile/features/auth/session_controller.dart';
 
+import 'support/admin_fakes.dart';
 import 'support/push_fakes.dart';
 
 Widget _app(FakeDeviceApi api, {PushMessaging? messaging, bool active = false}) => ProviderScope(
       overrides: [
+        sessionControllerProvider.overrideWith(() => FakeSessionController(studentUser)),
         deviceApiProvider.overrideWithValue(api),
         pushMessagingProvider.overrideWithValue(messaging ?? FakePushMessaging()),
         pushActiveProvider.overrideWith((ref) => active),

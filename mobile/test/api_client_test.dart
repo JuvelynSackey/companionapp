@@ -23,8 +23,13 @@ class _FakeTokenStorage extends TokenStorage {
   }
 }
 
-DioException _dioErrorWithStatus(int? statusCode) {
-  final options = RequestOptions(path: '/whatever');
+/// [sentToken]: whether the failed request carried an Authorization header
+/// (the interceptor adds one whenever a token is stored; a guest has none).
+DioException _dioErrorWithStatus(int? statusCode, {bool sentToken = true}) {
+  final options = RequestOptions(
+    path: '/whatever',
+    headers: sentToken ? {'Authorization': 'Bearer dead-token'} : null,
+  );
   return DioException(
     requestOptions: options,
     response: statusCode == null
@@ -52,6 +57,31 @@ void main() {
       );
 
       expect(tokenStorage.cleared, isTrue);
+    });
+
+    test('a 401 on a request that carried a token reports the session expired', () async {
+      var expired = 0;
+      final client = ApiClient(_FakeTokenStorage()..saveToken('dead-token'), onSessionExpired: () => expired++);
+
+      await expectLater(client.guard(() async => throw _dioErrorWithStatus(401)), throwsA(isA<ApiException>()));
+
+      expect(expired, 1);
+    });
+
+    // Guest mode: a guest has no token, so a 401 from an account-only route
+    // must not throw them onto the "your session expired" screen.
+    test('a 401 on a request sent without a token does not report an expired session', () async {
+      var expired = 0;
+      final tokenStorage = _FakeTokenStorage();
+      final client = ApiClient(tokenStorage, onSessionExpired: () => expired++);
+
+      await expectLater(
+        client.guard(() async => throw _dioErrorWithStatus(401, sentToken: false)),
+        throwsA(isA<ApiException>().having((e) => e.statusCode, 'statusCode', 401)),
+      );
+
+      expect(expired, 0);
+      expect(tokenStorage.cleared, isFalse);
     });
 
     test('does not clear the token for an unrelated server error (500)', () async {

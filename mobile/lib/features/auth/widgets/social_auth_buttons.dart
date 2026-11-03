@@ -3,14 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/theme/landing_theme.dart';
+import '../../onboarding/institution_controller.dart';
+import '../../onboarding/institution_picker_screen.dart';
 import '../session_controller.dart';
 
 /// The Google / Apple / Guest row shared by WelcomeScreen and SignInScreen.
 /// Google is wired to the real sign-in flow (see docs/google-sign-in.md for
-/// what's needed to turn it on); Apple and Guest are not built yet — see
-/// PROJECT_AUDIT.md. The labels carry no "(Coming soon)" suffix, but tapping
-/// a button whose feature isn't available still shows a short notice rather
-/// than silently doing nothing.
+/// what's needed to turn it on); Guest opens the GuestShell; Apple is not
+/// built yet — see PROJECT_AUDIT.md. The labels carry no "(Coming soon)"
+/// suffix, but tapping a button whose feature isn't available still shows a
+/// short notice rather than silently doing nothing.
 class SocialAuthButtons extends ConsumerWidget {
   const SocialAuthButtons({super.key});
 
@@ -25,6 +27,16 @@ class SocialAuthButtons extends ConsumerWidget {
       messenger
         ..removeCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text(error is ApiException ? error.message : 'Google sign-in failed.')));
+    }
+  }
+
+  /// From SignInScreen the gate swaps straight to the GuestShell. From
+  /// WelcomeScreen onboarding hasn't run yet (the gate checks it first), so
+  /// the institution picker comes next, as it does for Google sign-in there.
+  void _continueAsGuest(BuildContext context, WidgetRef ref) {
+    ref.read(guestModeProvider.notifier).state = true;
+    if (!ref.read(onboardingControllerProvider)) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const InstitutionPickerScreen()));
     }
   }
 
@@ -69,7 +81,7 @@ class SocialAuthButtons extends ConsumerWidget {
           style: LandingStyle.outlinedButtonStyle,
           icon: const Icon(Icons.person_outline, size: 20),
           label: const Text('Continue as Guest'),
-          onPressed: () => _comingSoon(context, 'Guest mode'),
+          onPressed: submitting ? null : () => _continueAsGuest(context, ref),
         ),
       ],
     );

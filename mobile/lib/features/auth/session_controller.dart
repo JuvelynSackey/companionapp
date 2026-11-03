@@ -9,6 +9,12 @@ import '../../data/models/app_user.dart';
 /// doesn't carry a stale "expired" banner into the next session.
 final sessionExpiredProvider = StateProvider<bool>((ref) => false);
 
+/// True while someone is browsing without an account ("Continue as Guest").
+/// AppRoot shows the GuestShell for it whenever nobody is signed in. Held in
+/// memory only, so the next launch starts at the sign-in screen again; every
+/// successful sign-in clears it.
+final guestModeProvider = StateProvider<bool>((ref) => false);
+
 /// Holds the current signed-in user (or null). `null` while restoring the
 /// session is not distinguishable from "signed out" here — callers should
 /// use isLoading (AsyncValue) on first launch to show a splash state, and
@@ -34,6 +40,7 @@ class SessionController extends AsyncNotifier<AppUser?> {
     final previous = state;
     state = const AsyncLoading<AppUser?>().copyWithPrevious(previous);
     state = (await AsyncValue.guard(action)).copyWithPrevious(previous);
+    if (state.valueOrNull != null) ref.read(guestModeProvider.notifier).state = false;
   }
 
   Future<void> login({required String email, required String password}) async {
@@ -65,6 +72,7 @@ class SessionController extends AsyncNotifier<AppUser?> {
     await ref.read(pushCoordinatorProvider).unregisterCurrentDevice();
     await ref.read(authRepositoryProvider).signOut();
     ref.read(sessionExpiredProvider.notifier).state = false;
+    ref.read(guestModeProvider.notifier).state = false;
     state = const AsyncValue.data(null);
   }
 }

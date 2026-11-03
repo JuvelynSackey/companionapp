@@ -11,6 +11,7 @@ import 'features/auth/sign_in_screen.dart';
 import 'features/auth/welcome_screen.dart';
 import 'features/onboarding/institution_controller.dart';
 import 'features/shell/app_shell.dart';
+import 'features/shell/guest_shell.dart';
 import 'widgets/async_value_view.dart';
 
 class AppRoot extends StatelessWidget {
@@ -71,6 +72,7 @@ class _RootGate extends ConsumerWidget {
 
     Widget gate(BuildContext context, AppUser? user) {
       final expired = ref.watch(sessionExpiredProvider);
+      final guest = ref.watch(guestModeProvider);
       final status = user != null
           ? AuthStatus.authenticated
           : (expired ? AuthStatus.sessionExpired : AuthStatus.unauthenticated);
@@ -80,7 +82,8 @@ class _RootGate extends ConsumerWidget {
         child: switch (status) {
           AuthStatus.authenticated => const AppShell(key: ValueKey('shell')),
           AuthStatus.sessionExpired => const SignInScreen(key: ValueKey('signin-expired'), showExpiredNotice: true),
-          AuthStatus.unauthenticated || AuthStatus.initializing => const SignInScreen(key: ValueKey('signin')),
+          AuthStatus.unauthenticated || AuthStatus.initializing =>
+            guest ? const GuestShell(key: ValueKey('guest')) : const SignInScreen(key: ValueKey('signin')),
         },
       );
     }

@@ -26,6 +26,20 @@ export function requireAuth(req, res, next) {
 }
 
 /**
+ * For the read-only campus routes a guest may browse (announcements, events,
+ * clubs, locations). No Authorization header: continues with req.user = null.
+ * A header that is present but bad is still a 401, so a signed-in client whose
+ * token expired keeps getting the session-expired flow, not guest data.
+ */
+export function optionalAuth(req, res, next) {
+  if (!req.headers.authorization) {
+    req.user = null;
+    return next();
+  }
+  return requireAuth(req, res, next);
+}
+
+/**
  * Gate for the admin-only use cases in the proposal (manage users, post
  * announcements, update schedules and grades).
  *

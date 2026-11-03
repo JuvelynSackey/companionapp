@@ -39,14 +39,15 @@ export async function listEvents(req, res, next) {
       `SELECT e.event_id, e.title, e.description, e.event_date, e.location, e.created_by,
               c.name AS club_name,
               COUNT(r.user_id) AS attendee_count,
-              BOOL_OR(r.user_id = $1) AS is_registered
+              COALESCE(BOOL_OR(r.user_id = $1), false) AS is_registered
          FROM events e
          LEFT JOIN clubs c ON c.club_id = e.club_id
          LEFT JOIN event_registrations r ON r.event_id = e.event_id
         WHERE ($2::boolean IS NOT TRUE OR e.event_date >= now())
         GROUP BY e.event_id, c.name
         ORDER BY e.event_date`,
-      [req.user.userId, upcomingOnly]
+      // A guest (optionalAuth, no token) matches no registration rows.
+      [req.user?.userId ?? null, upcomingOnly]
     );
 
     return res.json({ events: rows.map(shape) });

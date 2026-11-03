@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_exception.dart';
 import '../../data/models/club.dart';
+import '../auth/guest_prompt.dart';
 import 'clubs_providers.dart';
 
 /// Join / Leave button shared by the club list and the club detail screen.
@@ -16,6 +17,8 @@ class ClubMembershipButton extends ConsumerWidget {
   final bool prominent;
 
   Future<void> _toggle(BuildContext context, WidgetRef ref) async {
+    if (!await ensureSignedIn(context, ref, action: 'join clubs')) return;
+    if (!context.mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     try {
       await ref.read(clubsProvider.notifier).toggleMembership(club.clubId);

@@ -5,8 +5,10 @@ import 'package:mobile/core/network/api_exception.dart';
 import 'package:mobile/core/providers/core_providers.dart';
 import 'package:mobile/data/models/campus_event.dart';
 import 'package:mobile/data/models/club.dart';
+import 'package:mobile/features/auth/session_controller.dart';
 import 'package:mobile/features/clubs/clubs_screen.dart';
 
+import 'support/admin_fakes.dart';
 import 'support/club_fakes.dart';
 
 CampusEvent _event(int id, String title, String? clubName) => CampusEvent(
@@ -22,6 +24,7 @@ CampusEvent _event(int id, String title, String? clubName) => CampusEvent(
 
 Widget _app(FakeClubApi clubs, {FakeEventApi? events}) => ProviderScope(
       overrides: [
+        sessionControllerProvider.overrideWith(() => FakeSessionController(studentUser)),
         clubApiProvider.overrideWithValue(clubs),
         eventApiProvider.overrideWithValue(events ?? FakeEventApi([])),
       ],

@@ -83,6 +83,30 @@ async function run() {
   const badToken = await call('GET', '/dashboard', { token: 'not-a-real-token' });
   check('protected route rejects forged token', badToken.status === 401);
 
+  console.log('\nGuest browsing (no token)');
+  for (const path of ['/announcements', '/events', '/clubs', '/locations', '/locations/categories']) {
+    const guest = await call('GET', path);
+    check(`guest can read ${path}`, guest.status === 200, `got ${guest.status}`);
+  }
+  const guestEvents = await call('GET', '/events');
+  check('guest sees every event as not registered',
+    (guestEvents.data?.events ?? []).every((e) => e.isRegistered === false));
+  const guestClubs = await call('GET', '/clubs');
+  check('guest sees every club as not joined',
+    (guestClubs.data?.clubs ?? []).every((c) => c.isMember === false));
+  const forgedOnPublic = await call('GET', '/events', { token: 'not-a-real-token' });
+  check('a bad token on a guest route is still rejected (401)', forgedOnPublic.status === 401);
+  for (const [method, path] of [
+    ['POST', '/events/1/register'],
+    ['POST', '/clubs/1/join'],
+    ['GET', '/announcements/sync-cursor'],
+    ['GET', '/grades'],
+    ['POST', '/announcements'],
+  ]) {
+    const guestWrite = await call(method, path, method === 'GET' ? {} : { body: {} });
+    check(`guest cannot ${method} ${path} (401)`, guestWrite.status === 401, `got ${guestWrite.status}`);
+  }
+
   const me = await call('GET', '/auth/me', { token: studentToken });
   check('me returns the student', me.data?.user?.email === 'student@ug.edu.gh');
   check('me never leaks the password hash', me.data?.user?.password_hash === undefined);

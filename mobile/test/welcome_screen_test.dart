@@ -5,6 +5,7 @@ import 'package:mobile/core/providers/core_providers.dart';
 import 'package:mobile/core/storage/local_prefs.dart';
 import 'package:mobile/core/storage/token_storage.dart';
 import 'package:mobile/data/repositories/auth_repository.dart';
+import 'package:mobile/features/auth/session_controller.dart';
 import 'package:mobile/features/auth/welcome_screen.dart';
 import 'package:mobile/features/onboarding/institution_picker_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -101,7 +102,7 @@ void main() {
     expect(find.textContaining('Coming soon'), findsNothing);
   });
 
-  testWidgets('tapping Apple or Guest (not built yet) shows a notice, not nothing', (tester) async {
+  testWidgets('tapping Apple (not built yet) shows a notice, not nothing', (tester) async {
     _tallScreen(tester);
     await tester.pumpWidget(await _app());
     await tester.pumpAndSettle();
@@ -109,9 +110,19 @@ void main() {
     await tester.tap(find.text('Continue with Apple'));
     await tester.pump();
     expect(find.text('Apple sign-in is coming soon.'), findsOneWidget);
+  });
+
+  testWidgets('Continue as Guest turns on guest mode and goes on to the institution picker', (tester) async {
+    _tallScreen(tester);
+    await tester.pumpWidget(await _app());
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Continue as Guest'));
-    await tester.pump();
-    expect(find.text('Guest mode is coming soon.'), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(InstitutionPickerScreen), findsOneWidget, reason: 'onboarding has not run yet on this device');
+    final container = ProviderScope.containerOf(tester.element(find.byType(InstitutionPickerScreen)));
+    expect(container.read(guestModeProvider), isTrue);
+    expect(find.textContaining('coming soon'), findsNothing);
   });
 }

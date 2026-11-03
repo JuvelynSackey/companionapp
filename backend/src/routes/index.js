@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 import authRoutes from './authRoutes.js';
-import { requireAuth, requireAdmin, requireRole } from '../middleware/auth.js';
+import { requireAuth, optionalAuth, requireAdmin, requireRole } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate.js';
 
 import { getDashboard } from '../controllers/dashboardController.js';
@@ -39,6 +39,16 @@ const router = Router();
 // ---- Module 1: authentication (public) ----
 router.use('/auth', authRoutes);
 
+// ---- Guest browsing (public reads) ----
+// Campus-wide information a visitor may see without an account. A signed-in
+// caller still gets their own isRegistered / isMember flags; a guest gets them
+// as false. Every write, and everything personal, stays behind requireAuth.
+router.get('/announcements', optionalAuth, listAnnouncements);
+router.get('/events', optionalAuth, listEvents);
+router.get('/clubs', optionalAuth, listClubs);
+router.get('/locations', optionalAuth, listLocations);
+router.get('/locations/categories', optionalAuth, listCategories);
+
 // Everything below requires a valid token.
 router.use(requireAuth);
 
@@ -59,7 +69,7 @@ router.post('/schedule', requireAdmin, validateBody(createScheduleSchema), creat
 router.delete('/schedule/:id', requireAdmin, deleteScheduleEntry);
 
 // ---- Module 3: announcements & notifications ----
-router.get('/announcements', listAnnouncements);
+// GET /announcements is a guest-readable route, declared above requireAuth.
 router.post('/announcements', requireAdmin, validateBody(createAnnouncementSchema), createAnnouncement);
 router.delete('/announcements/:id', requireAdmin, deleteAnnouncement);
 // Declared before no :id route conflicts with "sync-cursor" as a literal segment.
@@ -71,7 +81,7 @@ router.get('/grades', listGrades);
 router.post('/grades', requireAdmin, validateBody(upsertGradeSchema), upsertGrade);
 
 // ---- Module 5: events & clubs ----
-router.get('/events', listEvents);
+// GET /events and GET /clubs are guest-readable routes, declared above requireAuth.
 // Lecturers/club coordinators and admins may publish events; only admins
 // gate the rest of the admin-only surface (schedule, announcements, grades).
 router.post('/events', requireRole('lecturer', 'admin'), validateBody(createEventSchema), createEvent);
@@ -80,7 +90,6 @@ router.delete('/events/:id', requireRole('lecturer', 'admin'), deleteEvent);
 router.post('/events/:id/register', registerForEvent);
 router.delete('/events/:id/register', cancelRegistration);
 
-router.get('/clubs', listClubs);
 router.post('/clubs/:id/join', joinClub);
 router.delete('/clubs/:id/join', leaveClub);
 
@@ -91,8 +100,7 @@ router.get('/users/me/notification-preferences', getNotificationPreferences);
 router.put('/users/me/notification-preferences', validateBody(updatePreferencesSchema), updateNotificationPreferences);
 
 // ---- Module 6: campus map ----
-router.get('/locations', listLocations);
-router.get('/locations/categories', listCategories);
+// GET /locations and /locations/categories are guest-readable, declared above requireAuth.
 
 // ---- Module 7: quizzes & learning ----
 // Answer key is stripped from getQuiz and only revealed in submitAttempt's

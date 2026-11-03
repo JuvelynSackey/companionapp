@@ -7,6 +7,7 @@ import '../../data/models/event_pass.dart';
 import '../../data/models/student_identity.dart';
 import '../../widgets/async_value_view.dart';
 import '../admin/delete_event_button.dart';
+import '../auth/guest_prompt.dart';
 import '../auth/session_controller.dart';
 import '../clubs/clubs_screen.dart';
 import '../onboarding/institution_controller.dart';
@@ -81,6 +82,7 @@ class _EventCardState extends ConsumerState<_EventCard> {
   bool _submitting = false;
 
   Future<void> _toggleRegistration() async {
+    if (!await ensureSignedIn(context, ref, action: 'RSVP for events')) return;
     setState(() => _submitting = true);
     try {
       if (widget.event.isRegistered) {

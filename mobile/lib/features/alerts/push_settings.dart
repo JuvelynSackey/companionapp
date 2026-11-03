@@ -4,6 +4,7 @@ import '../../core/network/api_exception.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/services/push_coordinator.dart';
 import '../../data/models/notification_preferences.dart';
+import '../auth/session_controller.dart';
 
 /// The user's push on/off setting, held on the server so it applies to every
 /// device they are signed in on. Changes show immediately and are put back if
@@ -55,6 +56,8 @@ class PushSettingsTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!ref.watch(pushMessagingProvider).isAvailable) return const SizedBox.shrink();
+    // The setting belongs to an account; a guest has none to load it from.
+    if (ref.watch(sessionControllerProvider).valueOrNull == null) return const SizedBox.shrink();
 
     final settings = ref.watch(pushSettingsProvider).valueOrNull;
     if (settings == null) return const SizedBox.shrink(); // loading, or the server is unreachable

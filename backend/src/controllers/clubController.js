@@ -6,12 +6,13 @@ export async function listClubs(req, res, next) {
     const { rows } = await query(
       `SELECT c.club_id, c.name, c.description,
               COUNT(m.user_id) AS member_count,
-              BOOL_OR(m.user_id = $1) AS is_member
+              COALESCE(BOOL_OR(m.user_id = $1), false) AS is_member
          FROM clubs c
          LEFT JOIN club_memberships m ON m.club_id = c.club_id
         GROUP BY c.club_id
         ORDER BY c.name`,
-      [req.user.userId]
+      // A guest (optionalAuth, no token) matches no membership rows.
+      [req.user?.userId ?? null]
     );
 
     return res.json({
