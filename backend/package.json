@@ -11,7 +11,8 @@
     "db:apply": "node src/utils/applySql.js",
     "test": "node --test",
     "test:db": "node --test src/services/deviceTokenStore.integration.js src/services/googleUserStore.integration.js",
-    "test:smoke": "node src/utils/smokeTest.js"
+    "test:smoke": "node src/utils/smokeTest.js",
+    "verify:integrations": "node src/utils/verifyIntegrations.js"
   },
   "engines": {
     "node": ">=20"
