@@ -121,7 +121,7 @@ Report:
 - **Checked:** on the web build the map showed the real Legon streets (Volta Hall Road, Hodasi Road, Akuafo Hall) with all six locations; tapping Great Hall opened its sheet, and the offline button showed the drawn map. New tests cover the dots, labels, colours and the zoom area; the Flutter suite passed 393/393, and `flutter analyze` reported no issues.
 - **Not checked:** the map on an Android device or emulator (the debug APK builds; see the commit).
 - **Report:** Section 4.3.5 and Table 3.5 updated. Three sentences that still said Google Sign-In awaited the Firebase console step (Sections 4.2, 4.3.1 and 4.6.4, and Table 4.2) were corrected at the same time. Still 53 pages.
-- **Google Maps:** a Google Maps version was started first and then replaced at the author's request. Its key was saved in `backend/.env` but never used or committed; it was partly shown in a working session, so it should be deleted in Google Cloud Console.
+- **Google Maps:** a Google Maps version was started first and then replaced at the author's request. Its key was saved in `backend/.env` but never used or committed; it was partly shown in a working session, but the author confirmed it was a demo key.
 
 ### Remembered guest mode and continuous integration (4 November 2026)
 - **Guest mode:** now saved on the device with the other local settings, so a guest who reopens the app returns to the guest shell. Signing in, signing out or tapping "Sign in" clears it. Four new tests cover this; three existing test containers now supply local preferences.
