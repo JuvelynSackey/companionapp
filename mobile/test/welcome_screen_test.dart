@@ -8,6 +8,7 @@ import 'package:mobile/data/repositories/auth_repository.dart';
 import 'package:mobile/features/auth/session_controller.dart';
 import 'package:mobile/features/auth/welcome_screen.dart';
 import 'package:mobile/features/onboarding/institution_picker_screen.dart';
+import 'package:mobile/widgets/brand_logo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/google_auth_fakes.dart';
@@ -58,6 +59,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Campus Companion'), findsOneWidget);
+    expect(find.byType(BrandLogo), findsOneWidget);
+    expect(find.bySemanticsLabel('Campus Companion logo'), findsOneWidget);
     expect(find.text('Get Started'), findsOneWidget);
     expect(find.text('Continue with Google'), findsOneWidget, reason: 'same label whether or not Google is configured');
   });

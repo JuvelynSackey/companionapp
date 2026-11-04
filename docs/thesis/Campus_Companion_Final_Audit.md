@@ -102,6 +102,11 @@ Report:
 - **Schedule fix:** recorded in Section 4.4.5 and Section 5.3, and recommendation 5.4 was reworded.
 - **Backup:** the previous versions are in the session scratchpad (`final_3nov_guest_backup`).
 
+### Logo and splash (4 November 2026)
+- The app now has a logo: the graduation-cap art the author supplied. It is the launcher icon and the web icons, and it appears on the launch splash (native, then a matching Flutter screen while the saved session is checked) and on the Welcome and Login screens.
+- **Figure 4.1:** the Welcome and Login screenshots were retaken, so they show the logo. No report text changed, and the report is still 52 pages.
+- **To check:** the licence of the cap image, if it came from a stock or clip-art site.
+
 ---
 
 ## 3. Feature classification (verified against the code and tests)

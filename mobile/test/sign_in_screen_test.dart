@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/widgets/brand_logo.dart';
 import 'package:mobile/core/network/api_client.dart';
 import 'package:mobile/core/network/api_exception.dart';
 import 'package:mobile/core/providers/core_providers.dart';
@@ -73,6 +74,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Login'), findsNWidgets(2), reason: 'the headline and the submit button both say "Login"');
+    expect(find.byType(BrandLogo), findsOneWidget);
     expect(_email, findsOneWidget);
     expect(_password, findsOneWidget);
   });

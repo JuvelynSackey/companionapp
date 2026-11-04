@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/landing_theme.dart';
+import '../../widgets/brand_logo.dart';
 import '../onboarding/institution_picker_screen.dart';
 import 'widgets/social_auth_buttons.dart';
 
@@ -99,45 +100,26 @@ class WelcomeScreen extends StatelessWidget {
   }
 }
 
-/// A simple original illustration (no third-party art assets) in the spirit
-/// of the reference design: a student at a laptop, soft green blob behind.
-/// Kept to plain shapes/icons so there is nothing to license or attribute.
+/// The app's graduation-cap logo (the same art as the launcher icon and the
+/// splash) with two floating feature chips, in the spirit of the reference
+/// design.
 class _HeroIllustration extends StatelessWidget {
   const _HeroIllustration();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return const SizedBox(
       height: 220,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(
-            height: 200,
-            width: 200,
-            decoration: const BoxDecoration(color: LandingColors.green100, shape: BoxShape.circle),
-          ),
+          BrandLogo(size: 200),
           Positioned(
-            bottom: 36,
-            child: Icon(Icons.school_rounded, size: 56, color: LandingColors.green500),
-          ),
-          Positioned(
-            bottom: 16,
-            child: Container(
-              width: 140,
-              height: 14,
-              decoration: BoxDecoration(
-                color: LandingColors.green700,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ),
-          const Positioned(
             top: 8,
             right: 40,
             child: _FloatingChip(icon: Icons.calendar_today_rounded),
           ),
-          const Positioned(
+          Positioned(
             top: 28,
             left: 32,
             child: _FloatingChip(icon: Icons.insights_rounded),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/theme/landing_theme.dart';
+import '../../widgets/brand_logo.dart';
 import 'session_controller.dart';
 import 'sign_up_screen.dart';
 import 'widgets/social_auth_buttons.dart';
@@ -68,7 +69,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 8),
+                    const Center(child: BrandLogo(size: 96)),
+                    const SizedBox(height: 16),
                     Text(
                       'Login',
                       textAlign: TextAlign.center,
