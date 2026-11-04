@@ -116,6 +116,13 @@ Report:
 - **Retry seen live:** in the same re-check Gemini first answered HTTP 503, then the automatic retry got HTTP 200 and the answer came from Gemini.
 - The report was not changed for these two points; Section 4.6.3 already describes the retry.
 
+### Street map with OpenFreeMap (4 November 2026)
+- **Change:** the campus map's Map tab now shows an OpenFreeMap street map (OpenStreetMap data, drawn by MapLibre through `maplibre_gl`) in place of the drawn canvas with its decorative walkway lines. No API key or account is needed. Each location is a dot in its category colour with its name; tapping a dot opens the same details sheet ("Open in Maps"). A button switches to the drawn map for offline use. The map credits OpenFreeMap, OpenMapTiles and OpenStreetMap, as their terms ask.
+- **Checked:** on the web build the map showed the real Legon streets (Volta Hall Road, Hodasi Road, Akuafo Hall) with all six locations; tapping Great Hall opened its sheet, and the offline button showed the drawn map. New tests cover the dots, labels, colours and the zoom area; the Flutter suite passed 393/393, and `flutter analyze` reported no issues.
+- **Not checked:** the map on an Android device or emulator (the debug APK builds; see the commit).
+- **Report:** Section 4.3.5 and Table 3.5 updated. Three sentences that still said Google Sign-In awaited the Firebase console step (Sections 4.2, 4.3.1 and 4.6.4, and Table 4.2) were corrected at the same time. Still 53 pages.
+- **Google Maps:** a Google Maps version was started first and then replaced at the author's request. Its key was saved in `backend/.env` but never used or committed; it was partly shown in a working session, so it should be deleted in Google Cloud Console.
+
 ---
 
 ## 3. Feature classification (verified against the code and tests)

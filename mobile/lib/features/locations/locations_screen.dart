@@ -6,12 +6,13 @@ import '../../widgets/async_value_view.dart';
 import '../../widgets/campus_card_tile.dart';
 import '../../widgets/open_in_maps.dart';
 import 'locations_providers.dart';
-import 'map/campus_map_view.dart';
+import 'map/street_campus_map_view.dart';
 
 /// Two views over the same GET /api/locations data: a searchable/filterable
-/// list, and the interactive CustomPainter campus map using the real
-/// lat/long the backend provides (the old app only had percentage-based
-/// canvas coordinates, so this is new capability, not a straight port).
+/// list, and a campus map using the real lat/long the backend provides. The
+/// map is an OpenFreeMap street map, with the interactive CustomPainter map
+/// one tap away for offline use (the old app only had percentage-based
+/// canvas coordinates, so both are new capability).
 class LocationsScreen extends ConsumerStatefulWidget {
   const LocationsScreen({super.key});
 
@@ -63,7 +64,7 @@ class _LocationsScreenState extends ConsumerState<LocationsScreen> {
                 items: items,
                 onRefresh: () => ref.refresh(locationsProvider.future),
               ),
-              CampusMapView(locations: items),
+              StreetCampusMapView(locations: items),
             ],
           ),
         ),
