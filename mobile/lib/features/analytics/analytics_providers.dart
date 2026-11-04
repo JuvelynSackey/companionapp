@@ -53,5 +53,6 @@ final academicPlanProvider = FutureProvider.autoDispose<GradePredictionResult?>(
     remainingCredits: remainingCredits,
     targetClass: targetClass,
     institution: institution,
+    levelTotals: AcademicEngine.levelTotals(grades, institution),
   );
 });

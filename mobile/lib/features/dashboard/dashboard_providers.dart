@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/engine/context_engine.dart';
 import '../../core/providers/core_providers.dart';
+import '../../core/services/walking_route_service.dart';
 import '../../data/models/dashboard_data.dart';
 import '../../data/models/exam_countdown.dart';
 import '../exams/exams_providers.dart';
@@ -77,11 +78,15 @@ final dashboardContextProvider = FutureProvider.autoDispose<List<CampusContextAc
   final examCountdowns = ExamCountdownUtils.getSortedUpcomingExams(exams, now: now);
 
   final locations = await ref.watch(allLocationsProvider.future);
+  final routed = await ref
+      .watch(walkingRouteServiceProvider)
+      .walkMinutesFor(ContextEngine.walksBetweenClasses(todaysSchedule, locations));
 
   return ContextEngine.evaluate(
     todaysSchedule: todaysSchedule,
     examCountdowns: examCountdowns,
     locations: locations,
     now: now,
+    routedWalkMinutes: routed,
   );
 });

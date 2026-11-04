@@ -85,8 +85,8 @@ class AssistantContext {
     final academicSummary = unavailable.contains(ContextSource.grades)
         ? '${academicMetric.metricLabel}: unavailable'
         : '${academicMetric.metricLabel}: ${academicMetric.formattedScore} '
-            '(${academicMetric.classLabel.toLowerCase()}: ${academicMetric.honoursClass}; '
-            'the official degree class can differ)';
+            '(${academicMetric.classLabel.toLowerCase()}: ${academicMetric.honoursClass}'
+            '${academicMetric.fgpa == null ? '; the official degree class can differ' : ''})';
     final unavailableNote = unavailable.isEmpty
         ? ''
         : '\nThe server could not be reached, so these are unavailable right now: '

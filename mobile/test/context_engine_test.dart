@@ -120,6 +120,44 @@ void main() {
       );
       expect(warning.estimatedWalkMinutes, isNotNull);
       expect(warning.estimatedWalkMinutes, greaterThan(0));
+      // No route was supplied, so the card says this is the straight-line figure.
+      expect(warning.walkIsRouted, isFalse);
+      expect(warning.description, contains('(straight-line estimate)'));
+    });
+
+    test('uses the routed walk along real footpaths when one is supplied', () {
+      final balme = CampusLocation(locationId: 1, name: 'Balme Library', category: 'library', description: '', latitude: 5.6508, longitude: -0.1866);
+      final greatHall = CampusLocation(locationId: 2, name: 'Great Hall', category: 'other', description: '', latitude: 5.6522, longitude: -0.1869);
+      final schedule = [
+        _entry(id: 1, code: 'DCIT 201', start: '09:00', end: '09:50', room: 'Balme Library'),
+        _entry(id: 2, code: 'DCIT 202', start: '10:00', end: '11:00', room: 'Great Hall'),
+      ];
+
+      expect(ContextEngine.walksBetweenClasses(schedule, [balme, greatHall]), [(balme, greatHall)]);
+
+      final actions = ContextEngine.evaluate(
+        todaysSchedule: schedule,
+        examCountdowns: const [],
+        locations: [balme, greatHall],
+        now: DateTime(2026, 8, 31, 9, 45),
+        routedWalkMinutes: {ContextEngine.walkKey(balme, greatHall): 6},
+      );
+      final warning = actions.firstWhere(
+        (a) => a.type == ContextActionType.classStartingSoon && a.title.contains('DCIT 202'),
+      );
+      expect(warning.estimatedWalkMinutes, 6);
+      expect(warning.walkIsRouted, isTrue);
+      expect(warning.description, 'Starts in 15 min · ~6 min walk from Balme Library');
+    });
+
+    test('asks for no route when consecutive classes are in the same place or an unknown room', () {
+      final balme = CampusLocation(locationId: 1, name: 'Balme Library', category: 'library', description: '', latitude: 5.6508, longitude: -0.1866);
+      final walks = ContextEngine.walksBetweenClasses([
+        _entry(id: 1, code: 'DCIT 201', start: '08:00', end: '08:50', room: 'Balme Library'),
+        _entry(id: 2, code: 'DCIT 202', start: '09:00', end: '09:50', room: 'Balme Library'),
+        _entry(id: 3, code: 'DCIT 203', start: '10:00', end: '10:50', room: 'Some Unknown Room 999'),
+      ], [balme]);
+      expect(walks, isEmpty);
     });
 
     test('omits the walk estimate (but still reminds) when the room cannot be matched to a known location', () {

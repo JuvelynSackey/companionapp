@@ -23,11 +23,75 @@ void main() {
     expect(result.isPercentage, isFalse);
   });
 
-  test('the class is labelled an estimate from the CGPA (or CWA), not the official degree class', () {
-    // UG classifies on the FGPA, which weights Levels 100-400 as 1:1:2:2
-    // (Regulations for Junior Members, 2017, 9.31); this engine does not.
-    expect(AcademicEngine.calculate([_grade(85)], InstitutionRegistry.ug).classLabel, 'Estimated class (from CGPA)');
-    expect(AcademicEngine.calculate([_grade(85)], InstitutionRegistry.knust).classLabel, 'Estimated class (from CWA)');
+  group('FGPA (UG, Regulations for Junior Members 2017, 9.31: Levels 100-400 weighted 1:1:2:2)', () {
+    CourseGrade at(String code, double score, {int credits = 3}) => CourseGrade(
+          gradeId: 1,
+          courseCode: code,
+          courseTitle: 'Course',
+          creditHours: credits,
+          score: score,
+          letterGrade: 'A',
+          semester: 'Semester 1',
+          passed: score >= 50,
+        );
+
+    test("a course's level is the first digit of its three-digit number (9.13)", () {
+      expect(AcademicEngine.levelOf('DCIT 201'), 200);
+      expect(AcademicEngine.levelOf('UGRC 110'), 100);
+      expect(AcademicEngine.levelOf('CSCD415'), 400);
+      expect(AcademicEngine.levelOf('PROJECT'), isNull);
+      expect(AcademicEngine.levelOf('DCIT 2010'), isNull, reason: 'four digits is not a course number');
+    });
+
+    test('weak early levels count half as much: the FGPA gives a higher class than the CGPA', () {
+      // Levels 100 and 200 at D (1.0), Levels 300 and 400 at A (4.0), equal credits.
+      // CGPA = 2.50 (Second Lower). FGPA = (1 + 1 + 2*4 + 2*4) / 6 = 3.00 (Second Upper).
+      final result = AcademicEngine.calculate(
+        [at('DCIT 101', 50), at('DCIT 201', 50), at('DCIT 301', 85), at('DCIT 401', 85)],
+        InstitutionRegistry.ug,
+      );
+      expect(result.scoreValue, closeTo(2.50, 1e-9), reason: 'the headline figure stays the CGPA');
+      expect(result.fgpa, closeTo(3.00, 1e-9));
+      expect(result.honoursClass, 'Second Class (Upper)');
+      expect(result.classLabel, 'Class (from FGPA 3.00)');
+    });
+
+    test('strong early levels count half as much: the FGPA gives a lower class than the CGPA', () {
+      // Levels 100 and 200 at A (4.0), Levels 300 and 400 at C (2.0).
+      // CGPA = 3.00 (Second Upper). FGPA = (4 + 4 + 2*2 + 2*2) / 6 = 2.67 (Second Lower).
+      final result = AcademicEngine.calculate(
+        [at('DCIT 101', 85), at('DCIT 201', 85), at('DCIT 301', 60), at('DCIT 401', 60)],
+        InstitutionRegistry.ug,
+      );
+      expect(result.scoreValue, closeTo(3.00, 1e-9));
+      expect(result.fgpa, closeTo(8 / 3, 1e-9));
+      expect(result.honoursClass, 'Second Class (Lower)');
+    });
+
+    test("each level's GPA is credit-weighted first, then the levels are combined", () {
+      // Level 100: one 3-credit A (GPA 4.0). Level 200: two 3-credit C (GPA 2.0).
+      // CGPA = (12 + 12) / 9 = 2.67, but FGPA = (4.0 + 2.0) / 2 = 3.00: the levels
+      // count equally whatever their credits.
+      final result = AcademicEngine.calculate(
+        [at('DCIT 101', 85), at('DCIT 201', 60), at('DCIT 203', 60)],
+        InstitutionRegistry.ug,
+      );
+      expect(result.scoreValue, closeTo(24 / 9, 1e-9));
+      expect(result.fgpa, closeTo(3.00, 1e-9));
+      expect(result.honoursClass, 'Second Class (Upper)');
+    });
+
+    test('a course with no readable level falls back to the CGPA, labelled an estimate', () {
+      final result = AcademicEngine.calculate([at('DCIT 201', 85), at('PROJECT', 60)], InstitutionRegistry.ug);
+      expect(result.fgpa, isNull);
+      expect(result.classLabel, 'Estimated class (from CGPA)');
+    });
+
+    test('an institution without level weighting keeps the cumulative estimate', () {
+      final result = AcademicEngine.calculate([at('DCIT 201', 85)], InstitutionRegistry.knust);
+      expect(result.fgpa, isNull);
+      expect(result.classLabel, 'Estimated class (from CWA)');
+    });
   });
 
   test('UG (gpa4_0): credit-weighted average across mixed grades', () {

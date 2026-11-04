@@ -13,10 +13,12 @@ import '../models/institution_profile.dart';
 /// scales (5.0, 4.3, CWA) work without backend changes. For those, the
 /// backend's `letterGrade` label is still the UG one.
 ///
-/// The class is an estimate from the plain credit-weighted average (the
-/// CGPA). The University of Ghana classifies a degree on the FGPA instead,
-/// which weights Levels 100-400 as 1:1:2:2 (Regulations for Junior Members,
-/// September 2017, 9.31), so the official class can differ; see [classLabel].
+/// The headline figure is the plain credit-weighted average (the CGPA, or
+/// CWA). Where the institution classifies on a level-weighted average (the
+/// University of Ghana's FGPA weights Levels 100-400 as 1:1:2:2; Regulations
+/// for Junior Members, September 2017, 9.31) and every course's level can be
+/// read from its code, the class comes from that FGPA; otherwise it is an
+/// estimate from the CGPA. [classLabel] says which.
 class AcademicMetricResult {
   const AcademicMetricResult({
     required this.scoreValue,
@@ -27,6 +29,7 @@ class AcademicMetricResult {
     required this.isPercentage,
     required this.metricLabel,
     required this.statusSummary,
+    this.fgpa,
   });
 
   final double scoreValue;
@@ -38,9 +41,14 @@ class AcademicMetricResult {
   final String metricLabel;
   final String statusSummary;
 
-  /// Shown wherever [honoursClass] is, so it never reads as the official
-  /// degree class.
-  String get classLabel => 'Estimated class (from ${isPercentage ? 'CWA' : 'CGPA'})';
+  /// The level-weighted average the class was taken from, or null when the
+  /// class is estimated from the cumulative average.
+  final double? fgpa;
+
+  /// Shown wherever [honoursClass] is, so the reader knows what it rests on.
+  String get classLabel => fgpa != null
+      ? 'Class (from FGPA ${fgpa!.toStringAsFixed(2)})'
+      : 'Estimated class (from ${isPercentage ? 'CWA' : 'CGPA'})';
 }
 
 class AcademicEngine {
@@ -79,6 +87,49 @@ class AcademicEngine {
     return 0.0;
   }
 
+  /// The level of a course from its code: the first digit of its three-digit
+  /// number (DCIT 201 is Level 200, UGRC 110 Level 100; Regulations for
+  /// Junior Members, 9.13). Null when the code has no such number.
+  static int? levelOf(String courseCode) {
+    final match = RegExp(r'(?<!\d)(\d)\d{2}(?!\d)').firstMatch(courseCode);
+    return match == null ? null : int.parse(match.group(1)!) * 100;
+  }
+
+  static int _credits(CourseGrade grade) => grade.creditHours < 1 ? 1 : grade.creditHours;
+
+  /// Credits and grade points earned at each level, or null when the
+  /// institution has no level weighting or any course's level is unknown or
+  /// unweighted (then no level-weighted average can be formed honestly).
+  static Map<int, ({int credits, double points})>? levelTotals(List<CourseGrade> grades, InstitutionProfile institution) {
+    if (institution.levelWeights.isEmpty || grades.isEmpty) return null;
+    final totals = <int, ({int credits, double points})>{};
+    for (final grade in grades) {
+      final level = levelOf(grade.courseCode);
+      if (level == null || !institution.levelWeights.containsKey(level)) return null;
+      final credits = _credits(grade);
+      final previous = totals[level] ?? (credits: 0, points: 0.0);
+      totals[level] = (
+        credits: previous.credits + credits,
+        points: previous.points + credits * _pointForScore(grade.score, institution.gradingSystem),
+      );
+    }
+    return totals;
+  }
+
+  /// The weighted mean of each level's GPA, over the levels taken so far
+  /// (1:1:2:2 at UG). With every level complete this is the FGPA; earlier in
+  /// the programme it is the same formula over the levels done.
+  static double weightedLevelAverage(Map<int, ({int credits, double points})> totals, Map<int, int> weights) {
+    var weighted = 0.0;
+    var weightSum = 0;
+    totals.forEach((level, t) {
+      if (t.credits == 0) return;
+      weighted += weights[level]! * (t.points / t.credits);
+      weightSum += weights[level]!;
+    });
+    return weightSum == 0 ? 0 : weighted / weightSum;
+  }
+
   static HonoursThreshold classify(double score, InstitutionProfile institution) {
     for (final threshold in institution.honoursThresholds) {
       if (score >= threshold.minScore) return threshold;
@@ -114,13 +165,15 @@ class AcademicEngine {
     var totalCredits = 0;
     var totalWeightedPoints = 0.0;
     for (final grade in grades) {
-      final credits = grade.creditHours < 1 ? 1 : grade.creditHours;
+      final credits = _credits(grade);
       totalCredits += credits;
       totalWeightedPoints += credits * _pointForScore(grade.score, institution.gradingSystem);
     }
 
     final calculatedScore = totalCredits > 0 ? totalWeightedPoints / totalCredits : 0.0;
-    final honours = classify(calculatedScore, institution);
+    final levels = levelTotals(grades, institution);
+    final fgpa = levels == null ? null : weightedLevelAverage(levels, institution.levelWeights);
+    final honours = classify(fgpa ?? calculatedScore, institution);
 
     final formatted = isPercentage
         ? '${calculatedScore.toStringAsFixed(2)}% CWA'
@@ -135,6 +188,7 @@ class AcademicEngine {
       isPercentage: isPercentage,
       metricLabel: metricLabel,
       statusSummary: '${honours.title} • $totalCredits Total Credit Hours',
+      fgpa: fgpa,
     );
   }
 }

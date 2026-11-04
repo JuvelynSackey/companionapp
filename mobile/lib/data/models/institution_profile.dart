@@ -54,6 +54,7 @@ class InstitutionProfile {
     required this.studentPortalName,
     required this.lmsName,
     required this.libraryName,
+    this.levelWeights = const {},
   });
 
   final String id;
@@ -71,6 +72,11 @@ class InstitutionProfile {
   final String studentPortalName;
   final String lmsName;
   final String libraryName;
+
+  /// How each course level counts towards the degree class, when the
+  /// institution classifies on a level-weighted average (keyed 100, 200, ...).
+  /// Empty means the class comes from the plain cumulative average.
+  final Map<int, int> levelWeights;
 }
 
 class InstitutionRegistry {
@@ -121,6 +127,9 @@ class InstitutionRegistry {
     studentPortalName: 'MIS Web',
     lmsName: 'Sakai LMS',
     libraryName: 'Balme Library',
+    // The FGPA weights the GPAs of Levels 100-400 as 1:1:2:2 (Regulations for
+    // Junior Members, September 2017, 9.31b).
+    levelWeights: {100: 1, 200: 1, 300: 2, 400: 2},
   );
 
   static const knust = InstitutionProfile(

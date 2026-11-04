@@ -26,6 +26,7 @@ class LocalPrefs {
   static const _kInstitutionId = 'selected_institution_id';
   static const _kOnboardingCompleted = 'is_onboarding_completed';
   static const _kGuestMode = 'is_guest_mode';
+  static const _kWalkRouteMinutes = 'walk_route_minutes_v1';
   static const _kReadAnnouncementIds = 'read_announcement_ids';
   static const _kExams = 'local_exams_v1';
   static const _kSchedule = 'local_schedule_v1';
@@ -48,6 +49,17 @@ class LocalPrefs {
   /// not signed in or left guest mode since.
   bool get isGuestMode => _prefs.getBool(_kGuestMode) ?? false;
   Future<void> setGuestMode(bool value) => _prefs.setBool(_kGuestMode, value);
+
+  /// Walking minutes along real footpaths between two campus locations, keyed
+  /// "fromId-toId" (see WalkingRouteService), kept so a walk is fetched once.
+  Map<String, int> get walkRouteMinutes {
+    final raw = _prefs.getString(_kWalkRouteMinutes);
+    if (raw == null) return const {};
+    return (jsonDecode(raw) as Map<String, dynamic>).map((key, value) => MapEntry(key, value as int));
+  }
+
+  Future<void> saveWalkRouteMinutes(String key, int minutes) =>
+      _prefs.setString(_kWalkRouteMinutes, jsonEncode({...walkRouteMinutes, key: minutes}));
 
   Set<int> get readAnnouncementIds =>
       (_prefs.getStringList(_kReadAnnouncementIds) ?? const []).map(int.parse).toSet();
