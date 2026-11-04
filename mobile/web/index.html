@@ -17,22 +17,41 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Campus Companion: your campus timetable, alerts, events, clubs and map.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="mobile">
+  <meta name="apple-mobile-web-app-title" content="Campus Companion">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>mobile</title>
+  <title>Campus Companion</title>
+  <meta name="theme-color" content="#FCF6E4">
+  <style>
+    /* Launch screen while Flutter loads; BrandSplash (lib/widgets/brand_splash.dart)
+       continues it with the same logo, size and centre. */
+    html, body { margin: 0; height: 100%; background: #FCF6E4; }
+    #splash { position: fixed; inset: 0; display: flex; align-items: center;
+              justify-content: center; background: #FCF6E4; transition: opacity .2s; }
+    #splash img { width: 200px; height: auto; }
+  </style>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <div id="splash" aria-label="Campus Companion is loading"><img src="splash_logo.png" alt=""></div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var el = document.getElementById('splash');
+      if (!el) return;
+      el.style.opacity = '0';
+      setTimeout(function () { el.remove(); }, 200);
+    });
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

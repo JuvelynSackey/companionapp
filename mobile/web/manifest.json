@@ -1,11 +1,11 @@
 {
-    "name": "mobile",
-    "short_name": "mobile",
+    "name": "Campus Companion",
+    "short_name": "Campus Companion",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FCF6E4",
+    "theme_color": "#FCF6E4",
+    "description": "Campus Companion: your campus timetable, alerts, events, clubs and map.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

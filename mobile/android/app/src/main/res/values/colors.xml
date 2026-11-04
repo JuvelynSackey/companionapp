@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The flat cream behind the graduation-cap logo (BrandSplash.background). -->
+    <color name="brand_cream">#FCF6E4</color>
+    <color name="ic_launcher_background">#FCF6E4</color>
+</resources>

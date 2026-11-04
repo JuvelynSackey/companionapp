@@ -13,6 +13,7 @@ import 'features/onboarding/institution_controller.dart';
 import 'features/shell/app_shell.dart';
 import 'features/shell/guest_shell.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/brand_splash.dart';
 
 class AppRoot extends StatelessWidget {
   const AppRoot({super.key});
@@ -98,6 +99,8 @@ class _RootGate extends ConsumerWidget {
     return Scaffold(
       body: session.hasValue
           ? gate(context, session.valueOrNull)
+          : session.isLoading
+          ? const BrandSplash()
           : AsyncValueView<AppUser?>(
               value: session,
               onRetry: () => ref.invalidate(sessionControllerProvider),
