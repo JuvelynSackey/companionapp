@@ -123,6 +123,11 @@ Report:
 - **Report:** Section 4.3.5 and Table 3.5 updated. Three sentences that still said Google Sign-In awaited the Firebase console step (Sections 4.2, 4.3.1 and 4.6.4, and Table 4.2) were corrected at the same time. Still 53 pages.
 - **Google Maps:** a Google Maps version was started first and then replaced at the author's request. Its key was saved in `backend/.env` but never used or committed; it was partly shown in a working session, so it should be deleted in Google Cloud Console.
 
+### Remembered guest mode and continuous integration (4 November 2026)
+- **Guest mode:** now saved on the device with the other local settings, so a guest who reopens the app returns to the guest shell. Signing in, signing out or tapping "Sign in" clears it. Four new tests cover this; three existing test containers now supply local preferences.
+- **Continuous integration:** `.github/workflows/ci.yml` runs the backend unit tests (`npm test`) and `flutter analyze` and `flutter test` on every push and pull request to `master`, with Flutter pinned to 3.44.9 and no secrets. The author reported that the first run (commit `659e1ee`) passed. The database and smoke tests still run only locally.
+- **Report:** Table 3.5 (Testing row), Table 4.3 (Repository setup), Section 4.3.1 (guest mode is remembered), Section 5.3 (the guest-mode limitation removed) and Section 5.1 (the AI assistant's live check) updated. Still 53 pages. Flutter suite: 397/397.
+
 ---
 
 ## 3. Feature classification (verified against the code and tests)
@@ -132,7 +137,7 @@ Report:
 | **1. Implemented and verified** (automated tests, and for some, the running app) | Guest mode (read-only browsing of announcements, events, clubs and the map; sign-in prompts for account-only actions); email/password registration and login; JWT sessions; bcrypt hashing; Zod request validation; backend role checks for students, lecturers and administrators; administrator account provisioning; GPA/CWA on the UG scale (shared fixture checked by backend and Flutter tests); events with ownership-based deletion; clubs (search, join, leave); announcements feed and admin posting; campus locations list and map; quiz lifecycle, including hidden answer keys; digital student ID with QR code; timetable `.ics`/CSV parsing and `.ics` export; onboarding and dashboard; AI assistant local engine and handling of unreachable data sources |
 | **2. Implemented but not fully verified** | Push notifications (backend fan-out, device tokens and preferences tested; delivery to a physical device not confirmed); Google Sign-In (backend verification checked against the live Firebase project; provider enabled on 4 November 2026, but no real sign-in has completed yet); Gemini-backed assistant and tutor (a live key answered in a short check on the web build; answer quality not evaluated); Gemini past-paper extraction (parsing tested, live extraction quality not evaluated); local reminders and notifications on a real device (not observed); Android build (compiles, installs and launches on an emulator; full walkthrough done on the web build because of the machine's memory limits) |
 | **3. Partially implemented** | Student Hub (static fixture data, simulated dues payments); Resources (static content); server-side timetable routes (exist and are restricted to each user's own entries, but are unused by the app); target-class calculator (works, but honours thresholds not checked against current regulations) |
-| **4. Planned or outstanding** | Apple sign-in and password reset (out of scope, no buttons shown); keeping guest mode across app restarts (it is in memory only, by design for now); timetable synchronisation across devices; production deployment; security review; iOS version; usability study; continuous integration |
+| **4. Planned or outstanding** | Apple sign-in and password reset (out of scope, no buttons shown); timetable synchronisation across devices; production deployment; security review; iOS version; usability study; continuous integration |
 
 ---
 
@@ -154,7 +159,6 @@ All 19 references in the final report are cited in the text, and every in-text c
 - **Push notifications:** delivery to a physical device is unconfirmed.
 - **Google Sign-In:** enabled in Firebase (4 November 2026), but no real sign-in has completed on a device yet.
 - **Apple sign-in and password reset:** out of scope; the app shows no option for either.
-- **Guest mode:** built, but it lasts only until the app is closed.
 - **Production readiness:** no production deployment and no security review.
 - **Timetable:** local-first and not synchronised with the backend.
 - **Static content:** Student Hub and Resources content is static, and payments are simulated.

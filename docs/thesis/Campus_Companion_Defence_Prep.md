@@ -187,7 +187,7 @@ All of these are fixed, with regression tests.
 7. **Target-class calculator:** a formula, not a validated prediction. The honours thresholds need checking against current UG regulations.
 8. **Walking times:** based on straight-line distance, not real routes.
 9. **Not deployed:** no production deployment and no security review. Android and web only; no iOS version.
-10. **Out of scope:** Apple sign-in and in-app password reset. Guest mode lasts only until the app is closed.
+10. **Out of scope:** Apple sign-in and in-app password reset.
 11. **Screenshots:** taken from the web build. The Android build runs on an emulator, but this machine (7.7 GB of RAM) could not keep the emulator responsive.
 
 ---
