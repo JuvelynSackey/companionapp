@@ -14,6 +14,7 @@ import 'package:mobile/core/storage/token_storage.dart';
 import 'package:mobile/features/auth/session_controller.dart';
 
 import 'support/admin_fakes.dart';
+import 'support/local_prefs_fakes.dart';
 import 'support/push_fakes.dart';
 
 /// The server (backend/src/services/notificationService.js) and the app agree
@@ -117,6 +118,7 @@ void main() {
         pushPlatformProvider.overrideWithValue('android'),
         authRepositoryProvider.overrideWithValue(_RecordingAuthRepository(events)),
         sessionControllerProvider.overrideWith(() => FakeSessionController(studentUser)),
+        localPrefsProvider.overrideWithValue(await testLocalPrefs()),
       ]);
       addTearDown(container.dispose);
       await container.read(sessionControllerProvider.future);
@@ -140,6 +142,7 @@ void main() {
         pushPlatformProvider.overrideWithValue('android'),
         authRepositoryProvider.overrideWithValue(_RecordingAuthRepository(order)),
         sessionControllerProvider.overrideWith(() => FakeSessionController(studentUser)),
+        localPrefsProvider.overrideWithValue(await testLocalPrefs()),
       ]);
       addTearDown(container.dispose);
       await container.read(sessionControllerProvider.future);
@@ -156,6 +159,7 @@ void main() {
       final container = ProviderContainer(overrides: [
         authRepositoryProvider.overrideWithValue(_RecordingAuthRepository(events)),
         sessionControllerProvider.overrideWith(() => FakeSessionController(studentUser)),
+        localPrefsProvider.overrideWithValue(await testLocalPrefs()),
       ]);
       addTearDown(container.dispose);
       await container.read(sessionControllerProvider.future);

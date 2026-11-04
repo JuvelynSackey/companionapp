@@ -25,6 +25,7 @@ class LocalPrefs {
 
   static const _kInstitutionId = 'selected_institution_id';
   static const _kOnboardingCompleted = 'is_onboarding_completed';
+  static const _kGuestMode = 'is_guest_mode';
   static const _kReadAnnouncementIds = 'read_announcement_ids';
   static const _kExams = 'local_exams_v1';
   static const _kSchedule = 'local_schedule_v1';
@@ -42,6 +43,11 @@ class LocalPrefs {
 
   bool get isOnboardingCompleted => _prefs.getBool(_kOnboardingCompleted) ?? false;
   Future<void> setOnboardingCompleted(bool value) => _prefs.setBool(_kOnboardingCompleted, value);
+
+  /// Whether the last person on this device chose "Continue as Guest" and has
+  /// not signed in or left guest mode since.
+  bool get isGuestMode => _prefs.getBool(_kGuestMode) ?? false;
+  Future<void> setGuestMode(bool value) => _prefs.setBool(_kGuestMode, value);
 
   Set<int> get readAnnouncementIds =>
       (_prefs.getStringList(_kReadAnnouncementIds) ?? const []).map(int.parse).toSet();

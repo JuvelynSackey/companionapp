@@ -68,8 +68,8 @@ final _event = CampusEvent(
   isRegistered: false,
 );
 
-Future<(Widget, FakeClubApi)> _app() async {
-  SharedPreferences.setMockInitialValues({'is_onboarding_completed': true});
+Future<(Widget, FakeClubApi)> _app({bool guestSaved = false}) async {
+  SharedPreferences.setMockInitialValues({'is_onboarding_completed': true, 'is_guest_mode': guestSaved});
   final prefs = await LocalPrefs.create();
   final clubs = FakeClubApi([cs, photo]);
   final app = ProviderScope(
@@ -108,6 +108,9 @@ Finder _navTab(String label) => find.descendant(of: find.byType(NavigationBar), 
 
 bool _guestMode(WidgetTester tester) =>
     ProviderScope.containerOf(tester.element(find.byType(AppRoot))).read(guestModeProvider);
+
+/// What the next launch will read.
+Future<bool?> _savedGuestMode() async => (await SharedPreferences.getInstance()).getBool('is_guest_mode');
 
 void main() {
   testWidgets('Continue as Guest opens the guest shell with the campus feeds, not the personal app', (tester) async {
@@ -189,5 +192,29 @@ void main() {
     expect(find.byType(SignInScreen), findsOneWidget);
     expect(find.byType(GuestShell), findsNothing);
     expect(_guestMode(tester), isFalse);
+  });
+
+  group('guest mode is remembered on the device', () {
+    testWidgets('choosing Continue as Guest saves it', (tester) async {
+      await _enterGuestMode(tester);
+      expect(await _savedGuestMode(), isTrue);
+    });
+
+    testWidgets('reopening the app goes straight back to the guest shell', (tester) async {
+      final (app, _) = await _app(guestSaved: true);
+      await tester.pumpWidget(app);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GuestShell), findsOneWidget);
+      expect(find.byType(SignInScreen), findsNothing);
+    });
+
+    testWidgets('choosing Sign in clears it, so the next launch shows the sign-in screen', (tester) async {
+      await _enterGuestMode(tester);
+      await tester.tap(find.widgetWithText(TextButton, 'Sign in'));
+      await tester.pumpAndSettle();
+
+      expect(await _savedGuestMode(), isFalse);
+    });
   });
 }

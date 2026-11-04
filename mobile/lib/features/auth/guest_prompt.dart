@@ -7,7 +7,7 @@ import 'session_controller.dart';
 /// detail page, say) is popped so the sign-in screen is what they see.
 void leaveGuestMode(BuildContext context, WidgetRef ref) {
   Navigator.of(context).popUntil((route) => route.isFirst);
-  ref.read(guestModeProvider.notifier).state = false;
+  ref.read(guestModeProvider.notifier).leave();
 }
 
 /// For account-only actions (RSVP, joining a club). Returns true when someone

@@ -37,7 +37,7 @@ class SocialAuthButtons extends ConsumerWidget {
   /// WelcomeScreen onboarding hasn't run yet (the gate checks it first), so
   /// the institution picker comes next, as it does for Google sign-in there.
   void _continueAsGuest(BuildContext context, WidgetRef ref) {
-    ref.read(guestModeProvider.notifier).state = true;
+    ref.read(guestModeProvider.notifier).enter();
     if (!ref.read(onboardingControllerProvider)) {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => const InstitutionPickerScreen()));
     }

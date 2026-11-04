@@ -10,10 +10,25 @@ import '../../data/models/app_user.dart';
 final sessionExpiredProvider = StateProvider<bool>((ref) => false);
 
 /// True while someone is browsing without an account ("Continue as Guest").
-/// AppRoot shows the GuestShell for it whenever nobody is signed in. Held in
-/// memory only, so the next launch starts at the sign-in screen again; every
-/// successful sign-in clears it.
-final guestModeProvider = StateProvider<bool>((ref) => false);
+/// AppRoot shows the GuestShell for it whenever nobody is signed in. Saved on
+/// the device, so a guest who closes the app comes back to the guest shell
+/// rather than the sign-in screen. Every successful sign-in, a sign-out, and
+/// the guest's own "Sign in" clear it.
+class GuestModeController extends Notifier<bool> {
+  @override
+  bool build() => ref.watch(localPrefsProvider).isGuestMode;
+
+  Future<void> enter() => _set(true);
+  Future<void> leave() => _set(false);
+
+  /// The screen changes at once; the saved copy follows.
+  Future<void> _set(bool value) async {
+    state = value;
+    await ref.read(localPrefsProvider).setGuestMode(value);
+  }
+}
+
+final guestModeProvider = NotifierProvider<GuestModeController, bool>(GuestModeController.new);
 
 /// Holds the current signed-in user (or null). `null` while restoring the
 /// session is not distinguishable from "signed out" here — callers should
@@ -40,7 +55,7 @@ class SessionController extends AsyncNotifier<AppUser?> {
     final previous = state;
     state = const AsyncLoading<AppUser?>().copyWithPrevious(previous);
     state = (await AsyncValue.guard(action)).copyWithPrevious(previous);
-    if (state.valueOrNull != null) ref.read(guestModeProvider.notifier).state = false;
+    if (state.valueOrNull != null) await ref.read(guestModeProvider.notifier).leave();
   }
 
   Future<void> login({required String email, required String password}) async {
@@ -72,7 +87,7 @@ class SessionController extends AsyncNotifier<AppUser?> {
     await ref.read(pushCoordinatorProvider).unregisterCurrentDevice();
     await ref.read(authRepositoryProvider).signOut();
     ref.read(sessionExpiredProvider.notifier).state = false;
-    ref.read(guestModeProvider.notifier).state = false;
+    await ref.read(guestModeProvider.notifier).leave();
     state = const AsyncValue.data(null);
   }
 }

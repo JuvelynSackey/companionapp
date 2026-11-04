@@ -33,6 +33,10 @@ flutter run --dart-define=API_BASE_URL=http://<host>:4000/api --dart-define=GEMI
 - `GEMINI_API_KEY` is optional. Without it, the assistant uses its built-in local rule engine.
 - Checks: `flutter analyze` and `flutter test`.
 
+**Continuous integration**
+
+[.github/workflows/ci.yml](.github/workflows/ci.yml) runs the backend's `npm test` and the app's `flutter analyze` and `flutter test` on every push and pull request to `master`. It needs no secrets. The database and smoke tests need a running PostgreSQL and API, so they stay local.
+
 ## Push notifications
 
 Built and tested, but **off** until a Firebase project exists. See

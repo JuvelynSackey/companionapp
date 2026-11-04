@@ -9,6 +9,7 @@ import 'package:mobile/data/repositories/auth_repository.dart';
 import 'package:mobile/features/auth/session_controller.dart';
 
 import 'support/google_auth_fakes.dart';
+import 'support/local_prefs_fakes.dart';
 
 /// In-memory fake — never touches the real FlutterSecureStorage platform channel.
 class _FakeTokenStorage extends TokenStorage {
@@ -21,9 +22,10 @@ class _FakeTokenStorage extends TokenStorage {
   Future<void> clearToken() async => _token = null;
 }
 
-ProviderContainer _container({required FakeGoogleAuthService google, required FakeGoogleAuthApi api}) {
+Future<ProviderContainer> _container({required FakeGoogleAuthService google, required FakeGoogleAuthApi api}) async {
   final container = ProviderContainer(overrides: [
     authRepositoryProvider.overrideWithValue(AuthRepository(api, _FakeTokenStorage(), googleAuth: google)),
+    localPrefsProvider.overrideWithValue(await testLocalPrefs()),
   ]);
   addTearDown(container.dispose);
   return container;
@@ -32,7 +34,7 @@ ProviderContainer _container({required FakeGoogleAuthService google, required Fa
 void main() {
   group('SessionController.loginWithGoogle', () {
     test('a cancelled picker leaves state as data(null) — signed out, not an error', () async {
-      final container = _container(google: FakeGoogleAuthService(idToken: null), api: FakeGoogleAuthApi());
+      final container = await _container(google: FakeGoogleAuthService(idToken: null), api: FakeGoogleAuthApi());
       container.listen(sessionControllerProvider, (_, _) {});
       await container.read(sessionControllerProvider.future); // build()
 
@@ -47,7 +49,7 @@ void main() {
       final api = FakeGoogleAuthApi(
         result: AuthResult('jwt', AppUser(userId: 3, fullName: 'Kojo', email: 'kojo@ug.edu.gh', role: 'student', permissions: const {})),
       );
-      final container = _container(google: FakeGoogleAuthService(idToken: 'tok'), api: api);
+      final container = await _container(google: FakeGoogleAuthService(idToken: 'tok'), api: api);
       container.listen(sessionControllerProvider, (_, _) {});
       await container.read(sessionControllerProvider.future);
 
@@ -58,7 +60,7 @@ void main() {
 
     test('a backend failure surfaces as a state error, not an unhandled exception', () async {
       final api = FakeGoogleAuthApi()..error = ApiException('Invalid or expired Google sign-in token', statusCode: 401);
-      final container = _container(google: FakeGoogleAuthService(idToken: 'tok'), api: api);
+      final container = await _container(google: FakeGoogleAuthService(idToken: 'tok'), api: api);
       container.listen(sessionControllerProvider, (_, _) {});
       await container.read(sessionControllerProvider.future);
 
@@ -71,7 +73,7 @@ void main() {
       final api = FakeGoogleAuthApi(
         result: AuthResult('jwt', AppUser(userId: 1, fullName: 'X', email: 'x@ug.edu.gh', role: 'student', permissions: const {})),
       );
-      final container = _container(google: FakeGoogleAuthService(idToken: 'tok'), api: api);
+      final container = await _container(google: FakeGoogleAuthService(idToken: 'tok'), api: api);
       container.listen(sessionControllerProvider, (_, _) {});
       await container.read(sessionControllerProvider.future);
       container.read(sessionExpiredProvider.notifier).state = true;
@@ -82,7 +84,7 @@ void main() {
     });
 
     test('a cancel leaves a prior "session expired" flag untouched', () async {
-      final container = _container(google: FakeGoogleAuthService(idToken: null), api: FakeGoogleAuthApi());
+      final container = await _container(google: FakeGoogleAuthService(idToken: null), api: FakeGoogleAuthApi());
       container.listen(sessionControllerProvider, (_, _) {});
       await container.read(sessionControllerProvider.future);
       container.read(sessionExpiredProvider.notifier).state = true;
@@ -91,5 +93,21 @@ void main() {
 
       expect(container.read(sessionExpiredProvider), isTrue, reason: 'a cancelled picker did not resolve anything');
     });
+  });
+
+  test('a successful sign-in clears a saved guest mode, so the next launch does not reopen as a guest', () async {
+    final api = FakeGoogleAuthApi(
+      result: AuthResult('jwt', AppUser(userId: 3, fullName: 'Kojo', email: 'kojo@ug.edu.gh', role: 'student', permissions: const {})),
+    );
+    final container = await _container(google: FakeGoogleAuthService(idToken: 'tok'), api: api);
+    container.listen(sessionControllerProvider, (_, _) {});
+    await container.read(sessionControllerProvider.future);
+    await container.read(guestModeProvider.notifier).enter();
+    expect(container.read(localPrefsProvider).isGuestMode, isTrue);
+
+    await container.read(sessionControllerProvider.notifier).loginWithGoogle();
+
+    expect(container.read(guestModeProvider), isFalse);
+    expect(container.read(localPrefsProvider).isGuestMode, isFalse);
   });
 }
