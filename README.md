@@ -9,7 +9,7 @@ alerts, events, campus map, grade analytics, quizzes, and an AI assistant and tu
 | `backend/` | Node/Express REST API on PostgreSQL. |
 | `docs/` | Schema notes, API examples (`api-testing.http`), phase-2 plan. |
 
-See [PROJECT_AUDIT.md](PROJECT_AUDIT.md) for what works, what is simulated, and what is left to clean up.
+See [PROJECT_AUDIT.md](PROJECT_AUDIT.md) for what works, what was removed, and what is left to do.
 
 ## Run locally
 

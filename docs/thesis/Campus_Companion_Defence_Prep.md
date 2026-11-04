@@ -20,14 +20,14 @@ Everything here matches the code and the final report as of 3 November 2026. Whe
 
 There are three roles (student, lecturer and administrator), plus a read-only guest mode.
 
-**Evidence.** On 4 November 2026 all 722 automated test executions passed:
+**Evidence.** On 4 November 2026 all 750 automated test executions passed:
 
 | Suite | Passed |
 |---|---|
-| Flutter tests | 412 |
-| Backend unit tests | 94 |
+| Flutter tests | 421 |
+| Backend unit tests | 103 |
 | Database tests | 14 |
-| API smoke tests | 202 |
+| API smoke tests | 212 |
 
 Flutter static analysis was clean. Mutation testing confirmed that the key tests fail when the code they check is broken.
 
@@ -95,10 +95,10 @@ Flutter app (Android / web)          Node.js + Express API             PostgreSQ
    - **Events:** RSVP, then show the event pass. **Clubs:** join and leave.
    - **Campus map:** list and map views; open a location in a maps app.
    - **Digital student ID:** flip the card to show the QR code.
-   - **Student Hub:** point out the **Demo data** banner and **PAID (SIMULATED)**. *This is deliberate honesty: no real money moves.*
+   - **Lost & Found:** post an item, mark it returned, then remove it. Point out that a guest sees the board without names or contact notes.
 4. **Log in as the administrator.** Post an emergency announcement and show it in Alerts. Open the admin panel and show account provisioning: lecturer and admin accounts can only be created here.
 5. **Evidence in the terminal:**
-   - `npm run test:smoke`: shows **202 passed, 0 failed**.
+   - `npm run test:smoke`: shows **212 passed, 0 failed**.
    - `npm run verify:integrations`: shows 3 verified and 0 failed, and lists exactly what is not verified.
 
 > If the first smoke-test run says "fetch failed", run it again. The very first request after the server starts sometimes fails to connect; this happened consistently on 30 October and 3 November.
@@ -151,10 +151,10 @@ The ER diagram is Figure 3.2 in the report.
 | Level | Tool | Result (4 Nov 2026) | What it proves |
 |---|---|---|---|
 | Static analysis | `flutter analyze` | No issues | No analyser-detected errors |
-| Mobile unit and widget tests | `flutter test` | 412 / 412 | Logic and screens, including grading and the FGPA, timetable parsing, walking routes, guest mode and the demo labels |
-| Backend unit tests (offline) | `node --test` | 94 / 94 | Grading scale, push fan-out, token verification, `optionalAuth`, and the events, clubs, quizzes, locations and login controllers |
+| Mobile unit and widget tests | `flutter test` | 421 / 421 | Logic and screens, including grading and the FGPA, timetable parsing, walking routes, guest mode and the demo labels |
+| Backend unit tests (offline) | `node --test` | 103 / 103 | Grading scale, push fan-out, token verification, `optionalAuth`, and the events, clubs, quizzes, locations, Lost & Found and login controllers |
 | Database tests | `npm run test:db` | 14 / 14 | Real SQL against PostgreSQL: device tokens, Google account linking |
-| End-to-end API | `npm run test:smoke` | 202 / 202 | Real user journeys through the running API, including the role and ownership rules |
+| End-to-end API | `npm run test:smoke` | 212 / 212 | Real user journeys through the running API, including the role and ownership rules |
 | Live integrations | `npm run verify:integrations` | 3 verified, 0 failed | Firebase credential, FCM authorisation (dry run), Firebase token rejection |
 
 **Mutation testing.** For key rules, I deliberately broke the real code and checked that the tests then failed. The rules covered were:
@@ -183,7 +183,7 @@ All of these are fixed, with regression tests.
 3. **AI assistant:** a live Gemini key answered in one short check. Response quality has not been evaluated.
 4. **No usability study** has been done with students. A future study would need ethics approval.
 5. **Timetable:** stored on the device and not synchronised across devices. The server routes exist, but the app does not use them.
-6. **Student Hub and Resources:** sample data. Dues payments are simulated, and the app labels both on screen.
+6. **University services:** dues payment, shuttle times, library occupancy and the academic calendar are not offered. Earlier sample versions were removed rather than shown with invented data.
 7. **Degree class:** taken from the FGPA, as in the UG *Regulations for Junior Members* (2017): Levels 300 and 400 count double. Repeated courses are not weighted separately. The target-class calculator is a formula, not a validated prediction, and assumes the remaining credits are spread evenly over the levels left.
 8. **Walking times:** along real footpaths from a public routing service; if it cannot be reached and no route is saved, the app falls back to a straight-line estimate and says so.
 9. **Not deployed:** no production deployment and no security review. Android and web only; no iOS version.
@@ -198,7 +198,7 @@ All of these are fixed, with regression tests.
 2. Evaluate Gemini's answers against a set of representative questions.
 3. Run a usability study, with ethics approval.
 4. Add timetable synchronisation using the existing server routes, which are already restricted to each user's own entries.
-5. Replace the Student Hub's sample data with real backend tables. Add a real payment gateway only if it is needed.
+5. Add dues payment, shuttle times and library occupancy once the University's data (or access to its systems) and a payment provider are available.
 6. Add password reset and, if an iOS version is built, Apple sign-in.
 7. Deploy to production: hosting, HTTPS, secrets management, backups, rate limiting and a security review.
 8. Weight repeated courses as the regulations require (9.31c), and let students say how many credits remain at each level.
@@ -238,8 +238,8 @@ The assistant draws on several data sources: grades, events, alerts, locations, 
 **Q: Why is the timetable not on the server?**
 Students edit their timetable often and need it offline, for reminders and walking-time cards, so it is stored on the device first. Early on, reading it from a mostly empty server timetable risked hiding a student's real classes. The server routes exist and are now owner-only, so cloud sync is a clear next step.
 
-**Q: The dues payment looks real. Is it?**
-No. It is simulated. The screen carries a "Demo data" banner, the button says **Pay with MoMo**, the receipt says "SIMULATED PAYMENT — NOT A REAL TRANSACTION", and paid dues show "PAID (SIMULATED)". A real mobile-money integration was out of scope.
+**Q: Why is there no dues payment or shuttle tracker?**
+Earlier versions had them, built on sample data: invented drivers and phone numbers, live seat counts, and a simulated MoMo payment. I removed them before submission rather than show made-up information. They need the University's own data and a payment provider. Lost & Found, which needs neither, became a real shared board instead.
 
 **Q: How accurate is the target-class "prediction"?**
 It is not a prediction. It is a formula: the average a student needs over their remaining credit hours to reach a chosen honours class. Its class bands match the University's 2017 regulations, and it works on the FGPA, where Levels 300 and 400 count double. The app reads each course's level from its code. Because it cannot know which levels a student's remaining credits will fall in, it assumes they are spread evenly over the levels left, and the card says so.
