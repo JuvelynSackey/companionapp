@@ -15,11 +15,11 @@ All test suites were run on 3 November 2026 against the final code:
 | Check | Result |
 |---|---|
 | `flutter analyze` | No issues |
-| `flutter test` | 421 / 421 passed (4 November 2026) |
+| `flutter test` | 422 / 422 passed (4 November 2026) |
 | Backend offline unit tests (`npm test`) | 103 / 103 passed |
 | Backend database tests (`npm run test:db`) | 14 / 14 passed |
 | Backend API smoke tests (`npm run test:smoke`) | 212 / 212 passed |
-| **Total** | **750 passing test executions** (the sum of suite totals, not 750 unique test cases), all four suites run on 4 November 2026 |
+| **Total** | **751 passing test executions** (the sum of suite totals, not 751 unique test cases), all four suites run on 4 November 2026 |
 | Live integrations (`npm run verify:integrations`) | 4 November 2026: 4 verified, 0 failed: Firebase credential loads; FCM accepts a dry-run message (nothing delivered); real Firebase rejects an invalid ID token; the Gemini API accepts the key. Google provider: enabled, fingerprint registered. Not verified: push delivery to a phone, a real Google sign-in. |
 
 **The audit brief's baseline (332 / 38 / 8 / 180 = 558) was not used.** Those figures come from an older run, before Google Sign-In, the new dashboard and the regression tests were added. Before guest mode, the suites stood at 371 / 50 / 14 / 182 = 617, a result obtained on both 30 and 31 October. Guest mode then added 8 Flutter tests, 4 backend unit tests and 13 smoke checks. On 31 October, with guest mode, they were 379 / 54 / 14 / 195 = 642. The final round then added 2 Flutter tests and dropped 1 (380) and added 7 smoke checks (202). No suite regressed. The report uses the current figures above.
@@ -31,7 +31,7 @@ All test suites were run on 3 November 2026 against the final code:
 ## 2. Corrections made
 
 ### Accuracy (highest priority)
-- **Test figures:** every chapter uses the verified 421 / 103 / 14 / 212 = 750 (4 November 2026). No outdated totals remain.
+- **Test figures:** every chapter uses the verified 422 / 103 / 14 / 212 = 751 (4 November 2026). No outdated totals remain.
 - **Target-class calculator:**
   - **Before:** described as a "prediction" with "predictive accuracy".
   - **After:** described as a fixed formula, the average needed over the remaining credit hours to reach a chosen honours class (confirmed in `grade_prediction_engine.dart`). This affects Chapters 1, 3 and 4, Table 4.2 and Table 4.3.
@@ -137,7 +137,7 @@ Report:
 - **Official FGPA:** the class is now taken from the FGPA. Each course's level is read from its code (the first digit of the number, 9.13); each level's GPA is credit-weighted; the levels are combined 1:1:2:2 (9.31b). The label reads "Class (from FGPA x.xx)". If a course's level cannot be read, or the institution has no level rule, the app falls back to the CGPA estimate as before. The target-class calculator solves on the FGPA too, assuming the remaining credits are spread evenly over the levels left, and the card says so. Tests include transcripts where the FGPA and CGPA give different classes in each direction. Repeated courses (9.31c) are not weighted separately.
 - **Backend unit tests:** 40 new offline tests for events, clubs, quizzes, locations and the register/login account lookup, running the controllers against a scripted stand-in for the shared pool (`src/testing/fakeDb.js`). Breaking the event ownership check or the quiz answer-key stripping makes the matching test fail. They run in CI without secrets.
 - **Walking routes:** `WalkingRouteService` asks the FOSSGIS foot-routing server (OSRM on OpenStreetMap, no key, CORS allowed) for the walk between consecutive classes and keeps each result on the device. The dashboard card falls back to the straight line, saying so, when no route can be fetched. Checked live on the web build: the card read "~5 min walk from Balme Library"; the route is 339 m against 159 m in a straight line.
-- **Tests on 4 November 2026:** Flutter 412/412, backend unit 94/94, database 14/14, smoke 202/202 (722); `flutter analyze` clean. (Superseded by the run below.)
+- **Tests on 4 November 2026:** Flutter 412/412, backend unit 94/94, database 14/14, smoke 202/202 (722); `flutter analyze` clean. (Superseded by the runs below.)
 - **Report:** test figures updated throughout (Abstract, Table 4.1, Sections 4.4, 4.9, 5.1, Table 4.2); Section 4.3.2 describes the FGPA; Section 4.3.5 the routed walks; Section 4.6.6 and 5.3 the new unit tests; Table 4.3's degree-class row now lists only repeated courses and the calculator assumption; Table 3.5 lists the routing server; the two completed recommendations removed. Figures 4.2(b) and (c) retaken. Section headings now stay with their following text (one heading had been left at the foot of a page). The report is 56 pages.
 
 ### Demo content removed; Lost & Found made real (4 November 2026)
@@ -145,8 +145,17 @@ Report:
 - **Lost & Found** is a shared board on the backend: new table `lost_found_items` (migration `2026-11-lost-found.sql`, applied to the local database; it only adds a table), routes `GET/POST /lost-found`, `PATCH /lost-found/:id/returned`, `DELETE /lost-found/:id`. Guests can read it without names or contact notes; signed-in users post; only the poster or an admin changes an item. It starts empty and replaces Student Hub in the account menu.
 - **Resources** keeps Portals and Quizzes and links the official UG Regulations for Junior Members (2017) PDF.
 - **Checked:** 9 new backend unit tests and 10 new smoke checks; new Flutter tests for the board and the slimmer Resources screen. Live on the web build: posted a labelled test item, marked it returned and removed it; the board was empty again afterwards.
-- **Tests on 4 November 2026 (final run):** Flutter 421/421, backend unit 103/103, database 14/14, smoke 212/212 (750); `flutter analyze` clean.
+- **Tests on 4 November 2026:** Flutter 421/421, backend unit 103/103, database 14/14, smoke 212/212 (750); `flutter analyze` clean. (Superseded by the run below.)
 - **Report:** Sections 1.3, 3.3 (sixteen tables; Table 3.4 and Figure 3.3 gain `lost_found_items`), 3.4, 4.3.5, 4.6, 5.3 and 5.4, Tables 4.2 and 4.3, and the use case diagram (Figure 3.2: "Post to Lost & Found") updated; test figures updated throughout. Still 56 pages.
+
+### Phone tests (4 November 2026, evening)
+- **Device:** a Samsung Galaxy A16 (Android 16), connected by USB (`adb reverse tcp:4000`) to the development machine running the local backend; debug APK with Google sign-in, FCM and the Gemini key.
+- **Google Sign-In: VERIFIED on a device.** The student signed in with their Google account; the server created user 177 (role student, `google_uid` set, no password) at 19:52:17 UTC.
+- **Push: VERIFIED on a device.** The phone registered its FCM token three seconds after sign-in. With the app in the background, an admin posted a test announcement; the phone showed an FCM notification on the `announcements` channel, and the student confirmed seeing it. A first attempt (announcement 27) was lost because the dev server (`node --watch`) restarted just after saving it, before the background fan-out ran; the second (announcement 28) was delivered. Both test announcements were deleted.
+- **Street map:** the native MapLibre map on Android showed the Legon streets and all six locations.
+- **Gemini:** answered on the phone (header "Gemini", no local-engine label). Its answer pointed to "the Resources tab" for library hours (a tab removed earlier the same day), and bold inside italics showed stray asterisks. Fixed: the prompt now describes the app's real sections and tells Gemini not to invent hours, fees or shuttle times; the reply formatter handles bold inside italics (new test). Flutter suite 422/422; the fixed build was installed on the phone.
+- **Not checked:** a notification while the app is open; the release signing key (only the debug fingerprint is registered); anything against a deployed server.
+- **Report:** Abstract, Sections 4.2, 4.3.1, 4.3.4, 4.6.4 (new paragraph with these results), 4.8, 4.9, 5.1, 5.3 and 5.4, and Tables 4.2 and 4.3 updated; the Flutter count is now 422 (total 751). Still 56 pages.
 - **Report:** the 2017 regulations added to the references (now 20) and cited in Section 4.3.2; Sections 1.3, 3.2.1 (FR7), 4.3.2, 4.7 (Table 4.3, new "Degree-class estimate" row), 4.9, 5.3 and Table 4.2 updated; a recommendation added to compute the FGPA. Figures 4.2(b) and 4.2(c) retaken to show the new labels. The report is now 56 pages.
 
 ---
@@ -156,7 +165,7 @@ Report:
 | Status | Features |
 |---|---|
 | **1. Implemented and verified** (automated tests, and for some, the running app) | Guest mode (read-only browsing of announcements, events, clubs and the map; sign-in prompts for account-only actions); email/password registration and login; JWT sessions; bcrypt hashing; Zod request validation; backend role checks for students, lecturers and administrators; administrator account provisioning; GPA/CWA on the UG scale (shared fixture checked by backend and Flutter tests); events with ownership-based deletion; clubs (search, join, leave); announcements feed and admin posting; campus locations list and map; quiz lifecycle, including hidden answer keys; digital student ID with QR code; timetable `.ics`/CSV parsing and `.ics` export; onboarding and dashboard; AI assistant local engine and handling of unreachable data sources |
-| **2. Implemented but not fully verified** | Push notifications (backend fan-out, device tokens and preferences tested; delivery to a physical device not confirmed); Google Sign-In (backend verification checked against the live Firebase project; provider enabled on 4 November 2026, but no real sign-in has completed yet); Gemini-backed assistant and tutor (a live key answered in a short check on the web build; answer quality not evaluated); Gemini past-paper extraction (parsing tested, live extraction quality not evaluated); local reminders and notifications on a real device (not observed); Android build (compiles, installs and launches on an emulator; full walkthrough done on the web build because of the machine's memory limits) |
+| **2. Implemented but not fully verified** | Push notifications (delivered to a physical phone in the background from the local backend; a notification while the app is open, and delivery from a deployed server, not checked); Google Sign-In (completed on a physical phone with the debug signing key; the release key is not registered); Gemini-backed assistant and tutor (live answers seen on the web build and on a phone; answer quality not evaluated); Gemini past-paper extraction (parsing tested, live extraction quality not evaluated); local reminders and notifications on a real device (not observed); Android build (compiles, installs and launches on an emulator; full walkthrough done on the web build because of the machine's memory limits) |
 | **3. Partially implemented** | Server-side timetable routes (exist and are restricted to each user's own entries, but are unused by the app); degree class and target-class calculator (taken from the FGPA, but repeated courses are not weighted separately and the calculator assumes the remaining credits are spread evenly over the levels left) |
 | **4. Planned or outstanding** | Apple sign-in and password reset (out of scope, no buttons shown); timetable synchronisation across devices; production deployment; security review; iOS version; usability study; continuous integration |
 
@@ -176,8 +185,7 @@ All 20 references in the final report are cited in the text, and every in-text c
 
 ## 5. Remaining limitations (as stated in the report)
 
-- **Push notifications:** delivery to a physical device is unconfirmed.
-- **Google Sign-In:** enabled in Firebase (4 November 2026), but no real sign-in has completed on a device yet.
+- **Push notifications and Google Sign-In:** confirmed on one physical phone against the local backend, with the debug signing key; a notification while the app is open, the release key and a deployed server are not yet checked.
 - **Apple sign-in and password reset:** out of scope; the app shows no option for either.
 - **Production readiness:** no production deployment and no security review.
 - **Timetable:** local-first and not synchronised with the backend.

@@ -94,6 +94,17 @@ void main() {
       expect(_plain(formatMessage('---\n\ntext\n\n---', _base)), 'text');
     });
 
+    test('bold inside italics leaves no stray asterisks', () {
+      // The shape Gemini produced on a phone on 4 Nov 2026, which showed "Resources* tab ... times.*".
+      final spans = formatMessage('*Note: please check the **Resources** tab for the latest times.*', _base);
+      expect(_plain(spans), 'Note: please check the Resources tab for the latest times.');
+      final styled = _styled(spans);
+      expect(styled['Resources']!.fontWeight, FontWeight.bold);
+      expect(styled['Resources']!.fontStyle, FontStyle.italic, reason: 'still inside the italics');
+      expect(styled['Note: please check the ']!.fontStyle, FontStyle.italic);
+      expect(styled[' tab for the latest times.']!.fontStyle, FontStyle.italic);
+    });
+
     test('math with spaced asterisks is not treated as italic', () {
       expect(_plain(formatMessage('5 * 3 * 2 = 30', _base)), '5 * 3 * 2 = 30');
     });

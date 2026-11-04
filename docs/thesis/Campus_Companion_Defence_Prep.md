@@ -20,11 +20,11 @@ Everything here matches the code and the final report as of 3 November 2026. Whe
 
 There are three roles (student, lecturer and administrator), plus a read-only guest mode.
 
-**Evidence.** On 4 November 2026 all 750 automated test executions passed:
+**Evidence.** On 4 November 2026 all 751 automated test executions passed:
 
 | Suite | Passed |
 |---|---|
-| Flutter tests | 421 |
+| Flutter tests | 422 |
 | Backend unit tests | 103 |
 | Database tests | 14 |
 | API smoke tests | 212 |
@@ -32,8 +32,8 @@ There are three roles (student, lecturer and administrator), plus a read-only gu
 Flutter static analysis was clean. Mutation testing confirmed that the key tests fail when the code they check is broken.
 
 **Honest status.** It is a working prototype, not a production system.
-- **Push notifications:** server side verified, but delivery to a phone has not been tested.
-- **Google Sign-In:** built, and switched on in Firebase (4 November 2026), but no one has signed in with Google on a phone yet.
+- **Push notifications:** delivered to a real phone (Samsung Galaxy A16) with the app in the background, on 4 November 2026.
+- **Google Sign-In:** a real sign-in on the same phone created the student's account.
 - **Gemini:** a key is configured, and a live Gemini answer was seen in a short check. Answer quality has not been evaluated.
 - **Usability:** no usability study has been done.
 
@@ -151,7 +151,7 @@ The ER diagram is Figure 3.2 in the report.
 | Level | Tool | Result (4 Nov 2026) | What it proves |
 |---|---|---|---|
 | Static analysis | `flutter analyze` | No issues | No analyser-detected errors |
-| Mobile unit and widget tests | `flutter test` | 421 / 421 | Logic and screens, including grading and the FGPA, timetable parsing, walking routes, guest mode and the demo labels |
+| Mobile unit and widget tests | `flutter test` | 422 / 422 | Logic and screens, including grading and the FGPA, timetable parsing, walking routes, guest mode and the demo labels |
 | Backend unit tests (offline) | `node --test` | 103 / 103 | Grading scale, push fan-out, token verification, `optionalAuth`, and the events, clubs, quizzes, locations, Lost & Found and login controllers |
 | Database tests | `npm run test:db` | 14 / 14 | Real SQL against PostgreSQL: device tokens, Google account linking |
 | End-to-end API | `npm run test:smoke` | 212 / 212 | Real user journeys through the running API, including the role and ownership rules |
@@ -178,8 +178,8 @@ All of these are fixed, with regression tests.
 
 ## 7. Known limitations (say these before you are asked)
 
-1. **Push notifications:** server side verified; delivery to a physical phone is not yet tested.
-2. **Google Sign-In:** built and tested, and Google is enabled as a provider in Firebase, but no real Google sign-in has completed yet. On the emulator the attempt timed out.
+1. **Push notifications:** delivered to one phone with the app in the background. A notification while the app is open, and delivery from a deployed server, are not yet checked.
+2. **Google Sign-In:** works on one phone, with the debug signing key. The release key still has to be registered before publishing.
 3. **AI assistant:** a live Gemini key answered in one short check. Response quality has not been evaluated.
 4. **No usability study** has been done with students. A future study would need ethics approval.
 5. **Timetable:** stored on the device and not synchronised across devices. The server routes exist, but the app does not use them.
@@ -194,7 +194,7 @@ All of these are fixed, with regression tests.
 
 ## 8. Future work
 
-1. Test Google Sign-In on a phone. Then test push delivery on a phone, in the foreground and background.
+1. Register the release signing key, deploy the backend, and repeat the Google sign-in and push checks there, including a notification while the app is open.
 2. Evaluate Gemini's answers against a set of representative questions.
 3. Run a usability study, with ethics approval.
 4. Add timetable synchronisation using the existing server routes, which are already restricted to each user's own entries.
@@ -230,7 +230,7 @@ Each one is built and tested in code. I also ran a live check against the real s
 - Google is enabled as a sign-in provider;
 - the Gemini API accepts the key, and the assistant gave a real Gemini answer in a short check.
 
-What has not been verified: no one has completed a Google sign-in on a phone, and no push has been delivered to a physical phone. I report exactly that.
+On 4 November 2026 I also tested on a real phone (Samsung Galaxy A16): Google sign-in created my account on the server, a test announcement arrived as a notification while the app was in the background, the street map loaded, and Gemini answered. What is not verified: a notification while the app is open, the release signing key, and a deployed server. I report exactly that.
 
 **Q: What happens if the AI service is down?**
 The assistant draws on several data sources: grades, events, alerts, locations, and the timetable stored on the device. If one cannot be reached, it tells the student which one and answers from the rest. If Gemini is unavailable, a local keyword engine answers supported questions, and its replies are labelled "via Local Engine". This behaviour is tested, and I saw it happen for real: in the live check Gemini once replied "high demand" (HTTP 503), and the app fell back. Since then the app retries once when Gemini says it is busy, and waits up to 60 seconds for a reply. In a later check the retry worked for real: Gemini answered 503, the retry got through, and the student saw a Gemini answer.
@@ -263,4 +263,4 @@ Passing tests are not the same as a working product. Running the whole applicati
 - [ ] Build the app, and log in as the student and the admin once beforehand.
 - [ ] Have the report PDF, this document and a terminal open.
 - [x] Enable Google in the Firebase console and add a Gemini key, re-run `npm run verify:integrations`, and update the report (4 November 2026).
-- [ ] Optional, if a phone allows: complete a Google sign-in and receive a push on a physical phone, then update the report.
+- [x] Complete a Google sign-in and receive a push on a physical phone, then update the report (4 November 2026).

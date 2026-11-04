@@ -99,7 +99,7 @@ Current Context:
 - Active Alerts: $alertSummary
 - Upcoming Events: $eventSummary$unavailableNote
 
-Answer clearly, politely, with actionable times and venue names. If you don't know something, direct the student to the relevant tab (Timetable, Exams, Analytics, or Resources).''';
+Answer clearly, politely, with actionable times and venue names. The app's sections are: Timetable, Exams, Analytics (grades), Alerts, the campus map, Lost & Found, and Resources (the institution's official portals and documents, and quizzes). Do not invent opening hours, fees, shuttle times or other campus facts that are not given above; for those, direct the student to the official portals in Resources.''';
   }
 }
 

@@ -14,10 +14,11 @@ email and password.
 **Status on 4 November 2026** (`cd backend && npm run verify:integrations`):
 the console step is done. The "Google sign-in provider" line reads ENABLED,
 the debug signing fingerprint is registered, and the credential and ID-token
-checks still pass. **No real Google sign-in has completed yet**: on the Android
-emulator the attempt timed out before an account could be chosen (a slow
-emulator with no Google account), so the end-to-end test is still to be done
-on a physical phone.
+checks still pass. **A real Google sign-in has completed on a physical phone**
+(Samsung Galaxy A16, Android 16, debug build against the local backend over
+USB): the server created the student's account from their Google identity.
+Only the debug signing fingerprint is registered; add the release key's
+fingerprint in the Firebase console before publishing a release build.
 
 ## How it works
 

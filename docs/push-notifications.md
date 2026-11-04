@@ -128,9 +128,13 @@ leaves it off (web push needs separate setup that is not done).
 **Status on 3 November 2026.** `cd backend && npm run verify:integrations`
 confirmed that the server's credential loads and that FCM accepts a dry-run
 message sent with it (FCM validates and authorises it but delivers nothing).
-Steps 1 to 6 below have **not** been done yet: no push has been delivered to a
-physical phone. Until they pass, describe push as "implemented, server side
-verified, device delivery not yet verified".
+**4 November 2026:** delivery was confirmed on a physical phone (Samsung Galaxy
+A16, Android 16, debug build against the local backend over USB): after signing
+in, the phone registered its token, and an announcement posted with the app in
+the background arrived as a notification. Not yet checked: a notification while
+the app is open, and delivery from a deployed server. Note that with
+`npm run dev` a server restart straight after posting can drop that
+announcement's push, since the fan-out runs after the response.
 
 1. Sign in on a real Android phone (an emulator needs Google Play services).
    Allow notifications when asked.

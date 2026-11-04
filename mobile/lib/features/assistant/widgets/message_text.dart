@@ -16,33 +16,43 @@ List<TextSpan> formatMessage(String text, TextStyle base) {
       .replaceAll(RegExp(r'\n{3,}'), '\n\n')
       .replaceAll(RegExp(r'^\n+|\n+$'), '');
 
+  return _inlineSpans(lines, base);
+}
+
+List<TextSpan> _inlineSpans(String text, TextStyle style) {
   final spans = <TextSpan>[];
   var cursor = 0;
-  for (final match in _inline.allMatches(lines)) {
-    if (match.start > cursor) spans.add(TextSpan(text: lines.substring(cursor, match.start)));
+  for (final match in _inline.allMatches(text)) {
+    if (match.start > cursor) spans.add(TextSpan(text: text.substring(cursor, match.start), style: _orNull(style)));
 
     final bold = match.namedGroup('b');
     final code = match.namedGroup('c');
     final italic = match.namedGroup('i');
     if (bold != null) {
-      spans.add(TextSpan(text: bold, style: base.copyWith(fontWeight: FontWeight.bold)));
+      spans.add(TextSpan(text: bold, style: style.copyWith(fontWeight: FontWeight.bold)));
     } else if (code != null) {
       spans.add(TextSpan(
         text: code,
-        style: base.copyWith(fontFamily: 'monospace', backgroundColor: base.color?.withValues(alpha: 0.12)),
+        style: style.copyWith(fontFamily: 'monospace', backgroundColor: style.color?.withValues(alpha: 0.12)),
       ));
     } else if (italic != null) {
-      spans.add(TextSpan(text: italic, style: base.copyWith(fontStyle: FontStyle.italic)));
+      // An italic run may hold bold (Gemini writes "*Note: check **Resources**.*").
+      spans.addAll(_inlineSpans(italic, style.copyWith(fontStyle: FontStyle.italic)));
     }
     cursor = match.end;
   }
-  if (cursor < lines.length) spans.add(TextSpan(text: lines.substring(cursor)));
+  if (cursor < text.length) spans.add(TextSpan(text: text.substring(cursor), style: _orNull(style)));
   return spans;
 }
 
+/// Plain runs at the top level carry no style of their own (they inherit
+/// the bubble's), as before; inside an italic run they keep the italics.
+TextStyle? _orNull(TextStyle style) => style.fontStyle == FontStyle.italic ? style : null;
+
 /// Bold first so "**x**" is never read as two italics. Italic must hug its
-/// text ("*x*", not "5 * 3 * 2"). None of them cross a line break.
-final _inline = RegExp(r'\*\*(?<b>[^*\n]+?)\*\*|`(?<c>[^`\n]+)`|\*(?<i>[^*\s][^*\n]*?)\*');
+/// text ("*x*", not "5 * 3 * 2"), may contain bold runs, and only closes on a
+/// lone "*". None of them cross a line break.
+final _inline = RegExp(r'\*\*(?<b>[^*\n]+?)\*\*|`(?<c>[^`\n]+)`|\*(?<i>[^*\s](?:\*\*[^*\n]+?\*\*|[^*\n])*?)\*(?!\*)');
 
 final _bullet = RegExp(r'^(\s*)[*-]\s+');
 final _heading = RegExp(r'^#{1,6}\s+(.*)$');
