@@ -15,11 +15,11 @@ All test suites were run on 3 November 2026 against the final code:
 | Check | Result |
 |---|---|
 | `flutter analyze` | No issues |
-| `flutter test` | 380 / 380 passed |
-| Backend offline unit tests (`npm test`) | 54 / 54 passed |
+| `flutter test` | 412 / 412 passed (4 November 2026) |
+| Backend offline unit tests (`npm test`) | 94 / 94 passed |
 | Backend database tests (`npm run test:db`) | 14 / 14 passed |
 | Backend API smoke tests (`npm run test:smoke`) | 202 / 202 passed |
-| **Total** | **650 passing test executions** (the sum of suite totals, not 650 unique test cases) |
+| **Total** | **722 passing test executions** (the sum of suite totals, not 722 unique test cases), all four suites run on 4 November 2026 |
 | Live integrations (`npm run verify:integrations`) | 4 November 2026: 4 verified, 0 failed: Firebase credential loads; FCM accepts a dry-run message (nothing delivered); real Firebase rejects an invalid ID token; the Gemini API accepts the key. Google provider: enabled, fingerprint registered. Not verified: push delivery to a phone, a real Google sign-in. |
 
 **The audit brief's baseline (332 / 38 / 8 / 180 = 558) was not used.** Those figures come from an older run, before Google Sign-In, the new dashboard and the regression tests were added. Before guest mode, the suites stood at 371 / 50 / 14 / 182 = 617, a result obtained on both 30 and 31 October. Guest mode then added 8 Flutter tests, 4 backend unit tests and 13 smoke checks. On 31 October, with guest mode, they were 379 / 54 / 14 / 195 = 642. The final round then added 2 Flutter tests and dropped 1 (380) and added 7 smoke checks (202). No suite regressed. The report uses the current figures above.
@@ -31,7 +31,7 @@ All test suites were run on 3 November 2026 against the final code:
 ## 2. Corrections made
 
 ### Accuracy (highest priority)
-- **Test figures:** every chapter uses the verified 380 / 54 / 14 / 202 = 650. No outdated totals remain.
+- **Test figures:** every chapter uses the verified 412 / 94 / 14 / 202 = 722 (4 November 2026). No outdated totals remain.
 - **Target-class calculator:**
   - **Before:** described as a "prediction" with "predictive accuracy".
   - **After:** described as a fixed formula, the average needed over the remaining credit hours to reach a chosen honours class (confirmed in `grade_prediction_engine.dart`). This affects Chapters 1, 3 and 4, Table 4.2 and Table 4.3.
@@ -132,6 +132,13 @@ Report:
 - **Source:** University of Ghana, *Regulations for Junior Members*, Vol. 1, September 2017 (https://www.ug.edu.gh/sites/default/files/UG_Regulations_for_Junior_Members-2017.pdf), read directly (pages 43-44 and 48).
 - **Matches:** grade points A 4.0 to D 1.0, E (45-49) 0.5 as a failure grade, F 0; pass grades A-D and failure grades E, F, X, Z; class bands First 3.60-4.00, Second Upper 3.00-3.59, Second Lower 2.00-2.99, Third 1.50-1.99, Pass 1.00-1.49, Fail 0.00-0.99.
 - **Difference:** the FGPA weights Level 100-400 GPAs 1:1:2:2 (9.31b); the app uses the plain credit-weighted CGPA. At the author's choice the formula was kept and labelled: the GPA card and the assistant now say "Estimated class (from CGPA)", and the target-class card notes that the official class can differ. Two new test assertions cover the labels; the Flutter suite passed 398/398.
+
+### Former future work made required (4 November 2026)
+- **Official FGPA:** the class is now taken from the FGPA. Each course's level is read from its code (the first digit of the number, 9.13); each level's GPA is credit-weighted; the levels are combined 1:1:2:2 (9.31b). The label reads "Class (from FGPA x.xx)". If a course's level cannot be read, or the institution has no level rule, the app falls back to the CGPA estimate as before. The target-class calculator solves on the FGPA too, assuming the remaining credits are spread evenly over the levels left, and the card says so. Tests include transcripts where the FGPA and CGPA give different classes in each direction. Repeated courses (9.31c) are not weighted separately.
+- **Backend unit tests:** 40 new offline tests for events, clubs, quizzes, locations and the register/login account lookup, running the controllers against a scripted stand-in for the shared pool (`src/testing/fakeDb.js`). Breaking the event ownership check or the quiz answer-key stripping makes the matching test fail. They run in CI without secrets.
+- **Walking routes:** `WalkingRouteService` asks the FOSSGIS foot-routing server (OSRM on OpenStreetMap, no key, CORS allowed) for the walk between consecutive classes and keeps each result on the device. The dashboard card falls back to the straight line, saying so, when no route can be fetched. Checked live on the web build: the card read "~5 min walk from Balme Library"; the route is 339 m against 159 m in a straight line.
+- **Tests on 4 November 2026:** Flutter 412/412, backend unit 94/94, database 14/14, smoke 202/202 (722); `flutter analyze` clean.
+- **Report:** test figures updated throughout (Abstract, Table 4.1, Sections 4.4, 4.9, 5.1, Table 4.2); Section 4.3.2 describes the FGPA; Section 4.3.5 the routed walks; Section 4.6.6 and 5.3 the new unit tests; Table 4.3's degree-class row now lists only repeated courses and the calculator assumption; Table 3.5 lists the routing server; the two completed recommendations removed. Figures 4.2(b) and (c) retaken. Section headings now stay with their following text (one heading had been left at the foot of a page). The report is 56 pages.
 - **Report:** the 2017 regulations added to the references (now 20) and cited in Section 4.3.2; Sections 1.3, 3.2.1 (FR7), 4.3.2, 4.7 (Table 4.3, new "Degree-class estimate" row), 4.9, 5.3 and Table 4.2 updated; a recommendation added to compute the FGPA. Figures 4.2(b) and 4.2(c) retaken to show the new labels. The report is now 56 pages.
 
 ---
@@ -167,8 +174,8 @@ All 20 references in the final report are cited in the text, and every in-text c
 - **Production readiness:** no production deployment and no security review.
 - **Timetable:** local-first and not synchronised with the backend.
 - **Static content:** Student Hub and Resources content is static, and payments are simulated.
-- **Walking times:** estimated by straight-line distance.
-- **Target-class calculator and degree class:** a formula, not a validated prediction model, and estimated from the CGPA rather than the level-weighted FGPA.
+- **Walking times:** routed along real footpaths by a public routing service (FOSSGIS OSRM); straight-line fallback, labelled, when it cannot be reached.
+- **Target-class calculator and degree class:** the class is taken from the FGPA; repeated courses are not weighted separately (9.31c), and the calculator assumes the remaining credits are spread evenly over the levels left. The calculator is a formula, not a validated prediction model.
 - **AI assistant:** a live Gemini key answered in one short check (4 November 2026); answer quality not evaluated. The local fallback is limited.
 - **Test coverage:** events, clubs, quizzes, locations and the registration/login account lookup are covered only by smoke tests.
 - **Usability:** no usability study.
@@ -203,5 +210,5 @@ The audit brief asked for placeholders for unconfirmed personal details. These d
 1. **No official style sheet:** formatting follows the supplied template structure and a same-department sample (Times New Roman 12 pt, 1.5 line spacing, 1-inch margins, A4). Check these against any department style guide.
 2. **Contents page:** it is written into the document with page numbers measured in Word, so editing the Word file can shift pages. After any edit, either re-check the numbers or insert Word's automatic contents table (References → Table of Contents), which works because the headings use Word heading styles.
 3. **Screenshots:** they come from the web build, not an Android device. This is disclosed in Section 4.2.
-4. **Degree class:** the grading scale and class bands match the 2017 regulations, but the app estimates the class from the CGPA, not the level-weighted FGPA. The app and report both say so; an examiner may still ask why the FGPA was not implemented.
+4. **Degree class:** computed from the FGPA as the 2017 regulations require. Repeated courses (9.31c) are not weighted separately; an examiner may ask about that, and about the calculator's even-spread assumption.
 5. **Source control:** the redesign, the three bug fixes (`b6d7266`) and guest mode (`7dc0185`) are committed, so the code matches the report. On 3 November 2026 the repository was pushed to a private GitHub remote (`master` at `915c2fa` at the time of the push), after a check that no secret files or keys are tracked or in the history. The repository was briefly public after it was created and was made private the same day; no secrets or thesis files were in it. The report folder (`docs/thesis/`) was then committed and pushed too. Table 4.3 now records the remote.

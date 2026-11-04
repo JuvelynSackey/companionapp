@@ -20,12 +20,12 @@ Everything here matches the code and the final report as of 3 November 2026. Whe
 
 There are three roles (student, lecturer and administrator), plus a read-only guest mode.
 
-**Evidence.** On 3 November 2026 all 650 automated test executions passed:
+**Evidence.** On 4 November 2026 all 722 automated test executions passed:
 
 | Suite | Passed |
 |---|---|
-| Flutter tests | 380 |
-| Backend unit tests | 54 |
+| Flutter tests | 412 |
+| Backend unit tests | 94 |
 | Database tests | 14 |
 | API smoke tests | 202 |
 
@@ -148,11 +148,11 @@ The ER diagram is Figure 3.2 in the report.
 
 ## 6. Testing evidence
 
-| Level | Tool | Result (3 Nov 2026) | What it proves |
+| Level | Tool | Result (4 Nov 2026) | What it proves |
 |---|---|---|---|
 | Static analysis | `flutter analyze` | No issues | No analyser-detected errors |
-| Mobile unit and widget tests | `flutter test` | 380 / 380 | Logic and screens, including grading, timetable parsing, guest mode and the demo labels |
-| Backend unit tests (offline) | `node --test` | 54 / 54 | Grading scale, push fan-out, token verification, `optionalAuth` |
+| Mobile unit and widget tests | `flutter test` | 412 / 412 | Logic and screens, including grading and the FGPA, timetable parsing, walking routes, guest mode and the demo labels |
+| Backend unit tests (offline) | `node --test` | 94 / 94 | Grading scale, push fan-out, token verification, `optionalAuth`, and the events, clubs, quizzes, locations and login controllers |
 | Database tests | `npm run test:db` | 14 / 14 | Real SQL against PostgreSQL: device tokens, Google account linking |
 | End-to-end API | `npm run test:smoke` | 202 / 202 | Real user journeys through the running API, including the role and ownership rules |
 | Live integrations | `npm run verify:integrations` | 3 verified, 0 failed | Firebase credential, FCM authorisation (dry run), Firebase token rejection |
@@ -184,8 +184,8 @@ All of these are fixed, with regression tests.
 4. **No usability study** has been done with students. A future study would need ethics approval.
 5. **Timetable:** stored on the device and not synchronised across devices. The server routes exist, but the app does not use them.
 6. **Student Hub and Resources:** sample data. Dues payments are simulated, and the app labels both on screen.
-7. **Degree class:** the scale and class bands match the UG *Regulations for Junior Members* (2017), but the app estimates the class from the CGPA. The official FGPA counts Levels 300 and 400 double (1:1:2:2), so the app labels its class "Estimated class (from CGPA)". The target-class calculator is a formula, not a validated prediction.
-8. **Walking times:** based on straight-line distance, not real routes.
+7. **Degree class:** taken from the FGPA, as in the UG *Regulations for Junior Members* (2017): Levels 300 and 400 count double. Repeated courses are not weighted separately. The target-class calculator is a formula, not a validated prediction, and assumes the remaining credits are spread evenly over the levels left.
+8. **Walking times:** along real footpaths from a public routing service; if it cannot be reached and no route is saved, the app falls back to a straight-line estimate and says so.
 9. **Not deployed:** no production deployment and no security review. Android and web only; no iOS version.
 10. **Out of scope:** Apple sign-in and in-app password reset.
 11. **Screenshots:** taken from the web build. The Android build runs on an emulator, but this machine (7.7 GB of RAM) could not keep the emulator responsive.
@@ -201,7 +201,7 @@ All of these are fixed, with regression tests.
 5. Replace the Student Hub's sample data with real backend tables. Add a real payment gateway only if it is needed.
 6. Add password reset and, if an iOS version is built, Apple sign-in.
 7. Deploy to production: hosting, HTTPS, secrets management, backups, rate limiting and a security review.
-8. Calculate walking times along real routes.
+8. Weight repeated courses as the regulations require (9.31c), and let students say how many credits remain at each level.
 
 ---
 
@@ -242,7 +242,7 @@ Students edit their timetable often and need it offline, for reminders and walki
 No. It is simulated. The screen carries a "Demo data" banner, the button says **Pay with MoMo**, the receipt says "SIMULATED PAYMENT — NOT A REAL TRANSACTION", and paid dues show "PAID (SIMULATED)". A real mobile-money integration was out of scope.
 
 **Q: How accurate is the target-class "prediction"?**
-It is not a prediction. It is a formula: the average a student needs over their remaining credit hours to reach a chosen honours class. Its class bands match the University's 2017 regulations, but like the GPA card it works from the CGPA, while the official class uses the FGPA, which weights Levels 100 to 400 as 1:1:2:2. The app says the class is an estimate. Computing the FGPA is the next step: the level of each course can be read from its code.
+It is not a prediction. It is a formula: the average a student needs over their remaining credit hours to reach a chosen honours class. Its class bands match the University's 2017 regulations, and it works on the FGPA, where Levels 300 and 400 count double. The app reads each course's level from its code. Because it cannot know which levels a student's remaining credits will fall in, it assumes they are spread evenly over the levels left, and the card says so.
 
 **Q: What would you do differently?**
 - Set up the remote repository and continuous integration at the start.
