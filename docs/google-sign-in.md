@@ -11,12 +11,13 @@ step, Google sign-in is **off**: "Continue with Google" still shows, and
 tapping it says Google sign-in isn't switched on in this version and suggests
 email and password.
 
-**Status on 3 November 2026** (`cd backend && npm run verify:integrations`):
-the service-account credential loads and real Firebase rejects an invalid
-ID token (both verified), but **Google is not enabled as a sign-in provider**
-in Firebase Authentication. No real Google sign-in has been done yet. Re-run
-that command after the console step: the "Google sign-in provider" line should
-change to ENABLED.
+**Status on 4 November 2026** (`cd backend && npm run verify:integrations`):
+the console step is done. The "Google sign-in provider" line reads ENABLED,
+the debug signing fingerprint is registered, and the credential and ID-token
+checks still pass. **No real Google sign-in has completed yet**: on the Android
+emulator the attempt timed out before an account could be chosen (a slow
+emulator with no Google account), so the end-to-end test is still to be done
+on a physical phone.
 
 ## How it works
 

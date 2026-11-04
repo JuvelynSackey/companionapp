@@ -13,17 +13,27 @@ AssistantMessage _user(String text) => _msg(MessageSender.user, text);
 AssistantMessage _bot(String text) => _msg(MessageSender.assistant, text);
 
 /// Records the request and answers with [body] / [status] instead of sending it.
+/// [earlierStatuses] are answered first, one per request, with an error body.
 class _Adapter implements HttpClientAdapter {
-  _Adapter({this.body, this.status = 200, this.fail = false});
+  _Adapter({this.body, this.status = 200, this.fail = false, List<int> earlierStatuses = const []})
+      : _earlier = [...earlierStatuses];
   final Map<String, dynamic>? body;
   final int status;
   final bool fail;
+  final List<int> _earlier;
   RequestOptions? last;
+  int requests = 0;
 
   @override
   Future<ResponseBody> fetch(RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
     last = options;
+    requests++;
     if (fail) throw DioException(requestOptions: options, type: DioExceptionType.connectionError);
+    if (_earlier.isNotEmpty) {
+      return ResponseBody.fromString(jsonEncode({'error': 'busy'}), _earlier.removeAt(0), headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      });
+    }
     return ResponseBody.fromString(jsonEncode(body ?? {}), status, headers: {
       Headers.contentTypeHeader: [Headers.jsonContentType],
     });
@@ -46,7 +56,7 @@ Map<String, dynamic> _reply(String text) => {
     };
 
 GeminiAssistantService _service(_Adapter adapter, {String apiKey = 'test-key'}) =>
-    GeminiAssistantService(dio: Dio()..httpClientAdapter = adapter, apiKey: apiKey);
+    GeminiAssistantService(dio: Dio()..httpClientAdapter = adapter, apiKey: apiKey, retryDelay: Duration.zero);
 
 List<String> _roles(List<Map<String, dynamic>> contents) => [for (final c in contents) c['role'] as String];
 List<String> _texts(List<Map<String, dynamic>> contents) =>
@@ -148,6 +158,30 @@ void main() {
 
     test('an error status returns null', () async {
       expect(await _service(_Adapter(status: 429, body: {'error': 'quota'})).ask(systemPrompt: 's', query: 'q'), isNull);
+    });
+
+    test('a busy reply (503 or 429) is retried once, and the retry\'s answer is used', () async {
+      for (final busy in [503, 429]) {
+        final adapter = _Adapter(earlierStatuses: [busy], body: _reply('Second time lucky.'));
+        expect(await _service(adapter).ask(systemPrompt: 's', query: 'q'), 'Second time lucky.');
+        expect(adapter.requests, 2, reason: 'one retry after $busy');
+      }
+    });
+
+    test('a second busy reply gives up (null) instead of retrying again', () async {
+      final adapter = _Adapter(earlierStatuses: [503, 503], body: _reply('never reached'));
+      expect(await _service(adapter).ask(systemPrompt: 's', query: 'q'), isNull);
+      expect(adapter.requests, 2);
+    });
+
+    test('other errors are not retried', () async {
+      final badRequest = _Adapter(status: 400, body: {'error': 'bad'});
+      expect(await _service(badRequest).ask(systemPrompt: 's', query: 'q'), isNull);
+      expect(badRequest.requests, 1);
+
+      final offline = _Adapter(fail: true);
+      expect(await _service(offline).ask(systemPrompt: 's', query: 'q'), isNull);
+      expect(offline.requests, 1);
     });
 
     test('empty, blank and malformed replies return null', () async {

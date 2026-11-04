@@ -33,8 +33,8 @@ Flutter static analysis was clean. Mutation testing confirmed that the key tests
 
 **Honest status.** It is a working prototype, not a production system.
 - **Push notifications:** server side verified, but delivery to a phone has not been tested.
-- **Google Sign-In:** built, but the provider has not been switched on in Firebase.
-- **Gemini:** no API key is configured, so only the local fallback has run.
+- **Google Sign-In:** built, and switched on in Firebase (4 November 2026), but no one has signed in with Google on a phone yet.
+- **Gemini:** a key is configured, and a live Gemini answer was seen in a short check. Answer quality has not been evaluated.
 - **Usability:** no usability study has been done.
 
 ---
@@ -91,7 +91,7 @@ Flutter app (Android / web)          Node.js + Express API             PostgreSQ
    - **Grades and GPA:** a CWA/GPA of 3.64, First Class Honours. Show the target-class calculator, and explain that it is a formula, not a prediction.
    - **Timetable:** import an `.ics` file, or add a class; show the reminder and the `.ics` export.
    - **Exams:** countdowns.
-   - **AI assistant:** ask "Calculate my GPA". The answer is labelled "via Local Engine", because no Gemini key is configured.
+   - **AI assistant:** ask "Calculate my GPA". In a build without the Gemini key, the answer is labelled "via Local Engine". In a build with the key (`--dart-define=GEMINI_API_KEY=...`), Gemini answers; replies take about 20 to 30 seconds.
    - **Events:** RSVP, then show the event pass. **Clubs:** join and leave.
    - **Campus map:** list and map views; open a location in a maps app.
    - **Digital student ID:** flip the card to show the QR code.
@@ -179,8 +179,8 @@ All of these are fixed, with regression tests.
 ## 7. Known limitations (say these before you are asked)
 
 1. **Push notifications:** server side verified; delivery to a physical phone is not yet tested.
-2. **Google Sign-In:** built and tested, but Google is not enabled as a provider in Firebase, so no real Google sign-in has happened yet.
-3. **AI assistant:** no Gemini key is configured, so only the local fallback has run. Response quality has not been evaluated.
+2. **Google Sign-In:** built and tested, and Google is enabled as a provider in Firebase, but no real Google sign-in has completed yet. On the emulator the attempt timed out.
+3. **AI assistant:** a live Gemini key answered in one short check. Response quality has not been evaluated.
 4. **No usability study** has been done with students. A future study would need ethics approval.
 5. **Timetable:** stored on the device and not synchronised across devices. The server routes exist, but the app does not use them.
 6. **Student Hub and Resources:** sample data. Dues payments are simulated, and the app labels both on screen.
@@ -194,8 +194,8 @@ All of these are fixed, with regression tests.
 
 ## 8. Future work
 
-1. Switch on Google Sign-In in the Firebase console and test it on a phone. Then test push delivery on a phone, in the foreground and background.
-2. Add a Gemini key and evaluate answers against a set of representative questions.
+1. Test Google Sign-In on a phone. Then test push delivery on a phone, in the foreground and background.
+2. Evaluate Gemini's answers against a set of representative questions.
 3. Run a usability study, with ethics approval.
 4. Add timetable synchronisation using the existing server routes, which are already restricted to each user's own entries.
 5. Replace the Student Hub's sample data with real backend tables. Add a real payment gateway only if it is needed.
@@ -226,12 +226,14 @@ No. I did not run interviews, surveys or a usability study, and the report does 
 Each one is built and tested in code. I also ran a live check against the real services:
 - the Firebase credential works;
 - FCM accepts a message from it (in a dry run);
-- Firebase rejects fake tokens.
+- Firebase rejects fake tokens;
+- Google is enabled as a sign-in provider;
+- the Gemini API accepts the key, and the assistant gave a real Gemini answer in a short check.
 
-What has not been verified: Google is not yet enabled in the Firebase console, no push has been delivered to a physical phone, and no Gemini key is configured. So the AI ran on its local fallback. I report exactly that.
+What has not been verified: no one has completed a Google sign-in on a phone, and no push has been delivered to a physical phone. I report exactly that.
 
 **Q: What happens if the AI service is down?**
-The assistant draws on several data sources: grades, events, alerts, locations, and the timetable stored on the device. If one cannot be reached, it tells the student which one and answers from the rest. If Gemini is unavailable, a local keyword engine answers supported questions, and its replies are labelled "via Local Engine". This behaviour is tested.
+The assistant draws on several data sources: grades, events, alerts, locations, and the timetable stored on the device. If one cannot be reached, it tells the student which one and answers from the rest. If Gemini is unavailable, a local keyword engine answers supported questions, and its replies are labelled "via Local Engine". This behaviour is tested, and I saw it happen for real: in the live check Gemini once replied "high demand" (HTTP 503), and the app fell back. Since then the app retries once when Gemini says it is busy, and waits up to 60 seconds for a reply.
 
 **Q: Why is the timetable not on the server?**
 Students edit their timetable often and need it offline, for reminders and walking-time cards, so it is stored on the device first. Early on, reading it from a mostly empty server timetable risked hiding a student's real classes. The server routes exist and are now owner-only, so cloud sync is a clear next step.
@@ -260,4 +262,5 @@ Passing tests are not the same as a working product. Running the whole applicati
 - [ ] `start-dev.ps1`, then `npm run db:setup` (it needs PostgreSQL running), then run the smoke tests once to warm the server.
 - [ ] Build the app, and log in as the student and the admin once beforehand.
 - [ ] Have the report PDF, this document and a terminal open.
-- [ ] Optional, if time and a phone allow: enable Google in the Firebase console and add a Gemini key, then re-run `npm run verify:integrations` and update the report.
+- [x] Enable Google in the Firebase console and add a Gemini key, re-run `npm run verify:integrations`, and update the report (4 November 2026).
+- [ ] Optional, if a phone allows: complete a Google sign-in and receive a push on a physical phone, then update the report.

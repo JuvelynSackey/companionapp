@@ -20,7 +20,7 @@ All test suites were run on 3 November 2026 against the final code:
 | Backend database tests (`npm run test:db`) | 14 / 14 passed |
 | Backend API smoke tests (`npm run test:smoke`) | 202 / 202 passed |
 | **Total** | **650 passing test executions** (the sum of suite totals, not 650 unique test cases) |
-| Live integrations (`npm run verify:integrations`) | 3 verified, 0 failed: Firebase credential loads; FCM accepts a dry-run message (nothing delivered); real Firebase rejects an invalid ID token. Not verified: Google provider (not enabled), Gemini (no key), push delivery to a phone, a real Google sign-in. |
+| Live integrations (`npm run verify:integrations`) | 4 November 2026: 4 verified, 0 failed: Firebase credential loads; FCM accepts a dry-run message (nothing delivered); real Firebase rejects an invalid ID token; the Gemini API accepts the key. Google provider: enabled, fingerprint registered. Not verified: push delivery to a phone, a real Google sign-in. |
 
 **The audit brief's baseline (332 / 38 / 8 / 180 = 558) was not used.** Those figures come from an older run, before Google Sign-In, the new dashboard and the regression tests were added. Before guest mode, the suites stood at 371 / 50 / 14 / 182 = 617, a result obtained on both 30 and 31 October. Guest mode then added 8 Flutter tests, 4 backend unit tests and 13 smoke checks. On 31 October, with guest mode, they were 379 / 54 / 14 / 195 = 642. The final round then added 2 Flutter tests and dropped 1 (380) and added 7 smoke checks (202). No suite regressed. The report uses the current figures above.
 
@@ -105,7 +105,14 @@ Report:
 ### Logo and splash (4 November 2026)
 - The app now has a logo: the graduation-cap art the author supplied. It is the launcher icon and the web icons, and it appears on the launch splash (native, then a matching Flutter screen while the saved session is checked) and on the Welcome and Login screens.
 - **Figure 4.1:** the Welcome and Login screenshots were retaken, so they show the logo. No report text changed, and the report is still 52 pages.
-- **To check:** the licence of the cap image, if it came from a stock or clip-art site.
+- **Licence:** the author confirmed on 4 November 2026 that the image may be used.
+
+### Gemini and Google provider (4 November 2026)
+- **Google Sign-In:** the provider is enabled in Firebase and the debug signing fingerprint is registered; `verify:integrations` reports ENABLED. A real sign-in has **not** completed: on the Android emulator, Google's credential service timed out before an account could be chosen (a slow emulator with no Google account). The physical-phone test is outstanding; the phone was not detected over USB that day.
+- **Gemini:** a key was added to `backend/.env` (git-ignored; the app receives it through `--dart-define`). `verify:integrations` now reports 4 verified, 0 failed. On the web build, signed in as a local test student, the assistant gave real Gemini answers (no "via Local Engine" label). A follow-up once received HTTP 503 "high demand" from Gemini, and the app fell back to the local engine as designed.
+- **Code change:** replies took 20 to 27 seconds against a 30-second limit. `GeminiAssistantService` now waits up to 60 seconds and retries once on HTTP 503 or 429. Three new tests cover this; the Flutter suite passed 384/384, and `flutter analyze` reported no issues.
+- **Report:** Sections 4.3.4, 4.6.3 (new paragraph on the live check), 4.6.4, 4.7 (Table 4.3: the Google Sign-In and AI response quality rows), 5.3 Limitations, 5.4 Recommendations, the Abstract's Result paragraph and FR2 (Section 3.2.1) were updated. The report is now 53 pages (body to page 41).
+- **Seen but not fixed:** in Gemini's longer replies, some bold headings show stray `****` and a `---` divider appears as raw text, because the reply renderer does not handle every markdown form Gemini produces.
 
 ---
 
@@ -114,7 +121,7 @@ Report:
 | Status | Features |
 |---|---|
 | **1. Implemented and verified** (automated tests, and for some, the running app) | Guest mode (read-only browsing of announcements, events, clubs and the map; sign-in prompts for account-only actions); email/password registration and login; JWT sessions; bcrypt hashing; Zod request validation; backend role checks for students, lecturers and administrators; administrator account provisioning; GPA/CWA on the UG scale (shared fixture checked by backend and Flutter tests); events with ownership-based deletion; clubs (search, join, leave); announcements feed and admin posting; campus locations list and map; quiz lifecycle, including hidden answer keys; digital student ID with QR code; timetable `.ics`/CSV parsing and `.ics` export; onboarding and dashboard; AI assistant local engine and handling of unreachable data sources |
-| **2. Implemented but not fully verified** | Push notifications (backend fan-out, device tokens and preferences tested; delivery to a physical device not confirmed); Google Sign-In (backend verification checked against the live Firebase project; provider not yet enabled, so no real sign-in); Gemini-backed assistant and tutor (not run with a live key); Gemini past-paper extraction (parsing tested, live extraction quality not evaluated); local reminders and notifications on a real device (not observed); Android build (compiles, installs and launches on an emulator; full walkthrough done on the web build because of the machine's memory limits) |
+| **2. Implemented but not fully verified** | Push notifications (backend fan-out, device tokens and preferences tested; delivery to a physical device not confirmed); Google Sign-In (backend verification checked against the live Firebase project; provider enabled on 4 November 2026, but no real sign-in has completed yet); Gemini-backed assistant and tutor (a live key answered in a short check on the web build; answer quality not evaluated); Gemini past-paper extraction (parsing tested, live extraction quality not evaluated); local reminders and notifications on a real device (not observed); Android build (compiles, installs and launches on an emulator; full walkthrough done on the web build because of the machine's memory limits) |
 | **3. Partially implemented** | Student Hub (static fixture data, simulated dues payments); Resources (static content); server-side timetable routes (exist and are restricted to each user's own entries, but are unused by the app); target-class calculator (works, but honours thresholds not checked against current regulations) |
 | **4. Planned or outstanding** | Apple sign-in and password reset (out of scope, no buttons shown); keeping guest mode across app restarts (it is in memory only, by design for now); timetable synchronisation across devices; production deployment; security review; iOS version; usability study; continuous integration |
 
@@ -144,7 +151,7 @@ All 19 references in the final report are cited in the text, and every in-text c
 - **Static content:** Student Hub and Resources content is static, and payments are simulated.
 - **Walking times:** estimated by straight-line distance.
 - **Target-class calculator:** a formula, not a validated prediction model.
-- **AI assistant:** limited local fallback; not run with a live Gemini key.
+- **AI assistant:** a live Gemini key answered in one short check (4 November 2026); answer quality not evaluated. The local fallback is limited.
 - **Test coverage:** events, clubs, quizzes, locations and the registration/login account lookup are covered only by smoke tests.
 - **Usability:** no usability study.
 - **Ethics:** no ethics approval sought, since no participants were involved.

@@ -13,15 +13,24 @@ const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
 /// caller can fall back to the local rule engine — a null result is an
 /// expected, non-exceptional outcome here, not an error to propagate.
 class GeminiAssistantService {
-  /// [dio] and [apiKey] are only overridden in tests; the app uses the
-  /// defaults (a 30s-timeout client and the --dart-define key).
-  GeminiAssistantService({Dio? dio, String? apiKey})
+  /// [dio], [apiKey] and [retryDelay] are only overridden in tests; the app
+  /// uses the defaults (the --dart-define key and a client that waits up to
+  /// 60s, since replies were measured at 20-27s on 4 Nov 2026).
+  GeminiAssistantService({Dio? dio, String? apiKey, this._retryDelay = const Duration(seconds: 2)})
       : _dio = dio ??
-            Dio(BaseOptions(connectTimeout: const Duration(seconds: 30), receiveTimeout: const Duration(seconds: 30))),
+            Dio(BaseOptions(connectTimeout: const Duration(seconds: 30), receiveTimeout: const Duration(seconds: 60))),
         _apiKey = apiKey ?? geminiApiKey;
 
   final Dio _dio;
   final String _apiKey;
+
+  /// Pause before the single retry of a "busy" reply (see [_retryStatuses]).
+  final Duration _retryDelay;
+
+  /// Statuses Gemini returns when it is briefly overloaded or rate-limited
+  /// (503 "model is experiencing high demand" was seen in testing). These
+  /// are retried once; anything else goes straight to the local fallback.
+  static const _retryStatuses = {429, 503};
 
   /// How many earlier messages are sent along so follow-ups ("and tomorrow?")
   /// make sense, without the request growing forever.
@@ -74,19 +83,28 @@ class GeminiAssistantService {
   }) async {
     if (_apiKey.isEmpty) return null;
 
-    try {
-      final response = await _dio.post(
-        'https://generativelanguage.googleapis.com/v1beta/models/$_geminiModel:generateContent',
-        queryParameters: {'key': _apiKey},
-        data: {
-          'systemInstruction': {
-            'parts': [
-              {'text': systemPrompt},
-            ],
+    Future<Response<dynamic>> send() => _dio.post(
+          'https://generativelanguage.googleapis.com/v1beta/models/$_geminiModel:generateContent',
+          queryParameters: {'key': _apiKey},
+          data: {
+            'systemInstruction': {
+              'parts': [
+                {'text': systemPrompt},
+              ],
+            },
+            'contents': buildContents(history: history, query: query),
           },
-          'contents': buildContents(history: history, query: query),
-        },
-      );
+        );
+
+    try {
+      Response<dynamic> response;
+      try {
+        response = await send();
+      } on DioException catch (e) {
+        if (!_retryStatuses.contains(e.response?.statusCode)) rethrow;
+        await Future<void>.delayed(_retryDelay);
+        response = await send();
+      }
 
       final candidates = response.data['candidates'] as List?;
       if (candidates == null || candidates.isEmpty) return null;
