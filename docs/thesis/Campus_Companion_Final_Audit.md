@@ -152,7 +152,7 @@ All 19 references in the final report are cited in the text, and every in-text c
 ## 5. Remaining limitations (as stated in the report)
 
 - **Push notifications:** delivery to a physical device is unconfirmed.
-- **Google Sign-In:** waits for the Firebase console step.
+- **Google Sign-In:** enabled in Firebase (4 November 2026), but no real sign-in has completed on a device yet.
 - **Apple sign-in and password reset:** out of scope; the app shows no option for either.
 - **Guest mode:** built, but it lasts only until the app is closed.
 - **Production readiness:** no production deployment and no security review.
