@@ -3,11 +3,18 @@ import 'package:flutter/material.dart';
 /// Turns the light markdown that Gemini and the local engine both produce
 /// into styled spans, so a bubble shows "Campus Shuttle" in bold instead of
 /// "**Campus Shuttle**". Deliberately small: bold, italic, inline code,
-/// bullet lines and headings. Anything unmatched is left as typed.
+/// bullet lines, headings and dividers. Anything unmatched is left as typed.
 ///
 ///   **bold**   *italic*   `code`   "* item" / "- item" -> "• item"   "## Title" -> bold
+///   "---" / "***" / "___" -> a paragraph break
 List<TextSpan> formatMessage(String text, TextStyle base) {
-  final lines = text.split('\n').map(_normaliseLine).join('\n');
+  final lines = text
+      .split('\n')
+      .map(_normaliseLine)
+      .join('\n')
+      // A removed divider leaves blank lines either side; keep one gap.
+      .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+      .replaceAll(RegExp(r'^\n+|\n+$'), '');
 
   final spans = <TextSpan>[];
   var cursor = 0;
@@ -39,9 +46,17 @@ final _inline = RegExp(r'\*\*(?<b>[^*\n]+?)\*\*|`(?<c>[^`\n]+)`|\*(?<i>[^*\s][^*
 
 final _bullet = RegExp(r'^(\s*)[*-]\s+');
 final _heading = RegExp(r'^#{1,6}\s+(.*)$');
+final _divider = RegExp(r'^\s*([-*_])(\s*\1){2,}\s*$');
 
 String _normaliseLine(String line) {
+  // Before bullets, so "- - -" and "* * *" are not read as bullet items.
+  if (_divider.hasMatch(line)) return '';
   final heading = _heading.firstMatch(line);
-  if (heading != null) return '**${heading.group(1)}**';
+  if (heading != null) {
+    // Gemini often bolds inside a heading ("### 4. **Title**"); wrapping that
+    // again would pair the asterisks wrongly and leave "****" on screen.
+    final title = heading.group(1)!.replaceAll('**', '').trim();
+    return title.isEmpty ? '' : '**$title**';
+  }
   return line.replaceFirstMapped(_bullet, (m) => '${m.group(1)}• ');
 }

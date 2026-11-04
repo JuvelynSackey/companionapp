@@ -112,7 +112,9 @@ Report:
 - **Gemini:** a key was added to `backend/.env` (git-ignored; the app receives it through `--dart-define`). `verify:integrations` now reports 4 verified, 0 failed. On the web build, signed in as a local test student, the assistant gave real Gemini answers (no "via Local Engine" label). A follow-up once received HTTP 503 "high demand" from Gemini, and the app fell back to the local engine as designed.
 - **Code change:** replies took 20 to 27 seconds against a 30-second limit. `GeminiAssistantService` now waits up to 60 seconds and retries once on HTTP 503 or 429. Three new tests cover this; the Flutter suite passed 384/384, and `flutter analyze` reported no issues.
 - **Report:** Sections 4.3.4, 4.6.3 (new paragraph on the live check), 4.6.4, 4.7 (Table 4.3: the Google Sign-In and AI response quality rows), 5.3 Limitations, 5.4 Recommendations, the Abstract's Result paragraph and FR2 (Section 3.2.1) were updated. The report is now 53 pages (body to page 41).
-- **Seen but not fixed:** in Gemini's longer replies, some bold headings show stray `****` and a `---` divider appears as raw text, because the reply renderer does not handle every markdown form Gemini produces.
+- **Reply formatting (fixed the same day):** Gemini writes headings that already contain bold (`### 4. **Title**`) and `---` dividers. The reply formatter wrapped such headings in bold a second time, which left a stray `****` on screen, and it showed dividers as raw text. Headings now drop their inner `**` before being made bold, and divider lines become a paragraph break. Three tests use the exact heading shapes Gemini produced; the Flutter suite passed 387/387. In a live re-check the raw reply contained `### **Phase 1: …**` headings and `---` dividers, and the screen showed clean bold headings with neither artefact.
+- **Retry seen live:** in the same re-check Gemini first answered HTTP 503, then the automatic retry got HTTP 200 and the answer came from Gemini.
+- The report was not changed for these two points; Section 4.6.3 already describes the retry.
 
 ---
 

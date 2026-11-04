@@ -68,6 +68,32 @@ void main() {
       expect(_styled(spans)['Your week']!.fontWeight, FontWeight.bold);
     });
 
+    test('a heading that already contains bold leaves no stray asterisks', () {
+      // Shapes Gemini produced on 4 Nov 2026, which showed as "...Session****".
+      for (final heading in [
+        '### 4. **Prepare for the Q&A Session**',
+        '### **Week 2: Practice & Exam Simulation (Days 7 – 1)**',
+        '### 💡 **Pro-Tip for University of Ghana Students:**',
+      ]) {
+        final plain = _plain(formatMessage(heading, _base));
+        expect(plain.contains('*'), isFalse, reason: heading);
+      }
+      final spans = formatMessage('### 4. **Prepare for the Q&A Session**', _base);
+      expect(_plain(spans), '4. Prepare for the Q&A Session');
+      expect(_styled(spans)['4. Prepare for the Q&A Session']!.fontWeight, FontWeight.bold);
+    });
+
+    test('a divider line ("---", "***", "___") becomes a paragraph break', () {
+      for (final rule in ['---', '***', '___', '- - -', ' ----- ']) {
+        expect(_plain(formatMessage('above\n\n$rule\n\nbelow', _base)), 'above\n\nbelow', reason: rule);
+      }
+      expect(_plain(formatMessage('above\n---\nbelow', _base)), 'above\n\nbelow');
+    });
+
+    test('a divider at the start or end leaves no blank lines behind', () {
+      expect(_plain(formatMessage('---\n\ntext\n\n---', _base)), 'text');
+    });
+
     test('math with spaced asterisks is not treated as italic', () {
       expect(_plain(formatMessage('5 * 3 * 2 = 30', _base)), '5 * 3 * 2 = 30');
     });
