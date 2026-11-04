@@ -38,11 +38,11 @@ void main() {
     test('when Gemini gives nothing the local engine answers, marked as a fallback', () async {
       final container = _container(FakeGemini(reply: null));
 
-      await container.read(assistantControllerProvider.notifier).sendMessage('how do I connect to wifi');
+      await container.read(assistantControllerProvider.notifier).sendMessage('hello');
 
       final reply = container.read(assistantControllerProvider).last;
       expect(reply.isFallback, isTrue);
-      expect(reply.text, contains('eduroam'));
+      expect(reply.text, contains('Ask me anything'));
     });
 
     test('the first question has no history', () async {

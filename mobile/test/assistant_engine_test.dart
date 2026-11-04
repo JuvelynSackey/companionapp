@@ -32,10 +32,21 @@ AssistantContext _buildContext({
 
 void main() {
   group('LocalAssistantEngine', () {
-    test('library keyword returns seat availability from fixture data', () {
-      final response = LocalAssistantEngine.respond('any seats in the library?', _buildContext());
-      expect(response, contains('Libraries'));
-      expect(response, contains('Main Library'));
+    test('library keyword lists the real library locations, with no invented seat counts', () {
+      final locations = [
+        CampusLocation(locationId: 1, name: 'Balme Library', category: 'library', description: 'Main library.', latitude: 5.65, longitude: -0.18),
+        CampusLocation(locationId: 2, name: 'Great Hall', category: 'other', description: '', latitude: 5.65, longitude: -0.18),
+      ];
+      final response = LocalAssistantEngine.respond('any seats in the library?', _buildContext(locations: locations));
+      expect(response, contains('Campus Libraries'));
+      expect(response, contains('Balme Library'));
+      expect(response, isNot(contains('Great Hall')), reason: 'only libraries');
+      expect(response, isNot(contains('seats free')));
+      expect(response, isNot(contains('vacant')));
+    });
+
+    test('library keyword with no libraries on the map says so', () {
+      expect(LocalAssistantEngine.respond('where is the library?', _buildContext()), contains('No libraries are listed'));
     });
 
     test('exam keyword returns the next non-past exam, skipping past ones', () {

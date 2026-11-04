@@ -112,12 +112,25 @@ void main() {
       expect(reply, contains('Lab 3'));
     });
 
-    test('a portal question and a general question are still answered', () async {
+    test('a portal question is still answered, and a library question says the map is out of reach', () async {
       final container = await _container(_Env());
       final context = await container.read(assistantContextProvider.future);
 
-      expect(LocalAssistantEngine.respond('how do I connect to wifi', context), contains('eduroam'));
-      expect(LocalAssistantEngine.respond('where are the study desks', context), contains('Libraries'));
+      expect(LocalAssistantEngine.respond('how do I register on my student portal', context), contains('Sakai'));
+      expect(LocalAssistantEngine.respond('where are the study desks', context), contains("can't reach the server"));
+    });
+
+    test('topics with no real data behind them get the general help, not invented facts', () async {
+      final container = await _container(_Env());
+      final context = await container.read(assistantContextProvider.future);
+
+      for (final question in ['how do I connect to wifi', 'when does the shuttle come', 'how do I pay my dues with momo']) {
+        final reply = LocalAssistantEngine.respond(question, context);
+        expect(reply, contains('Ask me anything'), reason: question);
+        for (final invented in ['eduroam', 'PEAP', 'every 8-12 minutes', 'GH₵', 'Cash Office']) {
+          expect(reply, isNot(contains(invented)), reason: '$question: $invented');
+        }
+      }
     });
 
     test('a GPA question says the server cannot be reached, instead of claiming there are no grades', () async {

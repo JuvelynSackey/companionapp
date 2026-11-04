@@ -21,6 +21,10 @@ class HonoursThreshold {
   final Color color;
 }
 
+/// The category of a portal entry that is an official document (a PDF of
+/// regulations, say) rather than a website to sign in to.
+const officialDocumentsCategory = 'Official documents';
+
 class InstitutionPortal {
   const InstitutionPortal({
     required this.id,
@@ -122,6 +126,13 @@ class InstitutionRegistry {
         description: 'UGRIS digital repository, e-journals, research theses & past questions',
         url: 'http://balme.ug.edu.gh',
         category: 'Library & E-Resources',
+      ),
+      InstitutionPortal(
+        id: 'ug_regulations',
+        name: 'Regulations for Junior Members (2017)',
+        description: 'The official grading system, degree classification and examination rules (PDF)',
+        url: 'https://www.ug.edu.gh/sites/default/files/UG_Regulations_for_Junior_Members-2017.pdf',
+        category: officialDocumentsCategory,
       ),
     ],
     studentPortalName: 'MIS Web',

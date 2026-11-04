@@ -7,7 +7,7 @@ import 'widgets/chat_view.dart';
 const _quickSuggestions = [
   "What's my next class?",
   'When is my next exam?',
-  'Where are vacant study desks?',
+  'Where is the library?',
   'Calculate my GPA',
 ];
 

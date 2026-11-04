@@ -33,6 +33,9 @@ import {
   listQuizzes, getQuiz, createQuiz, submitAttempt, deleteQuiz,
   createQuizSchema, submitAttemptSchema,
 } from '../controllers/quizController.js';
+import {
+  listLostFound, createLostFound, markReturned, deleteLostFound, createLostFoundSchema,
+} from '../controllers/lostFoundController.js';
 
 const router = Router();
 
@@ -48,6 +51,7 @@ router.get('/events', optionalAuth, listEvents);
 router.get('/clubs', optionalAuth, listClubs);
 router.get('/locations', optionalAuth, listLocations);
 router.get('/locations/categories', optionalAuth, listCategories);
+router.get('/lost-found', optionalAuth, listLostFound);
 
 // Everything below requires a valid token.
 router.use(requireAuth);
@@ -110,5 +114,13 @@ router.get('/quizzes/:id', getQuiz);
 router.post('/quizzes', requireRole('lecturer', 'admin'), validateBody(createQuizSchema), createQuiz);
 router.post('/quizzes/:id/attempts', validateBody(submitAttemptSchema), submitAttempt);
 router.delete('/quizzes/:id', requireAdmin, deleteQuiz);
+
+// ---- Lost & Found board ----
+// GET /lost-found is guest-readable (without names or contact details),
+// declared above requireAuth. Anyone signed in may post; only the poster or
+// an admin may mark an item returned or remove it (checked in the controller).
+router.post('/lost-found', validateBody(createLostFoundSchema), createLostFound);
+router.patch('/lost-found/:id/returned', markReturned);
+router.delete('/lost-found/:id', deleteLostFound);
 
 export default router;

@@ -4,6 +4,7 @@
 -- with the normalisation notes recorded in docs/schema-notes.md
 -- ============================================================
 
+DROP TABLE IF EXISTS lost_found_items  CASCADE;
 DROP TABLE IF EXISTS device_tokens     CASCADE;
 DROP TABLE IF EXISTS event_registrations CASCADE;
 DROP TABLE IF EXISTS club_memberships  CASCADE;
@@ -291,3 +292,23 @@ CREATE TABLE locations (
 );
 
 CREATE INDEX idx_locations_category ON locations (category);
+
+-- ------------------------------------------------------------
+-- LOST & FOUND  (a shared board: students post items they lost or found)
+-- Replaces the app's earlier sample list, which lived on each phone only.
+-- The poster's contact note is only ever sent to signed-in users.
+-- ------------------------------------------------------------
+CREATE TABLE lost_found_items (
+    item_id     SERIAL PRIMARY KEY,
+    kind        VARCHAR(10)  NOT NULL CHECK (kind IN ('lost', 'found')),
+    title       VARCHAR(120) NOT NULL,
+    description TEXT,
+    location    VARCHAR(160),
+    contact     VARCHAR(160),
+    status      VARCHAR(10)  NOT NULL DEFAULT 'open'
+                CHECK (status IN ('open', 'returned')),
+    posted_by   INTEGER      NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_lost_found_created ON lost_found_items (created_at DESC);

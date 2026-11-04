@@ -7,7 +7,6 @@ import '../../data/models/course_grade.dart';
 import '../../data/models/dashboard_data.dart';
 import '../../data/models/exam_countdown.dart';
 import '../../data/models/institution_profile.dart';
-import '../../data/models/resource_models.dart';
 import '../alerts/alerts_providers.dart';
 import '../analytics/analytics_providers.dart';
 import '../auth/session_controller.dart';
@@ -58,7 +57,6 @@ class AssistantContext {
   /// above are empty, which means "unknown", not "none".
   final Set<ContextSource> unavailable;
 
-  List<LibraryInfo> get libraries => ResourceFixtures.libraries;
   List<InstitutionPortal> get portals => institution.portals;
 
   /// System-instruction text sent to Gemini, summarising the student's live data.

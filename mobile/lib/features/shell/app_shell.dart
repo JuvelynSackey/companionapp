@@ -10,7 +10,7 @@ import '../onboarding/institution_controller.dart';
 import '../profile/digital_id_screen.dart';
 import '../resources/resources_screen.dart';
 import '../timetable/timetable_screen.dart';
-import '../student_hub/student_hub_screen.dart';
+import '../lost_found/lost_found_screen.dart';
 import 'nav_providers.dart';
 
 String _initials(String? fullName) {
@@ -71,8 +71,8 @@ class AppShell extends ConsumerWidget {
               ),
             ),
             onSelected: (value) {
-              if (value == 'studentHub') {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StudentHubScreen()));
+              if (value == 'lostFound') {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LostFoundScreen()));
               } else if (value == 'signOut') {
                 ref.read(sessionControllerProvider.notifier).signOut();
               } else if (value == 'digitalId') {
@@ -88,7 +88,7 @@ class AppShell extends ConsumerWidget {
               ),
               const PopupMenuDivider(),
               const PopupMenuItem(value: 'digitalId', child: Text('Digital Student ID')),
-              const PopupMenuItem(value: 'studentHub', child: Text('Student Hub')),
+              const PopupMenuItem(value: 'lostFound', child: Text('Lost & Found')),
               if (user?.isAdmin ?? false) const PopupMenuItem(value: 'admin', child: Text('Admin panel')),
               const PopupMenuItem(value: 'signOut', child: Text('Sign out')),
             ],

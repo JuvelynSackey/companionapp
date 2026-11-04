@@ -8,12 +8,15 @@
  * and checks that authorisation is actually enforced rather than assumed.
  * Also covers admin provisioning of lecturer accounts, role permissions,
  * self-registration never granting a privileged role, lecturer event
- * create/delete (with ownership rules), and the quiz lifecycle
- * (create -> fetch without answer key -> attempt -> delete).
+ * create/delete (with ownership rules), the quiz lifecycle
+ * (create -> fetch without answer key -> attempt -> delete), and the Lost &
+ * Found board (guests read without contact details; only the poster or an
+ * admin changes an item).
  *
- * Needs the seeded demo accounts (`npm run db:setup`). Safe to re-run: quizzes
- * and events are deleted at the end; each run leaves two accounts behind
- * (smoke-lecturer-*, smoke-register-*), since there is no delete-user endpoint.
+ * Needs the seeded demo accounts (`npm run db:setup`). Safe to re-run: quizzes,
+ * events and Lost & Found items are deleted at the end; each run leaves a few
+ * accounts behind (smoke-lecturer-*, smoke-register-*, smoke-grades-*), since
+ * there is no delete-user endpoint.
  */
 import { readFile } from 'node:fs/promises';
 
@@ -332,6 +335,57 @@ async function run() {
 
   const badCategory = await call('GET', '/locations?category=nonsense', { token: studentToken });
   check('invalid category rejected', badCategory.status === 400);
+
+  console.log('\nLost & Found board');
+  const createdLostFoundIds = [];
+  try {
+    const guestPost = await call('POST', '/lost-found', { body: { kind: 'lost', title: 'Smoke umbrella' } });
+    check('a guest cannot post an item (401)', guestPost.status === 401);
+
+    const badKind = await call('POST', '/lost-found', { token: studentToken, body: { kind: 'stolen', title: 'Smoke umbrella' } });
+    check('an unknown kind is rejected (400)', badKind.status === 400);
+
+    const posted = await call('POST', '/lost-found', {
+      token: studentToken,
+      body: { kind: 'lost', title: 'Smoke umbrella', location: 'Balme Library', contact: 'smoke-contact' },
+    });
+    check('a student can post a lost item (201)', posted.status === 201 && Number.isInteger(posted.data?.itemId));
+    const itemId = posted.data?.itemId;
+    if (itemId) createdLostFoundIds.push(itemId);
+
+    const asPoster = await call('GET', '/lost-found', { token: studentToken });
+    const mine = asPoster.data?.items?.find((i) => i.itemId === itemId);
+    check('the poster sees the item as theirs, with the contact note',
+      mine?.isMine === true && mine?.canManage === true && mine?.contact === 'smoke-contact' && mine?.status === 'open');
+
+    const asGuest = await call('GET', '/lost-found');
+    const seenByGuest = asGuest.data?.items?.find((i) => i.itemId === itemId);
+    check('a guest can read the board, without names or contact details',
+      asGuest.status === 200 && seenByGuest?.title === 'Smoke umbrella' && seenByGuest.contact === null && seenByGuest.postedBy === null);
+
+    const other = await newStudent('lostfound');
+    const otherReturn = await call('PATCH', `/lost-found/${itemId}/returned`, { token: other.token });
+    check('another student cannot mark it returned (403)', otherReturn.status === 403);
+    const otherDelete = await call('DELETE', `/lost-found/${itemId}`, { token: other.token });
+    check('another student cannot remove it (403)', otherDelete.status === 403);
+
+    const returned = await call('PATCH', `/lost-found/${itemId}/returned`, { token: studentToken });
+    const afterReturn = await call('GET', '/lost-found', { token: studentToken });
+    check('the poster can mark it returned',
+      returned.status === 204 && afterReturn.data?.items?.find((i) => i.itemId === itemId)?.status === 'returned');
+
+    const adminDelete = await call('DELETE', `/lost-found/${itemId}`, { token: adminToken });
+    const afterDelete = await call('GET', '/lost-found', { token: studentToken });
+    check('an admin can remove any item', adminDelete.status === 204 && !afterDelete.data?.items?.some((i) => i.itemId === itemId));
+    if (adminDelete.status === 204) createdLostFoundIds.splice(createdLostFoundIds.indexOf(itemId), 1);
+
+    const missing = await call('DELETE', `/lost-found/${itemId}`, { token: adminToken });
+    check('removing a missing item returns 404', missing.status === 404);
+  } finally {
+    for (const id of createdLostFoundIds) {
+      await call('DELETE', `/lost-found/${id}`, { token: adminToken });
+    }
+  }
 
   // Quizzes and events created below are tracked so they are removed even if
   // a check throws part-way. Deleting a quiz cascades to its questions and

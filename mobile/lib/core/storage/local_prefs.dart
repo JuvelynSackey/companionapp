@@ -3,9 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/event_pass.dart';
 import '../../data/models/exam.dart';
 import '../../data/models/local_student_profile.dart';
-import '../../data/models/resource_models.dart';
 import '../../data/models/schedule_entry.dart';
-import '../../data/models/student_hub_models.dart';
 
 /// Wraps SharedPreferences for the small bits of local-only state:
 /// onboarding/institution selection,
@@ -35,9 +33,6 @@ class LocalPrefs {
   static const _kEventPasses = 'local_event_passes_v1';
   static const _kRemainingCredits = 'academic_remaining_credits_v1';
   static const _kTargetHonoursTitle = 'academic_target_honours_title_v1';
-  static const _kMomoReceipts = 'student_hub_momo_receipts_v1';
-  static const _kReportedLostFoundItems = 'student_hub_reported_items_v1';
-  static const _kDocumentRequests = 'resources_document_requests_v1';
 
   String? get selectedInstitutionId => _prefs.getString(_kInstitutionId);
   Future<void> setSelectedInstitutionId(String id) => _prefs.setString(_kInstitutionId, id);
@@ -135,47 +130,4 @@ class LocalPrefs {
   /// agree. Null means not chosen yet.
   String? get targetHonoursTitle => _prefs.getString(_kTargetHonoursTitle);
   Future<void> setTargetHonoursTitle(String title) => _prefs.setString(_kTargetHonoursTitle, title);
-
-  /// Simulated MoMo receipts keyed by due id — see MoMoReceipt's doc comment
-  /// on why these are never real payments.
-  Map<String, MoMoReceipt> get momoReceipts {
-    final raw = _prefs.getString(_kMomoReceipts);
-    if (raw == null) return const {};
-    final decoded = jsonDecode(raw) as Map<String, dynamic>;
-    return decoded.map((key, value) => MapEntry(key, MoMoReceipt.fromJson(value as Map<String, dynamic>)));
-  }
-
-  Future<void> saveMomoReceipts(Map<String, MoMoReceipt> receipts) async {
-    final encoded = jsonEncode(receipts.map((key, value) => MapEntry(key, value.toJson())));
-    await _prefs.setString(_kMomoReceipts, encoded);
-  }
-
-  /// Student-reported lost/found items, layered on top of
-  /// StudentHubFixtures.lostFoundSeed() — per-device only, not a shared feed.
-  List<LostFoundItem> get reportedLostFoundItems {
-    final raw = _prefs.getString(_kReportedLostFoundItems);
-    if (raw == null) return const [];
-    final decoded = jsonDecode(raw) as List;
-    return decoded.map((e) => LostFoundItem.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  Future<void> saveReportedLostFoundItems(List<LostFoundItem> items) async {
-    final encoded = jsonEncode(items.map((e) => e.toJson()).toList());
-    await _prefs.setString(_kReportedLostFoundItems, encoded);
-  }
-
-  /// Logged document requests (transcript / proof of registration) — a
-  /// request record only, never the document itself. See DocumentType's doc
-  /// comment for why.
-  List<DocumentRequest> get documentRequests {
-    final raw = _prefs.getString(_kDocumentRequests);
-    if (raw == null) return const [];
-    final decoded = jsonDecode(raw) as List;
-    return decoded.map((e) => DocumentRequest.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  Future<void> saveDocumentRequests(List<DocumentRequest> requests) async {
-    final encoded = jsonEncode(requests.map((e) => e.toJson()).toList());
-    await _prefs.setString(_kDocumentRequests, encoded);
-  }
 }
