@@ -74,5 +74,9 @@ void main() {
         reason: '$letter passes=${band['passes']}',
       );
     }
+
+    // The class on the GPA card reads as an estimate, since UG classifies on
+    // the level-weighted FGPA, not this average.
+    expect(find.text('Estimated class (from CGPA)'), findsOneWidget);
   });
 }

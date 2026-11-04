@@ -84,7 +84,9 @@ class AssistantContext {
             : events.take(3).map((e) => '${e.title} on ${e.eventDate.toLocal()}${e.location != null ? ' @ ${e.location}' : ''}').join('; ');
     final academicSummary = unavailable.contains(ContextSource.grades)
         ? '${academicMetric.metricLabel}: unavailable'
-        : '${academicMetric.metricLabel}: ${academicMetric.formattedScore} (${academicMetric.honoursClass})';
+        : '${academicMetric.metricLabel}: ${academicMetric.formattedScore} '
+            '(${academicMetric.classLabel.toLowerCase()}: ${academicMetric.honoursClass}; '
+            'the official degree class can differ)';
     final unavailableNote = unavailable.isEmpty
         ? ''
         : '\nThe server could not be reached, so these are unavailable right now: '

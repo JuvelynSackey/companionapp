@@ -12,6 +12,11 @@ import '../models/institution_profile.dart';
 /// score using each institution's own breakpoints, so the other institutions'
 /// scales (5.0, 4.3, CWA) work without backend changes. For those, the
 /// backend's `letterGrade` label is still the UG one.
+///
+/// The class is an estimate from the plain credit-weighted average (the
+/// CGPA). The University of Ghana classifies a degree on the FGPA instead,
+/// which weights Levels 100-400 as 1:1:2:2 (Regulations for Junior Members,
+/// September 2017, 9.31), so the official class can differ; see [classLabel].
 class AcademicMetricResult {
   const AcademicMetricResult({
     required this.scoreValue,
@@ -32,6 +37,10 @@ class AcademicMetricResult {
   final bool isPercentage;
   final String metricLabel;
   final String statusSummary;
+
+  /// Shown wherever [honoursClass] is, so it never reads as the official
+  /// degree class.
+  String get classLabel => 'Estimated class (from ${isPercentage ? 'CWA' : 'CGPA'})';
 }
 
 class AcademicEngine {

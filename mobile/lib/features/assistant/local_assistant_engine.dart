@@ -161,7 +161,7 @@ class LocalAssistantEngine {
     final topTier = context.institution.honoursThresholds.isNotEmpty ? context.institution.honoursThresholds.first : null;
     final buffer = StringBuffer('📊 **Academic Performance Analytics**:\n');
     buffer.write('• **${metric.metricLabel}:** ${metric.formattedScore}\n');
-    buffer.write('• **Classification:** ${metric.honoursClass}\n');
+    buffer.write('• **${metric.classLabel}:** ${metric.honoursClass}\n');
     buffer.write('• **Completed Credits:** ${metric.totalCredits} credit hours\n\n');
     if (topTier != null && metric.scoreValue >= topTier.minScore) {
       buffer.write("🌟 You're maintaining **${topTier.title}**! Keep it up.");

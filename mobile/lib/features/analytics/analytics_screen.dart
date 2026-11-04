@@ -97,6 +97,8 @@ class _ScorecardCard extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
+          Text(metric.classLabel, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(color: metric.honoursColor, borderRadius: BorderRadius.circular(20)),

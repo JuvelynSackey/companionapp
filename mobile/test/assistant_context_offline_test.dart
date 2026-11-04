@@ -186,6 +186,10 @@ void main() {
       expect(context.academicMetric.formattedScore, '4.00 / 4.00');
       expect(context.toSystemPrompt(), isNot(contains('could not be reached')));
       expect(LocalAssistantEngine.respond('what is my gpa', context), contains('4.00'));
+      // The class is never presented as the official degree class.
+      expect(LocalAssistantEngine.respond('what is my gpa', context), contains('Estimated class (from CGPA)'));
+      expect(context.toSystemPrompt(), contains('estimated class (from cgpa): First Class Honours'));
+      expect(context.toSystemPrompt(), contains('the official degree class can differ'));
     });
   });
 

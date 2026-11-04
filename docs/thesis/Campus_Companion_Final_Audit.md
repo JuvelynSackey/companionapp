@@ -128,6 +128,12 @@ Report:
 - **Continuous integration:** `.github/workflows/ci.yml` runs the backend unit tests (`npm test`) and `flutter analyze` and `flutter test` on every push and pull request to `master`, with Flutter pinned to 3.44.9 and no secrets. The author reported that the first run (commit `659e1ee`) passed. The database and smoke tests still run only locally.
 - **Report:** Table 3.5 (Testing row), Table 4.3 (Repository setup), Section 4.3.1 (guest mode is remembered), Section 5.3 (the guest-mode limitation removed) and Section 5.1 (the AI assistant's live check) updated. Still 53 pages. Flutter suite: 397/397.
 
+### Grading checked against the regulations (4 November 2026)
+- **Source:** University of Ghana, *Regulations for Junior Members*, Vol. 1, September 2017 (https://www.ug.edu.gh/sites/default/files/UG_Regulations_for_Junior_Members-2017.pdf), read directly (pages 43-44 and 48).
+- **Matches:** grade points A 4.0 to D 1.0, E (45-49) 0.5 as a failure grade, F 0; pass grades A-D and failure grades E, F, X, Z; class bands First 3.60-4.00, Second Upper 3.00-3.59, Second Lower 2.00-2.99, Third 1.50-1.99, Pass 1.00-1.49, Fail 0.00-0.99.
+- **Difference:** the FGPA weights Level 100-400 GPAs 1:1:2:2 (9.31b); the app uses the plain credit-weighted CGPA. At the author's choice the formula was kept and labelled: the GPA card and the assistant now say "Estimated class (from CGPA)", and the target-class card notes that the official class can differ. Two new test assertions cover the labels; the Flutter suite passed 398/398.
+- **Report:** the 2017 regulations added to the references (now 20) and cited in Section 4.3.2; Sections 1.3, 3.2.1 (FR7), 4.3.2, 4.7 (Table 4.3, new "Degree-class estimate" row), 4.9, 5.3 and Table 4.2 updated; a recommendation added to compute the FGPA. Figures 4.2(b) and 4.2(c) retaken to show the new labels. The report is now 56 pages.
+
 ---
 
 ## 3. Feature classification (verified against the code and tests)
@@ -136,7 +142,7 @@ Report:
 |---|---|
 | **1. Implemented and verified** (automated tests, and for some, the running app) | Guest mode (read-only browsing of announcements, events, clubs and the map; sign-in prompts for account-only actions); email/password registration and login; JWT sessions; bcrypt hashing; Zod request validation; backend role checks for students, lecturers and administrators; administrator account provisioning; GPA/CWA on the UG scale (shared fixture checked by backend and Flutter tests); events with ownership-based deletion; clubs (search, join, leave); announcements feed and admin posting; campus locations list and map; quiz lifecycle, including hidden answer keys; digital student ID with QR code; timetable `.ics`/CSV parsing and `.ics` export; onboarding and dashboard; AI assistant local engine and handling of unreachable data sources |
 | **2. Implemented but not fully verified** | Push notifications (backend fan-out, device tokens and preferences tested; delivery to a physical device not confirmed); Google Sign-In (backend verification checked against the live Firebase project; provider enabled on 4 November 2026, but no real sign-in has completed yet); Gemini-backed assistant and tutor (a live key answered in a short check on the web build; answer quality not evaluated); Gemini past-paper extraction (parsing tested, live extraction quality not evaluated); local reminders and notifications on a real device (not observed); Android build (compiles, installs and launches on an emulator; full walkthrough done on the web build because of the machine's memory limits) |
-| **3. Partially implemented** | Student Hub (static fixture data, simulated dues payments); Resources (static content); server-side timetable routes (exist and are restricted to each user's own entries, but are unused by the app); target-class calculator (works, but honours thresholds not checked against current regulations) |
+| **3. Partially implemented** | Student Hub (static fixture data, simulated dues payments); Resources (static content); server-side timetable routes (exist and are restricted to each user's own entries, but are unused by the app); degree class and target-class calculator (bands match the 2017 regulations, but estimated from the CGPA, not the official 1:1:2:2 level-weighted FGPA) |
 | **4. Planned or outstanding** | Apple sign-in and password reset (out of scope, no buttons shown); timetable synchronisation across devices; production deployment; security review; iOS version; usability study; continuous integration |
 
 ---
@@ -146,11 +152,10 @@ Report:
 - **Wang & Yan (2018):** the full text could not be read (the PDF failed to extract), so the report describes only what the published abstract states.
 - **Okonkwo & Ade-Ibijola (2021):** the findings were verified through the abstract and citing summaries, not the full text.
 - **Baras et al. (2018):** the description is based on the abstract and indexing summaries.
-- **University of Ghana grading scale:** taken from the scale supplied by the student earlier in the project. It should be checked against the current official handbook.
-- **Honours-class thresholds:** the thresholds in the target-class calculator have not been compared with current University regulations.
+- **University of Ghana grading scale and class bands:** checked on 4 November 2026 against University of Ghana, *Regulations for Junior Members*, Vol. 1, September 2017 (https://www.ug.edu.gh/sites/default/files/UG_Regulations_for_Junior_Members-2017.pdf): the grade table (Section 9.20, pp. 43-44), pass and failure grades (9.21) and the classification bands (9.31d, p. 48) match the app exactly. The same document (9.31b) weights Level 100-400 GPAs 1:1:2:2 for the FGPA, which the app does not do (see the dated section above). It says nothing about rounding. A newer edition may exist; the 2017 one is the one found on ug.edu.gh.
 - **Six sources in the audit brief** (Crompton & Burke, 2018; Ifenthaler & Yau, 2020; Labadze, Grigolia & Machaidze, 2023; Namoun & Alshanqiti, 2021; Pimmer, Mateescu & Gröhbiel, 2016; Ramandanis & Xinogalos, 2023): none is cited in the current report. Following the instruction not to add references just to increase the count, they were **not added and not verified**. If they belong to another draft, verify each one before using it.
 
-All 19 references in the final report are cited in the text, and every in-text citation has a reference entry.
+All 20 references in the final report are cited in the text, and every in-text citation has a reference entry.
 
 ---
 
@@ -163,7 +168,7 @@ All 19 references in the final report are cited in the text, and every in-text c
 - **Timetable:** local-first and not synchronised with the backend.
 - **Static content:** Student Hub and Resources content is static, and payments are simulated.
 - **Walking times:** estimated by straight-line distance.
-- **Target-class calculator:** a formula, not a validated prediction model.
+- **Target-class calculator and degree class:** a formula, not a validated prediction model, and estimated from the CGPA rather than the level-weighted FGPA.
 - **AI assistant:** a live Gemini key answered in one short check (4 November 2026); answer quality not evaluated. The local fallback is limited.
 - **Test coverage:** events, clubs, quizzes, locations and the registration/login account lookup are covered only by smoke tests.
 - **Usability:** no usability study.
@@ -198,5 +203,5 @@ The audit brief asked for placeholders for unconfirmed personal details. These d
 1. **No official style sheet:** formatting follows the supplied template structure and a same-department sample (Times New Roman 12 pt, 1.5 line spacing, 1-inch margins, A4). Check these against any department style guide.
 2. **Contents page:** it is written into the document with page numbers measured in Word, so editing the Word file can shift pages. After any edit, either re-check the numbers or insert Word's automatic contents table (References → Table of Contents), which works because the headings use Word heading styles.
 3. **Screenshots:** they come from the web build, not an Android device. This is disclosed in Section 4.2.
-4. **Grading scale and honours thresholds:** both need confirmation against the current official regulations (Section 4 above).
+4. **Degree class:** the grading scale and class bands match the 2017 regulations, but the app estimates the class from the CGPA, not the level-weighted FGPA. The app and report both say so; an examiner may still ask why the FGPA was not implemented.
 5. **Source control:** the redesign, the three bug fixes (`b6d7266`) and guest mode (`7dc0185`) are committed, so the code matches the report. On 3 November 2026 the repository was pushed to a private GitHub remote (`master` at `915c2fa` at the time of the push), after a check that no secret files or keys are tracked or in the history. The repository was briefly public after it was created and was made private the same day; no secrets or thesis files were in it. The report folder (`docs/thesis/`) was then committed and pushed too. Table 4.3 now records the remote.

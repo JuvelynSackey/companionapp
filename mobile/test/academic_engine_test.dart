@@ -23,6 +23,13 @@ void main() {
     expect(result.isPercentage, isFalse);
   });
 
+  test('the class is labelled an estimate from the CGPA (or CWA), not the official degree class', () {
+    // UG classifies on the FGPA, which weights Levels 100-400 as 1:1:2:2
+    // (Regulations for Junior Members, 2017, 9.31); this engine does not.
+    expect(AcademicEngine.calculate([_grade(85)], InstitutionRegistry.ug).classLabel, 'Estimated class (from CGPA)');
+    expect(AcademicEngine.calculate([_grade(85)], InstitutionRegistry.knust).classLabel, 'Estimated class (from CWA)');
+  });
+
   test('UG (gpa4_0): credit-weighted average across mixed grades', () {
     // 3 credits @ 80 (4.0) + 2 credits @ 60 (2.0) = (12 + 4) / 5 = 3.2
     final result = AcademicEngine.calculate(

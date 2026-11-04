@@ -184,7 +184,7 @@ All of these are fixed, with regression tests.
 4. **No usability study** has been done with students. A future study would need ethics approval.
 5. **Timetable:** stored on the device and not synchronised across devices. The server routes exist, but the app does not use them.
 6. **Student Hub and Resources:** sample data. Dues payments are simulated, and the app labels both on screen.
-7. **Target-class calculator:** a formula, not a validated prediction. The honours thresholds need checking against current UG regulations.
+7. **Degree class:** the scale and class bands match the UG *Regulations for Junior Members* (2017), but the app estimates the class from the CGPA. The official FGPA counts Levels 300 and 400 double (1:1:2:2), so the app labels its class "Estimated class (from CGPA)". The target-class calculator is a formula, not a validated prediction.
 8. **Walking times:** based on straight-line distance, not real routes.
 9. **Not deployed:** no production deployment and no security review. Android and web only; no iOS version.
 10. **Out of scope:** Apple sign-in and in-app password reset.
@@ -242,7 +242,7 @@ Students edit their timetable often and need it offline, for reminders and walki
 No. It is simulated. The screen carries a "Demo data" banner, the button says **Pay with MoMo**, the receipt says "SIMULATED PAYMENT — NOT A REAL TRANSACTION", and paid dues show "PAID (SIMULATED)". A real mobile-money integration was out of scope.
 
 **Q: How accurate is the target-class "prediction"?**
-It is not a prediction. It is a formula: the average a student needs over their remaining credit hours to reach a chosen honours class. The thresholds still need checking against the current University regulations.
+It is not a prediction. It is a formula: the average a student needs over their remaining credit hours to reach a chosen honours class. Its class bands match the University's 2017 regulations, but like the GPA card it works from the CGPA, while the official class uses the FGPA, which weights Levels 100 to 400 as 1:1:2:2. The app says the class is an estimate. Computing the FGPA is the next step: the level of each course can be read from its code.
 
 **Q: What would you do differently?**
 - Set up the remote repository and continuous integration at the start.
@@ -257,7 +257,7 @@ Passing tests are not the same as a working product. Running the whole applicati
 ## 10. Checklist for the day
 
 - [ ] Confirm the programme title, submission date and Declaration format with the department; the report currently says "BSc Information Technology" and "October, 2026".
-- [ ] Check the UG grading scale and honours thresholds against the current handbook.
+- [x] Check the UG grading scale and honours thresholds against the regulations (2017 edition, 4 November 2026).
 - [x] Push the repository to the private GitHub remote and update Table 4.3 ("Repository setup"). Done 3 November 2026.
 - [ ] `start-dev.ps1`, then `npm run db:setup` (it needs PostgreSQL running), then run the smoke tests once to warm the server.
 - [ ] Build the app, and log in as the student and the admin once beforehand.

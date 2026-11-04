@@ -22,6 +22,13 @@ String _feasibilityLabel(PredictionFeasibility feasibility) => switch (feasibili
       PredictionFeasibility.unattainable => 'Statistically Unattainable',
     };
 
+/// The plan works from the plain average, while the University of Ghana sets
+/// the degree class from the level-weighted FGPA (Regulations for Junior
+/// Members, September 2017, 9.31), so the card says it is an estimate.
+const targetClassEstimateNote =
+    'An estimate from your current average. Your official class follows your university\'s rules and can differ: '
+    'at the University of Ghana, Levels 300 and 400 count double.';
+
 /// Interactive "what average do I need?" card. Reads/writes the same local
 /// prefs + academicPlanProvider the Dashboard's AcademicSnapshotCard uses, so
 /// changing the target class here updates the Dashboard too.
@@ -125,6 +132,8 @@ class TargetClassPredictorWidget extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(plan.summary, style: TextStyle(color: campus.textMuted)),
+              const SizedBox(height: 8),
+              Text(targetClassEstimateNote, style: TextStyle(color: campus.textMuted, fontSize: 12, fontStyle: FontStyle.italic)),
             ],
           ),
         );
