@@ -8,6 +8,7 @@ import '../../widgets/campus_card_tile.dart';
 import '../onboarding/institution_controller.dart';
 import 'analytics_providers.dart';
 import 'target_class_predictor.dart';
+import 'what_if_screen.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
@@ -32,6 +33,14 @@ class AnalyticsScreen extends ConsumerWidget {
                 _ScorecardCard(metric: metric, institutionShortCode: institution.shortCode, institutionBadgeColor: institution.primaryColor),
                 const SizedBox(height: 16),
                 const TargetClassPredictorWidget(),
+                if (!metric.isPercentage) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WhatIfScreen())),
+                    icon: const Icon(Icons.calculate_outlined),
+                    label: const Text('What if? Try expected grades'),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Text('Results by semester', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
