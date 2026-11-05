@@ -20,6 +20,8 @@ debug.keystore
 # Backend (Node)
 backend/node_modules/
 backend/.env
+backend/.env.*
+backend/seed-credentials.local.txt
 backend/npm-debug.log*
 
 # Flutter (mobile/)

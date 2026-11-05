@@ -13,7 +13,9 @@
  * Found board (guests read without contact details; only the poster or an
  * admin changes an item).
  *
- * Needs the seeded demo accounts (`npm run db:setup`). Safe to re-run: quizzes,
+ * Needs the seeded demo accounts (`npm run db:setup`). Against a hosted
+ * database set SMOKE_STUDENT_PASSWORD and SMOKE_ADMIN_PASSWORD from
+ * seed-credentials.local.txt. Safe to re-run: quizzes,
  * events and Lost & Found items are deleted at the end; each run leaves a few
  * accounts behind (smoke-lecturer-*, smoke-register-*, smoke-grades-*), since
  * there is no delete-user endpoint.
@@ -64,13 +66,13 @@ async function run() {
 
   console.log('\nModule 1 — authentication');
   const login = await call('POST', '/auth/login', {
-    body: { email: 'student@ug.edu.gh', password: 'student123' },
+    body: { email: 'student@ug.edu.gh', password: process.env.SMOKE_STUDENT_PASSWORD ?? 'student123' },
   });
   check('student can log in', login.status === 200 && !!login.data?.token);
   const studentToken = login.data?.token;
 
   const adminLogin = await call('POST', '/auth/login', {
-    body: { email: 'admin@ug.edu.gh', password: 'admin123' },
+    body: { email: 'admin@ug.edu.gh', password: process.env.SMOKE_ADMIN_PASSWORD ?? 'admin123' },
   });
   check('admin can log in', adminLogin.status === 200 && !!adminLogin.data?.token);
   const adminToken = adminLogin.data?.token;

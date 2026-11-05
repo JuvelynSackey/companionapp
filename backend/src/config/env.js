@@ -19,12 +19,16 @@ export const config = {
   port: Number(process.env.PORT ?? 4000),
   nodeEnv: process.env.NODE_ENV ?? 'development',
 
+  // A hosted database (Render, Neon, ...) gives one connection URL. When it is
+  // set it replaces the DB_* settings below, and SSL is used.
+  databaseUrl: process.env.DATABASE_URL ?? '',
+
   db: {
     host: process.env.DB_HOST ?? 'localhost',
     port: Number(process.env.DB_PORT ?? 5432),
     database: process.env.DB_NAME ?? 'campus_companion',
     user: process.env.DB_USER ?? 'postgres',
-    password: required('DB_PASSWORD'),
+    password: process.env.DATABASE_URL ? process.env.DB_PASSWORD ?? '' : required('DB_PASSWORD'),
   },
 
   jwt: {

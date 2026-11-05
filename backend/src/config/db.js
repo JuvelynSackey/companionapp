@@ -8,18 +8,28 @@ const { Pool } = pg;
  * exhaust PostgreSQL's connection limit under any real load, so every query
  * in the app goes through this pool.
  */
-export const pool = new Pool({
-  host: config.db.host,
-  port: config.db.port,
-  database: config.db.database,
-  user: config.db.user,
-  password: config.db.password,
-  max: 10,
-  idleTimeoutMillis: 30_000,
-  // Managed Postgres hosts (Render, etc.) require SSL; local dev Postgres
-  // typically doesn't support it, so this only kicks in in production.
-  ssl: config.nodeEnv === 'production' ? { rejectUnauthorized: false } : false,
-});
+export const pool = new Pool(
+  config.databaseUrl
+    ? {
+        // Hosted databases require SSL.
+        connectionString: config.databaseUrl,
+        ssl: { rejectUnauthorized: false },
+        max: 10,
+        idleTimeoutMillis: 30_000,
+      }
+    : {
+        host: config.db.host,
+        port: config.db.port,
+        database: config.db.database,
+        user: config.db.user,
+        password: config.db.password,
+        max: 10,
+        idleTimeoutMillis: 30_000,
+        // Managed Postgres hosts (Render, etc.) require SSL; local dev Postgres
+        // typically doesn't support it, so this only kicks in in production.
+        ssl: config.nodeEnv === 'production' ? { rejectUnauthorized: false } : false,
+      }
+);
 
 pool.on('error', (err) => {
   console.error('Unexpected error on idle PostgreSQL client', err);
