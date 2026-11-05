@@ -1,4 +1,6 @@
-const dayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+import '../../core/utils/course_code.dart';
+
+const dayNames =['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 /// Now a locally-owned, student-managed model (no backend authority — see
 /// LocalScheduleRepository). scheduleId is a locally-generated id, not a
@@ -6,17 +8,21 @@ const dayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'S
 /// the (now-unused) GET /api/schedule response shape, though the field
 /// names are kept identical since nothing about the shape needed to change.
 class ScheduleEntry {
+  /// Every way an entry is made (added, edited, imported, loaded from the
+  /// device) passes through here, so the course code is always in the
+  /// University's printed form ("DCIT 103") and a blank room is "no room".
   ScheduleEntry({
     required this.scheduleId,
-    required this.courseCode,
+    required String courseCode,
     required this.courseTitle,
     required this.lecturer,
     required this.dayOfWeek,
     required this.dayName,
     required this.startTime,
     required this.endTime,
-    required this.room,
-  });
+    required String? room,
+  })  : courseCode = normalizeCourseCode(courseCode),
+        room = (room == null || room.trim().isEmpty) ? null : room.trim();
 
   factory ScheduleEntry.fromJson(Map<String, dynamic> json) => ScheduleEntry(
         scheduleId: json['scheduleId'] as int,

@@ -10,6 +10,7 @@ import '../onboarding/institution_controller.dart';
 import '../profile/digital_id_screen.dart';
 import '../resources/resources_screen.dart';
 import '../timetable/timetable_screen.dart';
+import '../../core/theme/theme_mode_controller.dart';
 import '../lost_found/lost_found_screen.dart';
 import 'nav_providers.dart';
 
@@ -73,6 +74,8 @@ class AppShell extends ConsumerWidget {
             onSelected: (value) {
               if (value == 'lostFound') {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LostFoundScreen()));
+              } else if (value == 'appearance') {
+                showAppearanceDialog(context);
               } else if (value == 'signOut') {
                 ref.read(sessionControllerProvider.notifier).signOut();
               } else if (value == 'digitalId') {
@@ -89,6 +92,7 @@ class AppShell extends ConsumerWidget {
               const PopupMenuDivider(),
               const PopupMenuItem(value: 'digitalId', child: Text('Digital Student ID')),
               const PopupMenuItem(value: 'lostFound', child: Text('Lost & Found')),
+              const PopupMenuItem(value: 'appearance', child: Text('Appearance')),
               if (user?.isAdmin ?? false) const PopupMenuItem(value: 'admin', child: Text('Admin panel')),
               const PopupMenuItem(value: 'signOut', child: Text('Sign out')),
             ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_exception.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/theme/landing_theme.dart';
 import 'session_controller.dart';
 
@@ -51,8 +52,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     }
   }
 
+  // The pre-sign-in flow keeps its light, branded look whatever the
+  // Appearance setting; dark mode applies once the student is in the app.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Theme(data: AppTheme.light(), child: Builder(builder: _build));
+
+  Widget _build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(

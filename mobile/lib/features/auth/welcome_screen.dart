@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/theme/landing_theme.dart';
 import '../../widgets/brand_logo.dart';
 import '../onboarding/institution_picker_screen.dart';
@@ -21,8 +22,12 @@ import 'widgets/social_auth_buttons.dart';
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
+  // The pre-sign-in flow keeps its light, branded look whatever the
+  // Appearance setting; dark mode applies once the student is in the app.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Theme(data: AppTheme.light(), child: Builder(builder: _build));
+
+  Widget _build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(

@@ -91,7 +91,7 @@ class _ImportScheduleButtonState extends ConsumerState<ImportScheduleButton> {
       icon: _busy
           ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
           : const Icon(Icons.upload_file_outlined, size: 18),
-      label: const Text('Import'),
+      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Import', maxLines: 1, softWrap: false)),
       onPressed: _busy ? null : _import,
     );
   }

@@ -24,6 +24,7 @@ class LocalPrefs {
   static const _kInstitutionId = 'selected_institution_id';
   static const _kOnboardingCompleted = 'is_onboarding_completed';
   static const _kGuestMode = 'is_guest_mode';
+  static const _kThemeMode = 'theme_mode';
   static const _kWalkRouteMinutes = 'walk_route_minutes_v1';
   static const _kReadAnnouncementIds = 'read_announcement_ids';
   static const _kExams = 'local_exams_v1';
@@ -44,6 +45,10 @@ class LocalPrefs {
   /// not signed in or left guest mode since.
   bool get isGuestMode => _prefs.getBool(_kGuestMode) ?? false;
   Future<void> setGuestMode(bool value) => _prefs.setBool(_kGuestMode, value);
+
+  /// 'light', 'dark' or 'system' (also when unset). See ThemeModeController.
+  String get themeMode => _prefs.getString(_kThemeMode) ?? 'system';
+  Future<void> setThemeMode(String value) => _prefs.setString(_kThemeMode, value);
 
   /// Walking minutes along real footpaths between two campus locations, keyed
   /// "fromId-toId" (see WalkingRouteService), kept so a walk is fetched once.

@@ -4,6 +4,7 @@ import 'core/providers/core_providers.dart';
 import 'core/services/announcement_push_bridge.dart';
 import 'core/services/push_coordinator.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_controller.dart';
 import 'data/models/app_user.dart';
 import 'features/auth/auth_status.dart';
 import 'features/auth/session_controller.dart';
@@ -15,16 +16,17 @@ import 'features/shell/guest_shell.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/brand_splash.dart';
 
-class AppRoot extends StatelessWidget {
+class AppRoot extends ConsumerWidget {
   const AppRoot({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Campus Companion',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
+      themeMode: ref.watch(themeModeProvider),
       home: const _RootGate(),
     );
   }

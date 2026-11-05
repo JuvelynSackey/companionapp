@@ -51,7 +51,9 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        titleTextStyle: base.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800, color: CampusColors.slate900),
+        // An explicit size: the base text theme carries no sizes of its own,
+        // so copying from it left titles at the 14px default.
+        titleTextStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CampusColors.slate900),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
@@ -123,6 +125,7 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
+        titleTextStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: CampusColors.slate50),
       ),
       cardTheme: CardThemeData(
         elevation: 0,

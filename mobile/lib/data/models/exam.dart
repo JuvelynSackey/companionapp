@@ -1,8 +1,12 @@
+import '../../core/utils/course_code.dart';
+
 /// Local-only model — the backend has no exams table/endpoint.
 class Exam {
+  /// The course code is always kept in the University's printed form
+  /// ("DCIT 101"), however it was typed or saved.
   Exam({
     required this.id,
-    required this.courseCode,
+    required String courseCode,
     required this.courseTitle,
     required this.examDate,
     required this.startTime,
@@ -12,7 +16,7 @@ class Exam {
     this.invigilator = '',
     this.walkingTimeMinutes = 15,
     this.rules = 'Calculators permitted. No mobile phones or smartwatches. Bring Student ID Card.',
-  });
+  }) : courseCode = normalizeCourseCode(courseCode);
 
   factory Exam.fromJson(Map<String, dynamic> json) => Exam(
         id: json['id'] as String,

@@ -20,9 +20,10 @@ class ResourcesScreen extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        // The app's top bar already says "Resources"; this bar holds only the tabs.
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: const Text('Resources'),
+          toolbarHeight: 0,
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Portals'),

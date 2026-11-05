@@ -70,9 +70,13 @@ class _ScorecardCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [campus.accentGlow, Theme.of(context).colorScheme.primary],
+          // In dark mode the theme's greens are pale, and white text on them is
+          // hard to read; use the Dashboard card's deep green instead.
+          colors: Theme.of(context).brightness == Brightness.dark
+              ? const [CampusColors.brandDeep, CampusColors.brand]
+              : [campus.accentGlow, Theme.of(context).colorScheme.primary],
         ),
-        boxShadow: [BoxShadow(color: campus.accentGlow.withValues(alpha: 0.4), blurRadius: 24, spreadRadius: 1)],
+        boxShadow: [BoxShadow(color: campus.accentGlow.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.15 : 0.4), blurRadius: 24, spreadRadius: 1)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

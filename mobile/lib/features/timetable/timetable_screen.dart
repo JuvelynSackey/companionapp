@@ -72,7 +72,7 @@ class TimetableScreen extends ConsumerWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.calendar_month_outlined, size: 18),
-                      label: const Text('Export'),
+                      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Export', maxLines: 1, softWrap: false)),
                       onPressed: () => shareIcsFile(IcsExporter.generateScheduleIcs(entries), 'timetable.ics'),
                     ),
                   ),
@@ -205,15 +205,45 @@ class _TimelineTile extends StatelessWidget {
               child: CampusCardTile(
                 decoration: campus.cardDecoration(glow: ongoing),
                 radius: campus.cardRadius,
-                child: ListTile(
+                // A brand-coloured strip down the left edge ties each class to
+                // the timeline dot beside it.
+                //
+                // Not a ListTile: this row is sized by IntrinsicHeight (for the
+                // timeline line), and ListTile's intrinsic height leaves out its
+                // own vertical padding, which cut the time off the bottom.
+                child: InkWell(
                   onTap: onTap,
-                  title: Text('${entry.courseCode} · ${entry.courseTitle}'),
-                  subtitle: Text(
-                    '${entry.lecturer} · ${entry.room ?? 'TBA'}\n${entry.startTime} - ${entry.endTime}',
-                    style: TextStyle(color: campus.textMuted),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(border: Border(left: BorderSide(color: campus.accentGlow, width: 4))),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('${entry.courseCode} · ${entry.courseTitle}', style: Theme.of(context).textTheme.bodyLarge),
+                                const SizedBox(height: 2),
+                                Text.rich(
+                                  TextSpan(children: [
+                                    if (entry.lecturer.trim().isNotEmpty) TextSpan(text: '${entry.lecturer} · '),
+                                    entry.room != null
+                                        ? TextSpan(text: entry.room)
+                                        : const TextSpan(text: 'Room not set', style: TextStyle(fontStyle: FontStyle.italic)),
+                                  ]),
+                                  style: TextStyle(color: campus.textMuted),
+                                ),
+                                Text('${entry.startTime} - ${entry.endTime}', style: TextStyle(color: campus.textMuted)),
+                              ],
+                            ),
+                          ),
+                          IconButton(icon: const Icon(Icons.delete_outline), tooltip: 'Delete class', onPressed: onDelete),
+                        ],
+                      ),
+                    ),
                   ),
-                  isThreeLine: true,
-                  trailing: IconButton(icon: const Icon(Icons.delete_outline), onPressed: onDelete),
                 ),
               ),
             ),
@@ -265,7 +295,9 @@ class _RemindersButtonState extends ConsumerState<_RemindersButton> {
       icon: _busy
           ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
           : const Icon(Icons.notifications_active_outlined, size: 18),
-      label: const Text('Remind Me'),
+      // Three buttons share one row; on a narrow phone the labels shrink
+      // rather than wrap ("Remin / d Me").
+      label: const FittedBox(fit: BoxFit.scaleDown, child: Text('Remind Me', maxLines: 1, softWrap: false)),
       onPressed: _busy ? null : _enableReminders,
     );
   }
