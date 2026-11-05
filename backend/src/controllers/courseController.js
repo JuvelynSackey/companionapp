@@ -14,7 +14,8 @@ export async function listCourses(req, res, next) {
         courseId: row.course_id,
         courseCode: row.course_code,
         courseTitle: row.course_title,
-        lecturer: row.lecturer_name,
+        // The app expects a string; a course added without one must not break it.
+        lecturer: row.lecturer_name ?? '',
         creditHours: row.credit_hours,
       })),
     });
