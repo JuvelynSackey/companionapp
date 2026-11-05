@@ -24,6 +24,7 @@ app.get('/api/health', async (_req, res) => {
       // its contents. Push shares the key, so it is on whenever this is.
       googleSignIn: (await getGoogleIdTokenVerifier()) ? 'on' : 'off',
       firebaseKeyFormat: firebaseKeyFormat(),
+      ...(firebaseKeyFormat() === 'unreadable' ? unreadableKeyHint() : {}),
       commit: process.env.RENDER_GIT_COMMIT?.slice(0, 7) ?? 'local',
     });
   } catch {
@@ -41,6 +42,14 @@ function firebaseKeyFormat() {
   }
   if (raw.startsWith('{')) return 'json';
   return raw.startsWith("'") || raw.startsWith('"') ? 'quoted-json' : 'base64';
+}
+
+// Only when the key cannot be read: its length and first four characters
+// (a JSON key starts '{"ty', a base64 one 'eyJ0'), enough to tell what was
+// pasted without revealing the key.
+function unreadableKeyHint() {
+  const raw = (process.env.FIREBASE_SERVICE_ACCOUNT ?? '').trim();
+  return { firebaseKeyLength: raw.length, firebaseKeyStart: raw.slice(0, 4) };
 }
 
 app.use('/api', apiRoutes);
