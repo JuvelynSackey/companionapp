@@ -26,6 +26,10 @@ function serviceAccountJson() {
   if (value.length >= 2 && (value[0] === "'" || value[0] === '"') && value.at(-1) === value[0]) {
     value = value.slice(1, -1).trim();
   }
+  // Seen on Render: the JSON saved without its outer braces.
+  if (value.startsWith('"type"') && !value.endsWith('}')) {
+    return `{${value}}`;
+  }
   if (value && !value.startsWith('{')) {
     const decoded = Buffer.from(value, 'base64').toString('utf8').trim();
     if (decoded.startsWith('{')) return decoded;
