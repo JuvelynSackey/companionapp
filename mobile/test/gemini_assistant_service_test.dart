@@ -168,6 +168,38 @@ void main() {
       }
     });
 
+    test('the request goes to Flash-Lite, and a busy retry goes to the other model', () async {
+      final adapter = _Adapter(earlierStatuses: [503], body: _reply('ok'));
+      final seen = <String>[];
+      final dio = Dio()..httpClientAdapter = adapter;
+      dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
+        seen.add(options.path);
+        handler.next(options);
+      }));
+      final service = GeminiAssistantService(dio: dio, apiKey: 'k', retryDelay: Duration.zero);
+      expect(await service.ask(systemPrompt: 's', query: 'q'), 'ok');
+      expect(seen.first, contains('/models/gemini-3.5-flash-lite:generateContent'));
+      expect(seen.last, contains('/models/gemini-3.1-flash-lite:generateContent'));
+    });
+
+    test('attached slides are sent once, inline, with the newest question', () async {
+      final adapter = _Adapter(body: _reply('From slide 3.'));
+      final slides = GeminiAttachment(name: 'week3.pdf', mimeType: 'application/pdf', bytes: Uint8List.fromList([1, 2, 3]));
+      final answer = await _service(adapter).ask(
+        systemPrompt: 's',
+        query: 'Summarise these slides',
+        history: [_user('Hi'), _bot('Hello')],
+        attachment: slides,
+      );
+      expect(answer, 'From slide 3.');
+      final contents = (adapter.last!.data as Map)['contents'] as List;
+      expect(contents.length, 3);
+      final lastParts = (contents.last as Map)['parts'] as List;
+      expect((lastParts.first as Map)['inline_data'], {'mime_type': 'application/pdf', 'data': base64Encode([1, 2, 3])});
+      expect((lastParts.last as Map)['text'], 'Summarise these slides');
+      expect(((contents.first as Map)['parts'] as List).length, 1, reason: 'earlier turns carry no file');
+    });
+
     test('a second busy reply gives up (null) instead of retrying again', () async {
       final adapter = _Adapter(earlierStatuses: [503, 503], body: _reply('never reached'));
       expect(await _service(adapter).ask(systemPrompt: 's', query: 'q'), isNull);

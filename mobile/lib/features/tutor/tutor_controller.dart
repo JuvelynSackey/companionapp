@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../assistant/assistant_controller.dart' show geminiAssistantServiceProvider;
+import '../assistant/gemini_assistant_service.dart';
 import '../assistant/models/assistant_message.dart';
 import 'local_tutor_engine.dart';
 import 'tutor_context.dart';
@@ -9,6 +10,10 @@ import 'tutor_context.dart';
 /// the course picker starts a new conversation rather than mixing courses
 /// into one history.
 final tutorSendingProvider = StateProvider.family<bool, int>((ref, courseId) => false);
+
+/// Lecture slides (a PDF) the student attached for a course, sent to Gemini
+/// with every question about that course. Kept in memory only.
+final tutorSlidesProvider = StateProvider.family<GeminiAttachment?, int>((ref, courseId) => null);
 
 class TutorController extends FamilyNotifier<List<AssistantMessage>, int> {
   int _nextId = 0;
@@ -30,10 +35,12 @@ class TutorController extends FamilyNotifier<List<AssistantMessage>, int> {
 
     try {
       final context = await ref.read(tutorContextProvider(courseId).future);
+      final slides = ref.read(tutorSlidesProvider(courseId));
       final geminiReply = await ref.read(geminiAssistantServiceProvider).ask(
-            systemPrompt: context.toSystemPrompt(),
+            systemPrompt: context.toSystemPrompt(slidesName: slides?.name),
             query: query.trim(),
             history: history,
+            attachment: slides,
           );
 
       final replyText = geminiReply ?? LocalTutorEngine.respond(query, context);

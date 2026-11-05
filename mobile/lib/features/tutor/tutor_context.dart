@@ -22,7 +22,8 @@ class TutorContext {
   final CourseGrade? grade;
   final ExamCountdown? examCountdown;
 
-  String toSystemPrompt() {
+  /// [slidesName] is set when the student attached lecture slides.
+  String toSystemPrompt({String? slidesName}) {
     final gradeSummary =
         grade == null ? 'No recorded grade yet.' : '${grade!.score.toStringAsFixed(1)}% (${grade!.letterGrade})';
     final examSummary = examCountdown == null
@@ -35,7 +36,9 @@ Current Context:
 - Current grade in this course: $gradeSummary
 - Next exam for this course: $examSummary
 
-Act as a patient, encouraging tutor for this specific course only. Explain concepts clearly with examples when asked, and when asked for practice questions, generate 3-5 questions relevant to a course at this level with brief answers at the end. If asked about something outside this course, gently redirect the student to the general AI Assistant instead.''';
+Act as a patient, encouraging tutor for this specific course only. Explain concepts clearly with examples when asked, and when asked for practice questions, generate 3-5 questions relevant to a course at this level with brief answers at the end. If asked about something outside this course, gently redirect the student to the general AI Assistant instead.${slidesName == null ? '' : '''
+
+The student has attached lecture slides for this course ("$slidesName"). Base your answers on these slides, mention the slide or page a point comes from where you can, and say so if the slides do not cover the question.'''}''';
   }
 }
 

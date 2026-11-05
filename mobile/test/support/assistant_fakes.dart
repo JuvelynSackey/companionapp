@@ -37,14 +37,17 @@ class FakeGemini implements GeminiAssistantService {
   final queries = <String>[];
   final histories = <List<AssistantMessage>>[];
   final systemPrompts = <String>[];
+  final attachments = <GeminiAttachment?>[];
 
   @override
   Future<String?> ask({
     required String systemPrompt,
     required String query,
     List<AssistantMessage> history = const [],
+    GeminiAttachment? attachment,
   }) async {
     queries.add(query);
+    attachments.add(attachment);
     histories.add(history);
     systemPrompts.add(systemPrompt);
     await gate?.future;

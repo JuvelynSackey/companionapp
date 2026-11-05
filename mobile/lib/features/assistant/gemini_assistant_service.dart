@@ -1,8 +1,25 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'models/assistant_message.dart';
 
-/// Gemini model id used by this service.
-const String _geminiModel = 'gemini-3.5-flash';
+/// The Gemini model for every request: Flash-Lite, the fastest current model
+/// (answers took about 2-13 s against 15 s for Flash on 5 Nov 2026, and it
+/// read an attached 1.2 MB PDF correctly).
+const String geminiModel = 'gemini-3.5-flash-lite';
+
+/// When [geminiModel] answers "busy", the single retry goes to this other
+/// model instead of queueing on the overloaded one again.
+const String geminiRetryModel = 'gemini-3.1-flash-lite';
+
+/// A file sent along with a question, e.g. a course's lecture slides as a PDF.
+class GeminiAttachment {
+  const GeminiAttachment({required this.name, required this.mimeType, required this.bytes});
+  final String name;
+  final String mimeType;
+  final Uint8List bytes;
+}
 
 /// Never hardcode a real key. Pass with:
 ///   flutter run --dart-define=GEMINI_API_KEY=...
@@ -43,6 +60,7 @@ class GeminiAssistantService {
   static List<Map<String, dynamic>> buildContents({
     required List<AssistantMessage> history,
     required String query,
+    GeminiAttachment? attachment,
   }) {
     final recent = history.length > maxHistoryMessages ? history.sublist(history.length - maxHistoryMessages) : history;
 
@@ -66,11 +84,17 @@ class GeminiAssistantService {
     add('user', query);
 
     return [
-      for (final turn in turns)
+      for (var i = 0; i < turns.length; i++)
         {
-          'role': turn.role,
+          'role': turns[i].role,
           'parts': [
-            {'text': turn.text},
+            // The attachment rides on the newest question, so the model reads
+            // it fresh each time instead of relying on an earlier turn.
+            if (attachment != null && i == turns.length - 1)
+              {
+                'inline_data': {'mime_type': attachment.mimeType, 'data': base64Encode(attachment.bytes)},
+              },
+            {'text': turns[i].text},
           ],
         },
     ];
@@ -80,11 +104,12 @@ class GeminiAssistantService {
     required String systemPrompt,
     required String query,
     List<AssistantMessage> history = const [],
+    GeminiAttachment? attachment,
   }) async {
     if (_apiKey.isEmpty) return null;
 
-    Future<Response<dynamic>> send() => _dio.post(
-          'https://generativelanguage.googleapis.com/v1beta/models/$_geminiModel:generateContent',
+    Future<Response<dynamic>> send(String model) => _dio.post(
+          'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
           queryParameters: {'key': _apiKey},
           data: {
             'systemInstruction': {
@@ -92,18 +117,18 @@ class GeminiAssistantService {
                 {'text': systemPrompt},
               ],
             },
-            'contents': buildContents(history: history, query: query),
+            'contents': buildContents(history: history, query: query, attachment: attachment),
           },
         );
 
     try {
       Response<dynamic> response;
       try {
-        response = await send();
+        response = await send(geminiModel);
       } on DioException catch (e) {
         if (!_retryStatuses.contains(e.response?.statusCode)) rethrow;
         await Future<void>.delayed(_retryDelay);
-        response = await send();
+        response = await send(geminiRetryModel);
       }
 
       final candidates = response.data['candidates'] as List?;
