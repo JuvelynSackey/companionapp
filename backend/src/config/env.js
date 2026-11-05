@@ -15,6 +15,24 @@ function required(name) {
   return value;
 }
 
+/**
+ * The Firebase service-account key, as JSON or base64-encoded JSON. Hosting
+ * dashboards make it easy to paste the JSON with stray quotes around it, or
+ * mangle it, so surrounding quotes are dropped and base64 (letters and digits
+ * only, nothing to mangle) is accepted too.
+ */
+function serviceAccountJson() {
+  let value = (process.env.FIREBASE_SERVICE_ACCOUNT ?? '').trim();
+  if (value.length >= 2 && (value[0] === "'" || value[0] === '"') && value.at(-1) === value[0]) {
+    value = value.slice(1, -1).trim();
+  }
+  if (value && !value.startsWith('{')) {
+    const decoded = Buffer.from(value, 'base64').toString('utf8').trim();
+    if (decoded.startsWith('{')) return decoded;
+  }
+  return value;
+}
+
 export const config = {
   port: Number(process.env.PORT ?? 4000),
   nodeEnv: process.env.NODE_ENV ?? 'development',
@@ -41,7 +59,7 @@ export const config = {
   // or wrong the API still starts and pushes are only logged, see services/pushSenders.js.
   push: {
     enabled: process.env.FCM_ENABLED === 'true',
-    serviceAccount: process.env.FIREBASE_SERVICE_ACCOUNT ?? '',
+    serviceAccount: serviceAccountJson(),
   },
 
   // Google Sign-In. Off unless GOOGLE_SIGN_IN_ENABLED=true; shares
@@ -49,6 +67,6 @@ export const config = {
   // A wrong or missing key logs a warning and leaves it off, same as push.
   googleSignIn: {
     enabled: process.env.GOOGLE_SIGN_IN_ENABLED === 'true',
-    serviceAccount: process.env.FIREBASE_SERVICE_ACCOUNT ?? '',
+    serviceAccount: serviceAccountJson(),
   },
 };

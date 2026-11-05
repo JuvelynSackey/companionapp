@@ -44,7 +44,9 @@ Neon's free database also pauses when idle and wakes on the next query.
 2. New, Blueprint, choose the repository. Render reads `render.yaml`.
 3. When it asks for the secret values, paste:
    - `DATABASE_URL`: the Neon connection string;
-   - `FIREBASE_SERVICE_ACCOUNT`: the same one-line JSON as in `backend/.env`.
+   - `FIREBASE_SERVICE_ACCOUNT`: the Firebase key. Base64 is safest to paste
+     (PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("key.json"))`);
+     one-line JSON also works, and stray quotes around it are ignored.
 4. Apply. When the deploy finishes, open
    `https://<service>.onrender.com/api/health`; it should answer
    `{"status":"ok","database":"connected"}`.
