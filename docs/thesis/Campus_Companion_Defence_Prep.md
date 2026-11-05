@@ -72,7 +72,7 @@ Flutter app (Android / web)          Node.js + Express API             PostgreSQ
 4. Log in as the administrator and create one or two upcoming events (Events, then the + button). The seeded events are dated April 2026, so without this the Events tab is empty and there is nothing to RSVP to.
 5. Have `npm run test:smoke` and `npm run verify:integrations` ready in a terminal.
 
-**Demo accounts (local seed data only):**
+**Demo accounts (local seed data only; the live server uses the random passwords in `backend/seed-credentials.local.txt`):**
 
 | Role | Email | Password |
 |---|---|---|
@@ -121,7 +121,7 @@ Flutter app (Android / web)          Node.js + Express API             PostgreSQ
 - **Secrets:** `backend/.env` and the Firebase service-account key are ignored by Git. I checked that no credential has ever been committed.
 - **Quizzes:** answer keys are never sent to students before they submit.
 
-**Not done (say it plainly):** a production security review, rate limiting, deployment hardening and HTTPS on a public server.
+**Not done (say it plainly):** a production security review and rate limiting. The API is deployed on Render (HTTPS) with a Neon database, on free plans.
 
 ---
 
@@ -186,7 +186,7 @@ All of these are fixed, with regression tests.
 6. **University services:** dues payment, shuttle times, library occupancy and the academic calendar are not offered. Earlier sample versions were removed rather than shown with invented data.
 7. **Degree class:** taken from the FGPA, as in the UG *Regulations for Junior Members* (2017): Levels 300 and 400 count double. Repeated courses are not weighted separately. The target-class calculator is a formula, not a validated prediction, and assumes the remaining credits are spread evenly over the levels left.
 8. **Walking times:** along real footpaths from a public routing service; if it cannot be reached and no route is saved, the app falls back to a straight-line estimate and says so.
-9. **Not deployed:** no production deployment and no security review. Android and web only; no iOS version.
+9. **Deployment:** the API runs on Render's free plan with a Neon database (the smoke test passed 212/212 against it on 5 November 2026). Free plans sleep when idle; no security review. Android and web only; no iOS version.
 10. **Out of scope:** Apple sign-in and in-app password reset.
 11. **Screenshots:** taken from the web build. The Android build runs on an emulator, but this machine (7.7 GB of RAM) could not keep the emulator responsive.
 
@@ -194,7 +194,7 @@ All of these are fixed, with regression tests.
 
 ## 8. Future work
 
-1. Register the release signing key, deploy the backend, and repeat the Google sign-in and push checks there, including a notification while the app is open.
+1. Register the release signing key and repeat the Google sign-in and push checks with the phone against the deployed backend, including a notification while the app is open.
 2. Evaluate Gemini's answers against a set of representative questions.
 3. Run a usability study, with ethics approval.
 4. Add timetable synchronisation using the existing server routes, which are already restricted to each user's own entries.

@@ -163,6 +163,12 @@ Report:
 - **Also fixed:** app-bar titles were 14 px in the light theme (copied from a size-less base style) and are now 22 px bold in both themes; Resources no longer shows its title twice.
 - **Tests on 5 November 2026:** Flutter 429/429, backend unit 103/103, database 14/14, smoke 212/212 (758); `flutter analyze` clean. The smoke run used an API started without `node --watch` (port 4100), because the dev server's watcher restarted it mid-run.
 - **Report:** Section 4.2 mentions the appearance setting; test figures and dates updated throughout; Figures 4.1(d), 4.2 and 4.3 retaken to show the current screens. Still 56 pages.
+
+### Backend deployment (5 November 2026)
+- **Live API:** https://campus-companion-backend-1bye.onrender.com/api (Render free plan, Frankfurt; sleeps after about 15 minutes idle). **Database:** Neon free Postgres (Frankfurt), chosen because Render's free database is deleted after about 30 days. Steps in `docs/deployment.md`.
+- **Verified against the live server:** `/api/health` reports the database connected and Google sign-in on; the full smoke test passed 212/212, including real Firebase rejecting a forged Google token.
+- **Safety changes for a public server:** the seeded accounts get random passwords on a hosted database (saved to a git-ignored file, never printed), so `admin123` and the other local passwords do not work online; `db:setup` refuses to wipe a hosted database that has users unless given `--wipe`.
+- **Not yet checked:** the phone app against the live server (APK built; phone not connected), a push from the live server, and the release signing key. No security review or rate limiting.
 - **Report:** the 2017 regulations added to the references (now 20) and cited in Section 4.3.2; Sections 1.3, 3.2.1 (FR7), 4.3.2, 4.7 (Table 4.3, new "Degree-class estimate" row), 4.9, 5.3 and Table 4.2 updated; a recommendation added to compute the FGPA. Figures 4.2(b) and 4.2(c) retaken to show the new labels. The report is now 56 pages.
 
 ---
