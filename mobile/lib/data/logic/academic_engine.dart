@@ -51,6 +51,25 @@ class AcademicMetricResult {
       : 'Estimated class (from ${isPercentage ? 'CWA' : 'CGPA'})';
 }
 
+/// One semester of the transcript view (see AcademicEngine.semesterBreakdown).
+class SemesterSummary {
+  const SemesterSummary({
+    required this.semester,
+    required this.courses,
+    required this.credits,
+    required this.gpa,
+    required this.cumulativeCredits,
+    required this.cgpa,
+  });
+
+  final String semester;
+  final List<CourseGrade> courses;
+  final int credits;
+  final double gpa;
+  final int cumulativeCredits;
+  final double cgpa;
+}
+
 class AcademicEngine {
   AcademicEngine._();
 
@@ -85,6 +104,53 @@ class AcademicEngine {
       if (score >= minScore) return point;
     }
     return 0.0;
+  }
+
+  /// Orders semester names like "Semester 2 - 2023/2024" by academic year,
+  /// then semester; names in any other form come last, alphabetically.
+  static int _semesterOrder(String semester) {
+    final match = RegExp(r'Semester\s*(\d)\D+(\d{4})').firstMatch(semester);
+    return match == null ? 1 << 30 : int.parse(match.group(2)!) * 10 + int.parse(match.group(1)!);
+  }
+
+  /// The transcript view: each semester in order with its own GPA (credit-
+  /// weighted average of that semester's courses) and the running CGPA up to
+  /// and including it, as on a UG transcript (CCT / CGPA per semester).
+  static List<SemesterSummary> semesterBreakdown(List<CourseGrade> grades, InstitutionProfile institution) {
+    final bySemester = <String, List<CourseGrade>>{};
+    for (final grade in grades) {
+      bySemester.putIfAbsent(grade.semester, () => []).add(grade);
+    }
+    final names = bySemester.keys.toList()
+      ..sort((a, b) {
+        final byOrder = _semesterOrder(a).compareTo(_semesterOrder(b));
+        return byOrder != 0 ? byOrder : a.compareTo(b);
+      });
+
+    var runningCredits = 0;
+    var runningPoints = 0.0;
+    return [
+      for (final name in names)
+        () {
+          final courses = bySemester[name]!..sort((a, b) => a.courseCode.compareTo(b.courseCode));
+          var credits = 0;
+          var points = 0.0;
+          for (final grade in courses) {
+            credits += _credits(grade);
+            points += _credits(grade) * _pointForScore(grade.score, institution.gradingSystem);
+          }
+          runningCredits += credits;
+          runningPoints += points;
+          return SemesterSummary(
+            semester: name,
+            courses: courses,
+            credits: credits,
+            gpa: credits == 0 ? 0 : points / credits,
+            cumulativeCredits: runningCredits,
+            cgpa: runningCredits == 0 ? 0 : runningPoints / runningCredits,
+          );
+        }(),
+    ];
   }
 
   /// The level of a course from its code: the first digit of its three-digit

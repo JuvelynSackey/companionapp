@@ -33,7 +33,7 @@ class AnalyticsScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
                 const TargetClassPredictorWidget(),
                 const SizedBox(height: 24),
-                Text('Courses', style: Theme.of(context).textTheme.titleMedium),
+                Text('Results by semester', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 if (items.isEmpty)
                   const Padding(
@@ -41,7 +41,11 @@ class AnalyticsScreen extends ConsumerWidget {
                     child: Text('No grades recorded yet.'),
                   )
                 else
-                  ...items.map((g) => _GradeCard(grade: g)),
+                  for (final semester in AcademicEngine.semesterBreakdown(items, institution)) ...[
+                    _SemesterHeader(summary: semester, isPercentage: metric.isPercentage),
+                    ...semester.courses.map((g) => _GradeCard(grade: g)),
+                    const SizedBox(height: 8),
+                  ],
               ],
             );
           },
@@ -116,6 +120,36 @@ class _ScorecardCard extends StatelessWidget {
   }
 }
 
+/// A semester's heading, like a transcript row: its GPA, the running CGPA,
+/// and the credits taken that semester and in total.
+class _SemesterHeader extends StatelessWidget {
+  const _SemesterHeader({required this.summary, required this.isPercentage});
+  final SemesterSummary summary;
+  final bool isPercentage;
+
+  @override
+  Widget build(BuildContext context) {
+    final campus = Theme.of(context).campusTheme;
+    final unit = isPercentage ? 'CWA' : 'GPA';
+    final cumulative = isPercentage ? 'CWA' : 'CGPA';
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(summary.semester, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 2),
+          Text(
+            '$unit ${summary.gpa.toStringAsFixed(2)} · $cumulative ${summary.cgpa.toStringAsFixed(2)} · '
+            '${summary.credits} credits (${summary.cumulativeCredits} in total)',
+            style: TextStyle(color: campus.textMuted, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _GradeCard extends StatelessWidget {
   const _GradeCard({required this.grade});
   final CourseGrade grade;
@@ -129,7 +163,7 @@ class _GradeCard extends StatelessWidget {
       radius: campus.cardRadius,
       child: ListTile(
         title: Text('${grade.courseCode} · ${grade.courseTitle}'),
-        subtitle: Text('${grade.semester} · ${grade.creditHours} credit hours', style: TextStyle(color: campus.textMuted)),
+        subtitle: Text('${grade.creditHours} credit hours', style: TextStyle(color: campus.textMuted)),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
