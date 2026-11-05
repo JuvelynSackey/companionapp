@@ -49,10 +49,11 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                 padding: const EdgeInsets.all(16),
                 child: DropdownButtonFormField<int>(
                   initialValue: courseId,
+                  isExpanded: true,
                   decoration: campus.inputDecoration(label: 'Course', icon: Icons.menu_book_outlined),
                   items: [
                     for (final course in courses)
-                      DropdownMenuItem(value: course.courseId, child: Text(course.label)),
+                      DropdownMenuItem(value: course.courseId, child: Text(course.label, maxLines: 1, overflow: TextOverflow.ellipsis)),
                   ],
                   onChanged: (value) => setState(() => _selectedCourseId = value),
                 ),

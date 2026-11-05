@@ -47,9 +47,11 @@ class _QuizzesTabState extends ConsumerState<QuizzesTab> {
               padding: const EdgeInsets.all(16),
               child: DropdownButtonFormField<int>(
                 initialValue: course.courseId,
+                // Long course names are cut short instead of overflowing.
+                isExpanded: true,
                 decoration: campus.inputDecoration(label: 'Course', icon: Icons.menu_book_outlined),
                 items: [
-                  for (final c in courses) DropdownMenuItem(value: c.courseId, child: Text(c.label)),
+                  for (final c in courses) DropdownMenuItem(value: c.courseId, child: Text(c.label, maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ],
                 onChanged: (value) => setState(() => _selectedCourseId = value),
               ),
