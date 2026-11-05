@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { query } from '../config/db.js';
+import { getNotificationService } from '../services/push.js';
+import { possibleMatches } from '../utils/lostFoundMatch.js';
 
 export const createLostFoundSchema = z.object({
   kind: z.enum(['lost', 'found']),
@@ -45,7 +47,13 @@ export async function listLostFound(req, res, next) {
         ORDER BY (i.status = 'open') DESC, i.created_at DESC`
     );
 
-    return res.json({ items: rows.map((row) => shape(row, req.user)) });
+    const items = rows.map((row) => shape(row, req.user));
+    // Each open post lists the open posts of the other kind that may be the
+    // same item (titles only; see utils/lostFoundMatch.js).
+    for (const item of items) {
+      item.possibleMatches = possibleMatches(item, items).map((m) => ({ itemId: m.itemId, title: m.title }));
+    }
+    return res.json({ items });
   } catch (err) {
     return next(err);
   }
@@ -63,7 +71,32 @@ export async function createLostFound(req, res, next) {
       [kind, title, description || null, location || null, contact || null, req.user.userId]
     );
 
-    return res.status(201).json({ itemId: rows[0].item_id });
+    const itemId = rows[0].item_id;
+    const posted = { itemId, kind, title, location: location || null, status: 'open' };
+
+    // Open posts of the other kind that may be the same item. Their posters
+    // (not the caller) get a push, in the background so posting stays fast.
+    const others = await query(
+      `SELECT item_id, kind, title, location, status, posted_by
+         FROM lost_found_items
+        WHERE status = 'open' AND kind <> $1 AND item_id <> $2`,
+      [kind, itemId]
+    );
+    const matches = possibleMatches(
+      posted,
+      others.rows.map((r) => ({ itemId: r.item_id, kind: r.kind, title: r.title, location: r.location, status: r.status, postedBy: r.posted_by }))
+    );
+    const notify = [...new Set(matches.map((m) => m.postedBy))].filter((id) => id !== req.user.userId);
+    if (notify.length > 0) {
+      getNotificationService()
+        .then((notifications) => notifications.notifyLostFoundMatch(notify, posted))
+        .catch((err) => console.error('Lost & Found match push failed:', err));
+    }
+
+    return res.status(201).json({
+      itemId,
+      possibleMatches: matches.map((m) => ({ itemId: m.itemId, title: m.title })),
+    });
   } catch (err) {
     return next(err);
   }

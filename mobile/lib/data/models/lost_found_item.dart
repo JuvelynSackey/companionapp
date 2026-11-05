@@ -14,6 +14,7 @@ class LostFoundItem {
     this.contact,
     required this.isMine,
     required this.canManage,
+    this.possibleMatches = const [],
   });
 
   factory LostFoundItem.fromJson(Map<String, dynamic> json) => LostFoundItem(
@@ -28,6 +29,10 @@ class LostFoundItem {
         contact: json['contact'] as String?,
         isMine: json['isMine'] as bool? ?? false,
         canManage: json['canManage'] as bool? ?? false,
+        possibleMatches: [
+          for (final m in (json['possibleMatches'] as List? ?? const []))
+            LostFoundMatch(itemId: (m as Map<String, dynamic>)['itemId'] as int, title: m['title'] as String),
+        ],
       );
 
   final int itemId;
@@ -45,6 +50,17 @@ class LostFoundItem {
 
   /// The signed-in user may mark it returned or remove it (its poster, or an admin).
   final bool canManage;
+
+  /// Open posts of the other kind that may be the same item, best first.
+  /// The server suggests them from shared words in the title and place.
+  final List<LostFoundMatch> possibleMatches;
+}
+
+/// A post the server thinks may be the same item as another.
+class LostFoundMatch {
+  const LostFoundMatch({required this.itemId, required this.title});
+  final int itemId;
+  final String title;
 }
 
 enum LostFoundKind {

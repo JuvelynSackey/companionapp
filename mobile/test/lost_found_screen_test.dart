@@ -25,9 +25,12 @@ class _FakeApi extends LostFoundApi {
   @override
   Future<List<LostFoundItem>> fetch() async => items;
 
+  int matchesToReport = 0;
+
   @override
-  Future<void> post({required LostFoundKind kind, required String title, String? description, String? location, String? contact}) async {
+  Future<int> post({required LostFoundKind kind, required String title, String? description, String? location, String? contact}) async {
     posts.add({'kind': kind, 'title': title, 'description': description, 'location': location, 'contact': contact});
+    return matchesToReport;
   }
 
   @override
@@ -40,7 +43,7 @@ class _FakeApi extends LostFoundApi {
   Future<void> remove(int itemId) async => removed.add(itemId);
 }
 
-LostFoundItem _item(int id, {bool mine = false, bool canManage = false, bool returned = false, LostFoundKind kind = LostFoundKind.lost}) =>
+LostFoundItem _item(int id, {bool mine = false, bool canManage = false, bool returned = false, LostFoundKind kind = LostFoundKind.lost, List<LostFoundMatch> matches = const []}) =>
     LostFoundItem(
       itemId: id,
       kind: kind,
@@ -53,6 +56,7 @@ LostFoundItem _item(int id, {bool mine = false, bool canManage = false, bool ret
       contact: '024 000 0000',
       isMine: mine,
       canManage: canManage,
+      possibleMatches: matches,
     );
 
 Future<_FakeApi> _pump(WidgetTester tester, List<LostFoundItem> items) async {
@@ -150,6 +154,39 @@ void main() {
       {'kind': LostFoundKind.found, 'title': 'Black umbrella', 'description': '', 'location': 'Great Hall', 'contact': ''},
     ]);
     expect(find.text('Item 9'), findsOneWidget, reason: 'the board was fetched again');
+  });
+
+  test('an item reads its possible matches, and an older server without them gives none', () {
+    final base = {
+      'itemId': 4, 'kind': 'lost', 'title': 'Water bottle', 'status': 'open', 'createdAt': '2026-11-04T10:00:00.000Z',
+    };
+    final item = LostFoundItem.fromJson({...base, 'possibleMatches': [{'itemId': 5, 'title': 'Bottle found'}]});
+    expect(item.possibleMatches.single.itemId, 5);
+    expect(item.possibleMatches.single.title, 'Bottle found');
+    expect(LostFoundItem.fromJson(base).possibleMatches, isEmpty);
+  });
+
+  testWidgets('an open post shows its possible matches; a returned one does not', (tester) async {
+    await _pump(tester, [
+      _item(1, matches: const [LostFoundMatch(itemId: 2, title: 'Blue bottle found')]),
+      _item(3, returned: true, matches: const [LostFoundMatch(itemId: 4, title: 'Old match')]),
+    ]);
+
+    expect(find.text('Possibly found: "Blue bottle found"'), findsOneWidget);
+    expect(find.textContaining('Old match'), findsNothing);
+  });
+
+  testWidgets('posting a match says so and that the other poster was notified', (tester) async {
+    final api = await _pump(tester, []);
+    api.matchesToReport = 1;
+
+    await tester.tap(find.text('Post an item'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'What is it?'), 'Water bottle');
+    await tester.tap(find.text('Post'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Posted. 1 possible match found; the poster has been notified.'), findsOneWidget);
   });
 
   testWidgets('a title under three characters is not posted', (tester) async {

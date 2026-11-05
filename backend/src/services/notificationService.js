@@ -4,6 +4,7 @@
  * with in-memory fakes and no database or Firebase:
  *
  *   store.tokensForAllEnabledUsers() -> Promise<string[]>
+ *   store.tokensForUsers(userIds)    -> Promise<string[]>
  *   store.removeTokens(tokens)       -> Promise<number>
  *   sender.send(message, tokens)     -> Promise<[{ token, ok, invalidToken? }]>
  *
@@ -38,6 +39,24 @@ export function announcementMessage({ announcementId, title, message, category }
   };
 }
 
+/**
+ * The push to the poster of an open Lost & Found item when someone posts a
+ * possible match. Carries no contact details, only the matching post's title
+ * and place; the app shows the rest to signed-in users.
+ */
+export function lostFoundMatchMessage({ itemId, kind, title, location }) {
+  const what = kind === 'found' ? 'Someone found' : 'Someone is looking for';
+  const where = location ? ` (${location})` : '';
+  const body = `${what} "${title}"${where}. Open Lost & Found to check if it is yours.`;
+  return {
+    title: kind === 'found' ? 'Possible match for your lost item' : 'Someone may own what you found',
+    body: body.length > MAX_BODY_LENGTH ? `${body.slice(0, MAX_BODY_LENGTH - 1)}…` : body,
+    data: { type: 'lost_found', itemId: String(itemId) },
+    channelId: CHANNEL_ANNOUNCEMENTS,
+    priority: 'high',
+  };
+}
+
 function chunk(items, size) {
   const chunks = [];
   for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
@@ -46,12 +65,22 @@ function chunk(items, size) {
 
 export function createNotificationService({ store, sender, logger = console }) {
   /** Sends one message to every enabled device. Resolves with a summary; never rejects. */
-  async function sendToAll(message) {
+  function sendToAll(message) {
+    return sendTo(message, () => store.tokensForAllEnabledUsers());
+  }
+
+  /** Sends one message to the given users' enabled devices. Never rejects. */
+  function sendToUsers(userIds, message) {
+    if (userIds.length === 0) return Promise.resolve({ devices: 0, sent: 0, failed: 0, removed: 0 });
+    return sendTo(message, () => store.tokensForUsers(userIds));
+  }
+
+  async function sendTo(message, loadTokens) {
     const summary = { devices: 0, sent: 0, failed: 0, removed: 0 };
 
     let tokens;
     try {
-      tokens = [...new Set(await store.tokensForAllEnabledUsers())];
+      tokens = [...new Set(await loadTokens())];
     } catch (err) {
       logger.error('Push: could not load device tokens:', err);
       return summary;
@@ -88,6 +117,9 @@ export function createNotificationService({ store, sender, logger = console }) {
   return {
     sender,
     sendToAll,
+    sendToUsers,
     notifyAnnouncement: (announcement) => sendToAll(announcementMessage(announcement)),
+    /** Tells the posters in [userIds] that [item] may match their post. */
+    notifyLostFoundMatch: (userIds, item) => sendToUsers(userIds, lostFoundMatchMessage(item)),
   };
 }

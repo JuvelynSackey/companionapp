@@ -29,8 +29,15 @@ class LostFoundScreen extends ConsumerWidget {
         onPressed: () async {
           if (!await ensureSignedIn(context, ref, action: 'post on the Lost & Found board')) return;
           if (!context.mounted) return;
-          final posted = await showDialog<bool>(context: context, builder: (_) => const ReportItemDialog());
-          if (posted == true) ref.invalidate(lostFoundProvider);
+          final matches = await showDialog<int>(context: context, builder: (_) => const ReportItemDialog());
+          if (matches == null) return;
+          ref.invalidate(lostFoundProvider);
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(matches == 0
+                ? 'Posted.'
+                : 'Posted. $matches possible ${matches == 1 ? 'match' : 'matches'} found; the ${matches == 1 ? 'poster has' : 'posters have'} been notified.'),
+          ));
         },
         icon: const Icon(Icons.add),
         label: const Text('Post an item'),
@@ -116,6 +123,31 @@ class _ItemCard extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(item.description!),
           ],
+          if (!item.isReturned && item.possibleMatches.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: campus.accentGlow.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.join_inner, size: 18, color: campus.accentGlow),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      '${item.kind == LostFoundKind.lost ? 'Possibly found' : 'Possibly lost'}: '
+                      '${item.possibleMatches.map((m) => '"${m.title}"').join(', ')}',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           if (item.postedBy != null || item.contact != null) ...[
             const SizedBox(height: 8),
             Text(
@@ -197,14 +229,14 @@ class _ReportItemDialogState extends ConsumerState<ReportItemDialog> {
       _error = null;
     });
     try {
-      await ref.read(lostFoundApiProvider).post(
+      final matches = await ref.read(lostFoundApiProvider).post(
             kind: _kind,
             title: _title.text.trim(),
             location: _location.text.trim(),
             description: _description.text.trim(),
             contact: _contact.text.trim(),
           );
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) Navigator.of(context).pop(matches);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } finally {

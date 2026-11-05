@@ -56,6 +56,18 @@ export async function tokensForAllEnabledUsers() {
   return rows.map((row) => row.token);
 }
 
+/** The tokens of the given users, if they have not switched push off. */
+export async function tokensForUsers(userIds) {
+  const { rows } = await query(
+    `SELECT t.token
+       FROM device_tokens t
+       JOIN users u ON u.user_id = t.user_id
+      WHERE u.push_enabled AND t.user_id = ANY($1::int[])`,
+    [userIds]
+  );
+  return rows.map((row) => row.token);
+}
+
 /** Forgets tokens the push service reported as dead. */
 export async function removeTokens(tokens) {
   if (tokens.length === 0) return 0;
@@ -74,4 +86,4 @@ export async function setPushEnabled(userId, enabled) {
 }
 
 /** The functions notificationService.js depends on, bundled as its `store`. */
-export const deviceTokenStore = { tokensForAllEnabledUsers, removeTokens };
+export const deviceTokenStore = { tokensForAllEnabledUsers, tokensForUsers, removeTokens };

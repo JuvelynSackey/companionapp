@@ -26,7 +26,7 @@ test('a signed-in user sees who posted an item and how to reach them, and which 
   assert.deepEqual(body.items, [{
     itemId: 4, kind: 'lost', title: 'Blue water bottle', description: 'Has a UG sticker', location: 'Balme Library',
     status: 'open', createdAt: '2026-11-04T10:00:00.000Z', postedBy: 'Ama Owusu', contact: '024 000 0000',
-    isMine: true, canManage: true,
+    isMine: true, canManage: true, possibleMatches: [],
   }]);
   assert.match(db.calls[0].sql, /ORDER BY \(i\.status = 'open'\) DESC, i\.created_at DESC/, 'open items first, newest first');
 });
@@ -58,7 +58,7 @@ test('posting records the caller as the poster and blanks empty optional fields'
   });
 
   assert.equal(status, 201);
-  assert.deepEqual(body, { itemId: 11 });
+  assert.deepEqual(body, { itemId: 11, possibleMatches: [] });
   assert.deepEqual(db.calls[0].params, ['found', 'Calculator', null, null, null, 7]);
 });
 
@@ -102,3 +102,38 @@ for (const [name, handler, statement] of [
     assert.equal(db.calls.length, before, 'no query for a malformed id');
   });
 }
+
+test('the board lists, for each open post, the open posts of the other kind that may be the same item', async () => {
+  const found = { ...row, item_id: 5, kind: 'found', title: 'Water bottle found', posted_by: 8, posted_by_name: 'Kofi' };
+  const unrelated = { ...row, item_id: 6, kind: 'found', title: 'Calculator', posted_by: 8, posted_by_name: 'Kofi' };
+  db = installFakeDb(() => ({ rows: [row, found, unrelated] }));
+  const { body } = await callController(listLostFound, { user: student });
+
+  assert.deepEqual(body.items[0].possibleMatches, [{ itemId: 5, title: 'Water bottle found' }]);
+  assert.deepEqual(body.items[1].possibleMatches, [{ itemId: 4, title: 'Blue water bottle' }]);
+  assert.deepEqual(body.items[2].possibleMatches, []);
+});
+
+test('posting a match returns it and pushes to the other poster only, never the caller', async () => {
+  const lostByOther = { item_id: 4, kind: 'lost', title: 'Blue water bottle', location: 'Balme Library', status: 'open', posted_by: 8 };
+  const lostByMe = { item_id: 3, kind: 'lost', title: 'Water bottle', location: null, status: 'open', posted_by: 7 };
+  db = installFakeDb((sql) => {
+    if (sql.startsWith('INSERT INTO lost_found_items')) return { rows: [{ item_id: 12 }] };
+    if (sql.includes('FROM lost_found_items')) return { rows: [lostByOther, lostByMe] };
+    return { rows: [] };
+  });
+  const { status, body } = await callController(createLostFound, {
+    user: student,
+    body: { kind: 'found', title: 'Water bottle', location: 'Balme Library' },
+  });
+
+  assert.equal(status, 201);
+  assert.deepEqual(body.possibleMatches.map((m) => m.itemId), [4, 3], 'the shared place ranks the first one higher');
+  // The push runs in the background; let it reach the token lookup.
+  for (let i = 0; i < 20 && !db.calls.some((c) => c.sql.includes('ANY($1::int[])')); i++) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  const lookup = db.calls.find((c) => c.sql.includes('ANY($1::int[])'));
+  assert.ok(lookup, "looked up the other poster's devices");
+  assert.deepEqual(lookup.params, [[8]]);
+});
