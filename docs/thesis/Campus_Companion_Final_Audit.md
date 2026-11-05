@@ -15,11 +15,11 @@ All test suites were run on 3 November 2026 against the final code:
 | Check | Result |
 |---|---|
 | `flutter analyze` | No issues |
-| `flutter test` | 422 / 422 passed (4 November 2026) |
+| `flutter test` | 429 / 429 passed (5 November 2026) |
 | Backend offline unit tests (`npm test`) | 103 / 103 passed |
 | Backend database tests (`npm run test:db`) | 14 / 14 passed |
 | Backend API smoke tests (`npm run test:smoke`) | 212 / 212 passed |
-| **Total** | **751 passing test executions** (the sum of suite totals, not 751 unique test cases), all four suites run on 4 November 2026 |
+| **Total** | **758 passing test executions** (the sum of suite totals, not 758 unique test cases), all four suites run on 5 November 2026 |
 | Live integrations (`npm run verify:integrations`) | 4 November 2026: 4 verified, 0 failed: Firebase credential loads; FCM accepts a dry-run message (nothing delivered); real Firebase rejects an invalid ID token; the Gemini API accepts the key. Google provider: enabled, fingerprint registered. Not verified: push delivery to a phone, a real Google sign-in. |
 
 **The audit brief's baseline (332 / 38 / 8 / 180 = 558) was not used.** Those figures come from an older run, before Google Sign-In, the new dashboard and the regression tests were added. Before guest mode, the suites stood at 371 / 50 / 14 / 182 = 617, a result obtained on both 30 and 31 October. Guest mode then added 8 Flutter tests, 4 backend unit tests and 13 smoke checks. On 31 October, with guest mode, they were 379 / 54 / 14 / 195 = 642. The final round then added 2 Flutter tests and dropped 1 (380) and added 7 smoke checks (202). No suite regressed. The report uses the current figures above.
@@ -31,7 +31,7 @@ All test suites were run on 3 November 2026 against the final code:
 ## 2. Corrections made
 
 ### Accuracy (highest priority)
-- **Test figures:** every chapter uses the verified 422 / 103 / 14 / 212 = 751 (4 November 2026). No outdated totals remain.
+- **Test figures:** every chapter uses the verified 429 / 103 / 14 / 212 = 758 (5 November 2026). No outdated totals remain.
 - **Target-class calculator:**
   - **Before:** described as a "prediction" with "predictive accuracy".
   - **After:** described as a fixed formula, the average needed over the remaining credit hours to reach a chosen honours class (confirmed in `grade_prediction_engine.dart`). This affects Chapters 1, 3 and 4, Table 4.2 and Table 4.3.
@@ -156,6 +156,13 @@ Report:
 - **Gemini:** answered on the phone (header "Gemini", no local-engine label). Its answer pointed to "the Resources tab" for library hours (a tab removed earlier the same day), and bold inside italics showed stray asterisks. Fixed: the prompt now describes the app's real sections and tells Gemini not to invent hours, fees or shuttle times; the reply formatter handles bold inside italics (new test). Flutter suite 422/422; the fixed build was installed on the phone.
 - **Not checked:** a notification while the app is open; the release signing key (only the debug fingerprint is registered); anything against a deployed server.
 - **Report:** Abstract, Sections 4.2, 4.3.1, 4.3.4, 4.6.4 (new paragraph with these results), 4.8, 4.9, 5.1, 5.3 and 5.4, and Tables 4.2 and 4.3 updated; the Flutter count is now 422 (total 751). Still 56 pages.
+
+### Dark mode and screen fixes (5 November 2026)
+- **Appearance setting** (account menu): Use phone setting, Light or Dark, saved on the device. The pre-sign-in screens keep their light branded look. In dark mode the Analytics and Exams hero cards use the Dashboard's deep green for readable white text.
+- **From the author's screenshots:** timetable labels no longer wrap ("Remin / d Me"); course codes are printed as "DCIT 103" in the timetable and exams, including entries already saved; a missing room reads "Room not set" instead of "TBA"; timetable cards have a green accent strip and no longer cut off the class time; the exam card's 8-pixel overflow is fixed; and the next exam appears only in the hero card (now with Edit and Delete), with "Later exams" listed below.
+- **Also fixed:** app-bar titles were 14 px in the light theme (copied from a size-less base style) and are now 22 px bold in both themes; Resources no longer shows its title twice.
+- **Tests on 5 November 2026:** Flutter 429/429, backend unit 103/103, database 14/14, smoke 212/212 (758); `flutter analyze` clean. The smoke run used an API started without `node --watch` (port 4100), because the dev server's watcher restarted it mid-run.
+- **Report:** Section 4.2 mentions the appearance setting; test figures and dates updated throughout; Figures 4.1(d), 4.2 and 4.3 retaken to show the current screens. Still 56 pages.
 - **Report:** the 2017 regulations added to the references (now 20) and cited in Section 4.3.2; Sections 1.3, 3.2.1 (FR7), 4.3.2, 4.7 (Table 4.3, new "Degree-class estimate" row), 4.9, 5.3 and Table 4.2 updated; a recommendation added to compute the FGPA. Figures 4.2(b) and 4.2(c) retaken to show the new labels. The report is now 56 pages.
 
 ---
