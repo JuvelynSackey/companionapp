@@ -17,11 +17,31 @@ app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 app.get('/api/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
-    return res.json({ status: 'ok', database: 'connected' });
+    return res.json({
+      status: 'ok',
+      database: 'connected',
+      // Deployment diagnostics: on/off flags and the key's format only, never
+      // its contents. Push shares the key, so it is on whenever this is.
+      googleSignIn: (await getGoogleIdTokenVerifier()) ? 'on' : 'off',
+      firebaseKeyFormat: firebaseKeyFormat(),
+      commit: process.env.RENDER_GIT_COMMIT?.slice(0, 7) ?? 'local',
+    });
   } catch {
     return res.status(503).json({ status: 'degraded', database: 'unreachable' });
   }
 });
+
+function firebaseKeyFormat() {
+  const raw = (process.env.FIREBASE_SERVICE_ACCOUNT ?? '').trim();
+  if (!raw) return 'missing';
+  try {
+    JSON.parse(config.push.serviceAccount);
+  } catch {
+    return 'unreadable';
+  }
+  if (raw.startsWith('{')) return 'json';
+  return raw.startsWith("'") || raw.startsWith('"') ? 'quoted-json' : 'base64';
+}
 
 app.use('/api', apiRoutes);
 
