@@ -17,14 +17,17 @@ final lostFoundProvider = FutureProvider.autoDispose<List<LostFoundItem>>((ref) 
 /// what they lost or found; the poster (or an admin) marks it returned or
 /// removes it. It replaced a sample list that lived on each phone only.
 class LostFoundScreen extends ConsumerWidget {
-  const LostFoundScreen({super.key});
+  const LostFoundScreen({super.key, this.embedded = false});
+
+  /// Shown as a tab inside Resources, which already has the top bar.
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final items = ref.watch(lostFoundProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Lost & Found')),
+      appBar: embedded ? null : AppBar(title: const Text('Lost & Found')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           if (!await ensureSignedIn(context, ref, action: 'post on the Lost & Found board')) return;

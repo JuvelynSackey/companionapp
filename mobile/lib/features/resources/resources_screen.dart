@@ -5,9 +5,11 @@ import '../../core/theme/campus_companion_theme.dart';
 import '../../data/models/institution_profile.dart';
 import '../../widgets/campus_card_tile.dart';
 import '../onboarding/institution_controller.dart';
-import '../quizzes/quizzes_screen.dart';
+import '../lost_found/lost_found_screen.dart';
 
-/// The institution's official portals and documents, and the quizzes. Tabs
+/// The institution's official portals and documents, and the campus Lost &
+/// Found board. Quizzes moved into the AI Tutor ("Course quizzes"), next to
+/// the slide-based practice questions. Tabs
 /// that could only show sample content (library seat counts, a past-paper
 /// list, an academic calendar, handbook summaries and document requests that
 /// were never sent anywhere) were removed rather than kept as demo data; the
@@ -27,11 +29,11 @@ class ResourcesScreen extends StatelessWidget {
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Portals'),
-              Tab(text: 'Quizzes'),
+              Tab(text: 'Lost & Found'),
             ],
           ),
         ),
-        body: const TabBarView(children: [_PortalsTab(), QuizzesTab()]),
+        body: const TabBarView(children: [_PortalsTab(), LostFoundScreen(embedded: true)]),
       ),
     );
   }

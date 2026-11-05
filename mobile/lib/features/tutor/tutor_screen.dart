@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../assistant/gemini_assistant_service.dart';
+import '../quizzes/quizzes_screen.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/theme/campus_companion_theme.dart';
 import '../../widgets/async_value_view.dart';
@@ -130,9 +131,12 @@ class _SlidesBar extends ConsumerWidget {
     final slides = ref.watch(tutorSlidesProvider(courseId));
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: slides == null
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          slides == null
             ? OutlinedButton.icon(
                 onPressed: () => _pick(context, ref),
                 icon: const Icon(Icons.upload_file),
@@ -144,6 +148,19 @@ class _SlidesBar extends ConsumerWidget {
                 tooltip: 'Remove these slides',
                 onDeleted: () => ref.read(tutorSlidesProvider(courseId).notifier).state = null,
               ),
+          // Quizzes written by lecturers for this course (they used to be a
+          // Resources tab).
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => Scaffold(
+                appBar: AppBar(title: const Text('Course quizzes')),
+                body: QuizzesTab(initialCourseId: courseId),
+              ),
+            )),
+            icon: const Icon(Icons.quiz_outlined),
+            label: const Text('Course quizzes'),
+          ),
+        ],
       ),
     );
   }

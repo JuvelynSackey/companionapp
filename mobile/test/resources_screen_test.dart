@@ -8,7 +8,7 @@ import 'package:mobile/features/resources/resources_screen.dart';
 import 'support/local_prefs_fakes.dart';
 
 void main() {
-  testWidgets('Resources offers only the real parts: official portals and documents, and quizzes', (tester) async {
+  testWidgets('Resources offers only the real parts: official portals and documents, and Lost & Found', (tester) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -21,6 +21,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(Tab), findsNWidgets(2));
+    expect(find.text('Lost & Found'), findsOneWidget);
+    expect(find.text('Quizzes'), findsNothing, reason: 'quizzes moved into the AI Tutor');
     for (final removed in ['Libraries', 'Past Papers', 'Documents']) {
       expect(find.text(removed), findsNothing, reason: removed);
     }

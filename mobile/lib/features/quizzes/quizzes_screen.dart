@@ -14,7 +14,10 @@ import 'quizzes_providers.dart';
 /// picker at the top, then that course's quiz list below. Not its own
 /// Scaffold since it's embedded inside Resources' existing AppBar/TabBar.
 class QuizzesTab extends ConsumerStatefulWidget {
-  const QuizzesTab({super.key});
+  const QuizzesTab({super.key, this.initialCourseId});
+
+  /// The course to show first (the AI Tutor passes the one it is on).
+  final int? initialCourseId;
 
   @override
   ConsumerState<QuizzesTab> createState() => _QuizzesTabState();
@@ -37,7 +40,8 @@ class _QuizzesTabState extends ConsumerState<QuizzesTab> {
           return const Center(child: Text('No courses available yet.'));
         }
 
-        _selectedCourseId ??= courses.first.courseId;
+        _selectedCourseId ??=
+            courses.any((c) => c.courseId == widget.initialCourseId) ? widget.initialCourseId : courses.first.courseId;
         final course = courses.firstWhere((c) => c.courseId == _selectedCourseId);
         final quizzesAsync = ref.watch(quizzesForCourseProvider(course.courseId));
 
