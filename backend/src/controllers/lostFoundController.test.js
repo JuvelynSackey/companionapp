@@ -6,7 +6,7 @@ import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { installFakeDb, callController, student, admin } from '../testing/fakeDb.js';
 import {
-  listLostFound, createLostFound, createLostFoundSchema, markReturned, deleteLostFound,
+  listLostFound, createLostFound, createLostFoundSchema, markReturned, deleteLostFound, lostFoundPhoto, photoType, MAX_PHOTO_BYTES,
 } from './lostFoundController.js';
 
 let db;
@@ -26,7 +26,7 @@ test('a signed-in user sees who posted an item and how to reach them, and which 
   assert.deepEqual(body.items, [{
     itemId: 4, kind: 'lost', title: 'Blue water bottle', description: 'Has a UG sticker', location: 'Balme Library',
     status: 'open', createdAt: '2026-11-04T10:00:00.000Z', postedBy: 'Ama Owusu', contact: '024 000 0000',
-    isMine: true, canManage: true, possibleMatches: [],
+    isMine: true, canManage: true, hasPhoto: false, possibleMatches: [],
   }]);
   assert.match(db.calls[0].sql, /ORDER BY \(i\.status = 'open'\) DESC, i\.created_at DESC/, 'open items first, newest first');
 });
@@ -59,7 +59,7 @@ test('posting records the caller as the poster and blanks empty optional fields'
 
   assert.equal(status, 201);
   assert.deepEqual(body, { itemId: 11, possibleMatches: [] });
-  assert.deepEqual(db.calls[0].params, ['found', 'Calculator', null, null, null, 7]);
+  assert.deepEqual(db.calls[0].params, ['found', 'Calculator', null, null, null, 7, null, null]);
 });
 
 test('the schema requires a kind and a real title, and limits the free text', () => {
@@ -136,4 +136,50 @@ test('posting a match returns it and pushes to the other poster only, never the 
   const lookup = db.calls.find((c) => c.sql.includes('ANY($1::int[])'));
   assert.ok(lookup, "looked up the other poster's devices");
   assert.deepEqual(lookup.params, [[8]]);
+});
+
+const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(100)]);
+
+test('a JPEG or PNG photo is stored with its type; anything else is refused', async () => {
+  db = installFakeDb(() => ({ rows: [{ item_id: 20 }] }));
+  const ok = await callController(createLostFound, {
+    user: student, body: { kind: 'found', title: 'Umbrella', photo: jpeg.toString('base64') },
+  });
+  assert.equal(ok.status, 201);
+  const insert = db.calls.find((c) => c.sql.startsWith('INSERT INTO lost_found_items'));
+  assert.ok(Buffer.isBuffer(insert.params[6]) && insert.params[6].equals(jpeg));
+  assert.equal(insert.params[7], 'image/jpeg');
+
+  const notImage = await callController(createLostFound, {
+    user: student, body: { kind: 'found', title: 'Umbrella', photo: Buffer.from('<html>').toString('base64') },
+  });
+  assert.equal(notImage.status, 400);
+  assert.equal(photoType(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0])), 'image/png');
+});
+
+test('a photo over 2 MB is refused', async () => {
+  db = installFakeDb(() => ({ rows: [{ item_id: 21 }] }));
+  const big = Buffer.concat([jpeg, Buffer.alloc(MAX_PHOTO_BYTES)]);
+  const res = await callController(createLostFound, { user: student, body: { kind: 'lost', title: 'Bag', photo: big.toString('base64') } });
+  assert.equal(res.status, 400);
+  assert.equal(db.calls.filter((c) => c.sql.startsWith('INSERT')).length, 0);
+});
+
+test('the board says which posts have a photo, without sending the photo itself', async () => {
+  db = installFakeDb(() => ({ rows: [{ ...row, has_photo: true }] }));
+  const { body } = await callController(listLostFound, {});
+  assert.equal(body.items[0].hasPhoto, true);
+  assert.match(db.calls[0].sql, /\(i\.photo IS NOT NULL\) AS has_photo/);
+  assert.doesNotMatch(db.calls[0].sql, /i\.photo,/);
+});
+
+test('the photo is served with its type, and a missing one is a 404', async () => {
+  db = installFakeDb(() => ({ rows: [{ photo: jpeg, photo_type: 'image/jpeg' }] }));
+  const res = await callController(lostFoundPhoto, { params: { id: '20' } });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers['Content-Type'], 'image/jpeg');
+  db.restore();
+  db = installFakeDb(() => ({ rows: [{ photo: null }] }));
+  assert.equal((await callController(lostFoundPhoto, { params: { id: '20' } })).status, 404);
+  assert.equal((await callController(lostFoundPhoto, { params: { id: 'x' } })).status, 404);
 });

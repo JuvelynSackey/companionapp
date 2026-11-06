@@ -3,6 +3,17 @@ import { query } from '../config/db.js';
 import { getNotificationService } from '../services/push.js';
 import { possibleMatches } from '../utils/lostFoundMatch.js';
 
+/** At most 2 MB once decoded; base64 is a third bigger. */
+export const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+const MAX_PHOTO_BASE64 = Math.ceil(MAX_PHOTO_BYTES / 3) * 4;
+
+/** 'image/jpeg' or 'image/png' from the file's first bytes, else null. */
+export function photoType(bytes) {
+  if (bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+  if (bytes.length > 8 && bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+  return null;
+}
+
 export const createLostFoundSchema = z.object({
   kind: z.enum(['lost', 'found']),
   title: z.string().trim().min(3).max(120),
@@ -12,6 +23,8 @@ export const createLostFoundSchema = z.object({
   // porters' lodge"). Free text, chosen by the poster, and only ever sent
   // to signed-in users.
   contact: z.string().trim().max(160).optional(),
+  // One optional photo, base64-encoded (the app shrinks it first).
+  photo: z.string().max(MAX_PHOTO_BASE64).optional(),
 });
 
 function shape(row, user) {
@@ -30,6 +43,7 @@ function shape(row, user) {
     contact: user ? row.contact : null,
     isMine,
     canManage: isMine || user?.role === 'admin',
+    hasPhoto: row.has_photo === true,
   };
 }
 
@@ -41,7 +55,8 @@ export async function listLostFound(req, res, next) {
   try {
     const { rows } = await query(
       `SELECT i.item_id, i.kind, i.title, i.description, i.location, i.contact,
-              i.status, i.created_at, i.posted_by, u.full_name AS posted_by_name
+              i.status, i.created_at, i.posted_by, u.full_name AS posted_by_name,
+              (i.photo IS NOT NULL) AS has_photo
          FROM lost_found_items i
          JOIN users u ON u.user_id = i.posted_by
         ORDER BY (i.status = 'open') DESC, i.created_at DESC`
@@ -63,12 +78,21 @@ export async function listLostFound(req, res, next) {
 export async function createLostFound(req, res, next) {
   const { kind, title, description, location, contact } = req.body;
 
+  let photo = null;
+  let type = null;
+  if (req.body.photo) {
+    photo = Buffer.from(req.body.photo, 'base64');
+    type = photoType(photo);
+    if (!type) return res.status(400).json({ error: 'The photo must be a JPEG or PNG image.' });
+    if (photo.length > MAX_PHOTO_BYTES) return res.status(400).json({ error: 'The photo is too large (2 MB at most).' });
+  }
+
   try {
     const { rows } = await query(
-      `INSERT INTO lost_found_items (kind, title, description, location, contact, posted_by)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO lost_found_items (kind, title, description, location, contact, posted_by, photo, photo_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING item_id`,
-      [kind, title, description || null, location || null, contact || null, req.user.userId]
+      [kind, title, description || null, location || null, contact || null, req.user.userId, photo, type]
     );
 
     const itemId = rows[0].item_id;
@@ -146,6 +170,24 @@ export async function deleteLostFound(req, res, next) {
 
     await query('DELETE FROM lost_found_items WHERE item_id = $1', [itemId]);
     return res.status(204).send();
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
+ * GET /api/lost-found/:id/photo - guest-readable, like the board itself. The
+ * photo shows the item, never the poster's details.
+ */
+export async function lostFoundPhoto(req, res, next) {
+  const itemId = Number(req.params.id);
+  if (!Number.isInteger(itemId) || itemId <= 0) return res.status(404).json({ error: 'Photo not found' });
+  try {
+    const { rows } = await query('SELECT photo, photo_type FROM lost_found_items WHERE item_id = $1', [itemId]);
+    if (rows.length === 0 || !rows[0].photo) return res.status(404).json({ error: 'Photo not found' });
+    res.set('Content-Type', rows[0].photo_type);
+    res.set('Cache-Control', 'public, max-age=86400');
+    return res.send(rows[0].photo);
   } catch (err) {
     return next(err);
   }

@@ -51,6 +51,11 @@ export async function callController(handler, req = {}) {
   const res = {
     statusCode: 200,
     body: undefined,
+    headers: {},
+    set(name, value) {
+      this.headers[name] = value;
+      return this;
+    },
     status(code) {
       this.statusCode = code;
       return this;
@@ -68,7 +73,7 @@ export async function callController(handler, req = {}) {
   await handler({ params: {}, query: {}, body: {}, ...req }, res, (err) => {
     error = err;
   });
-  return { status: res.statusCode, body: res.body, error };
+  return { status: res.statusCode, body: res.body, headers: res.headers, error };
 }
 
 export const student = { userId: 7, role: 'student' };

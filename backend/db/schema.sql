@@ -207,6 +207,8 @@ CREATE TABLE grades (
             ELSE 'F'
         END
     ) STORED,
+    -- true when the student entered it themselves (not an official record)
+    self_reported BOOLEAN NOT NULL DEFAULT false,
     CONSTRAINT uq_grade_per_course UNIQUE (user_id, course_id, semester)
 );
 
@@ -308,7 +310,9 @@ CREATE TABLE lost_found_items (
     status      VARCHAR(10)  NOT NULL DEFAULT 'open'
                 CHECK (status IN ('open', 'returned')),
     posted_by   INTEGER      NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    created_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    photo       BYTEA,        -- one optional photo (JPEG or PNG), at most 2 MB
+    photo_type  VARCHAR(20)
 );
 
 CREATE INDEX idx_lost_found_created ON lost_found_items (created_at DESC);

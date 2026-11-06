@@ -10,7 +10,7 @@ import {
   createScheduleSchema,
 } from '../controllers/scheduleController.js';
 import {
-  listGrades, upsertGrade, upsertGradeSchema,
+  listGrades, upsertGrade, upsertGradeSchema, addMyGrade, addMyGradeSchema, deleteMyGrade,
 } from '../controllers/gradeController.js';
 import {
   listAnnouncements, createAnnouncement, deleteAnnouncement,
@@ -34,7 +34,7 @@ import {
   createQuizSchema, submitAttemptSchema,
 } from '../controllers/quizController.js';
 import {
-  listLostFound, createLostFound, markReturned, deleteLostFound, createLostFoundSchema,
+  listLostFound, createLostFound, markReturned, deleteLostFound, createLostFoundSchema, lostFoundPhoto
 } from '../controllers/lostFoundController.js';
 
 const router = Router();
@@ -52,6 +52,7 @@ router.get('/clubs', optionalAuth, listClubs);
 router.get('/locations', optionalAuth, listLocations);
 router.get('/locations/categories', optionalAuth, listCategories);
 router.get('/lost-found', optionalAuth, listLostFound);
+router.get('/lost-found/:id/photo', lostFoundPhoto);
 
 // Everything below requires a valid token.
 router.use(requireAuth);
@@ -83,6 +84,9 @@ router.put('/announcements/sync-cursor', validateBody(updateSyncCursorSchema), u
 // ---- Module 4: grades & performance ----
 router.get('/grades', listGrades);
 router.post('/grades', requireAdmin, validateBody(upsertGradeSchema), upsertGrade);
+// A student's own, self-entered results (never official ones).
+router.post('/grades/mine', validateBody(addMyGradeSchema), addMyGrade);
+router.delete('/grades/mine/:id', deleteMyGrade);
 
 // ---- Module 5: events & clubs ----
 // GET /events and GET /clubs are guest-readable routes, declared above requireAuth.

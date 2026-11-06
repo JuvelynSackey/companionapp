@@ -10,7 +10,8 @@ import { getGoogleIdTokenVerifier } from './services/googleAuth.js';
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+// Lost & Found photos arrive base64-encoded (2 MB at most once decoded).
+app.use(express.json({ limit: '3mb' }));
 app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 
 // Liveness probe, and a quick way to confirm the database is reachable.
