@@ -12,6 +12,22 @@ once results come in.
 
 ## 1. Get the app to testers
 
+**Build the install files (once, about 10 minutes).** Close other heavy
+programs first (the build needs a lot of memory). In VS Code open a terminal
+(Terminal > New Terminal; it is PowerShell) and run these three lines. The
+second reads the Gemini key from `backend\.env` without printing it.
+
+```powershell
+cd "C:\Users\Makel\Desktop\Final Year Project\campus-companion-app\mobile"
+$key = ((Get-Content ..\backend\.env | Where-Object { $_ -like 'GEMINI_API_KEY=*' }) -replace '^GEMINI_API_KEY=', '').Trim().Trim("'").Trim('"')
+flutter build apk --release --split-per-abi --dart-define=API_BASE_URL=https://campus-companion-backend-1bye.onrender.com/api --dart-define=GOOGLE_SIGN_IN_ENABLED=true --dart-define=GOOGLE_SERVER_CLIENT_ID=696171773446-d7i37n33smtb6qcjqlha1alfd8uqvfjs.apps.googleusercontent.com --dart-define=FCM_ENABLED=true --dart-define=GEMINI_API_KEY=$key
+```
+
+When it prints `Built ...`, the files are in
+`mobile\build\app\outputs\flutter-apk\`. The Gemini key is inside these files,
+so share them only with your testers, and restrict or replace the key in
+Google Cloud Console after the study.
+
 **Android phones** (most testers):
 
 1. Send them the install file (APK). Use the one for modern phones:
