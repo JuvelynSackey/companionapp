@@ -20,11 +20,11 @@ Everything here matches the code and the final report as of 3 November 2026. Whe
 
 There are three roles (student, lecturer and administrator), plus a read-only guest mode.
 
-**Evidence.** On 5–6 November 2026 all 794 automated test executions passed:
+**Evidence.** On 5–6 November 2026 all 797 automated test executions passed:
 
 | Suite | Passed |
 |---|---|
-| Flutter tests | 449 |
+| Flutter tests | 452 |
 | Backend unit tests | 119 |
 | Database tests | 14 |
 | API smoke tests | 212 |
@@ -151,7 +151,7 @@ The ER diagram is Figure 3.2 in the report.
 | Level | Tool | Result (5 Nov 2026) | What it proves |
 |---|---|---|---|
 | Static analysis | `flutter analyze` | No issues | No analyser-detected errors |
-| Mobile unit and widget tests | `flutter test` | 449 / 449 | Logic and screens, including grading and the FGPA, timetable parsing, walking routes, guest mode and the demo labels |
+| Mobile unit and widget tests | `flutter test` | 452 / 452 | Logic and screens, including grading and the FGPA, timetable parsing, walking routes, guest mode and the demo labels |
 | Backend unit tests (offline) | `node --test` | 119 / 119 | Grading scale, push fan-out, token verification, `optionalAuth`, and the events, clubs, quizzes, locations, Lost & Found and login controllers |
 | Database tests | `npm run test:db` | 14 / 14 | Real SQL against PostgreSQL: device tokens, Google account linking |
 | End-to-end API | `npm run test:smoke` | 212 / 212 | Real user journeys through the running API, including the role and ownership rules |

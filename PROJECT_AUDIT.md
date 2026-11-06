@@ -11,7 +11,7 @@ live app is now Flutter; the legacy Kotlin module `app/` was removed (see sectio
 | Check | Result |
 |---|---|
 | `flutter analyze` | No issues |
-| `flutter test` | 449 / 449 pass (6 November 2026) |
+| `flutter test` | 452 / 452 pass (6 November 2026) |
 | Backend `npm test` (offline) | 119 / 119 pass: the events, clubs, quizzes, locations, Lost & Found and register/login controllers against a scripted stand-in for the database (`src/testing/fakeDb.js`); `optionalAuth`, the gate on the guest-readable routes; the grading scale in `schema.sql`, the migration and `GRADE_POINTS` all match `docs/grading-scale-ug.json`; the push fan-out and FCM sender against in-memory fakes; the Google ID token verifier (including that push and Google sign-in share one Firebase app) |
 | Backend `npm run test:db` | 14 / 14 pass against local Postgres: the device-token/push-preference SQL, and the Google user-store SQL (linking, create, the uniqueness conflict) — both clean up after themselves |
 | Backend `npm run verify:integrations` | Live, read-only, 4 November 2026: 4 verified, 0 failed (Firebase credential loads; FCM accepts a dry-run message, nothing delivered; real Firebase rejects an invalid ID token; the Gemini API accepts the key). Google provider: ENABLED, with the debug signing fingerprint registered. On a physical phone (Samsung Galaxy A16, Android 16, local backend over USB) on 4 November 2026: a real Google sign-in created the account, and a push was delivered with the app in the background. Not yet checked: a notification while the app is open, the release signing key, a deployed server. |
