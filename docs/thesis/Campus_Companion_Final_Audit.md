@@ -15,11 +15,11 @@ All test suites were run on 3 November 2026 against the final code:
 | Check | Result |
 |---|---|
 | `flutter analyze` | No issues |
-| `flutter test` | 429 / 429 passed (5 November 2026) |
-| Backend offline unit tests (`npm test`) | 103 / 103 passed |
+| `flutter test` | 442 / 442 passed (5 November 2026) |
+| Backend offline unit tests (`npm test`) | 109 / 109 passed |
 | Backend database tests (`npm run test:db`) | 14 / 14 passed |
 | Backend API smoke tests (`npm run test:smoke`) | 212 / 212 passed |
-| **Total** | **758 passing test executions** (the sum of suite totals, not 758 unique test cases), all four suites run on 5 November 2026 |
+| **Total** | **777 passing test executions** (the sum of suite totals, not 777 unique test cases), all four suites run on 5 November 2026 |
 | Live integrations (`npm run verify:integrations`) | 4 November 2026: 4 verified, 0 failed: Firebase credential loads; FCM accepts a dry-run message (nothing delivered); real Firebase rejects an invalid ID token; the Gemini API accepts the key. Google provider: enabled, fingerprint registered. Not verified: push delivery to a phone, a real Google sign-in. |
 
 **The audit brief's baseline (332 / 38 / 8 / 180 = 558) was not used.** Those figures come from an older run, before Google Sign-In, the new dashboard and the regression tests were added. Before guest mode, the suites stood at 371 / 50 / 14 / 182 = 617, a result obtained on both 30 and 31 October. Guest mode then added 8 Flutter tests, 4 backend unit tests and 13 smoke checks. On 31 October, with guest mode, they were 379 / 54 / 14 / 195 = 642. The final round then added 2 Flutter tests and dropped 1 (380) and added 7 smoke checks (202). No suite regressed. The report uses the current figures above.
@@ -31,7 +31,7 @@ All test suites were run on 3 November 2026 against the final code:
 ## 2. Corrections made
 
 ### Accuracy (highest priority)
-- **Test figures:** every chapter uses the verified 429 / 103 / 14 / 212 = 758 (5 November 2026). No outdated totals remain.
+- **Test figures:** every chapter uses the verified 442 / 109 / 14 / 212 = 777 (5–6 November 2026). No outdated totals remain.
 - **Target-class calculator:**
   - **Before:** described as a "prediction" with "predictive accuracy".
   - **After:** described as a fixed formula, the average needed over the remaining credit hours to reach a chosen honours class (confirmed in `grade_prediction_engine.dart`). This affects Chapters 1, 3 and 4, Table 4.2 and Table 4.3.
@@ -172,6 +172,16 @@ Report:
 - **Report:** the 2017 regulations added to the references (now 20) and cited in Section 4.3.2; Sections 1.3, 3.2.1 (FR7), 4.3.2, 4.7 (Table 4.3, new "Degree-class estimate" row), 4.9, 5.3 and Table 4.2 updated; a recommendation added to compute the FGPA. Figures 4.2(b) and 4.2(c) retaken to show the new labels. The report is now 56 pages.
 
 ---
+
+### Features and report update (5–6 November 2026)
+- **Lost & Found:** the server suggests possible matches (open lost vs found posts sharing a title word; a shared place ranks higher) and pushes a notification to the other poster, never the caller and without contact details. Checked on the live server. The board is now a Resources tab (still in the account menu).
+- **Quizzes** moved from Resources into the AI Tutor ("Course quizzes", on the tutor's course).
+- **AI Tutor slides:** a course's slides can be attached as a PDF (12 MB at most) and are sent with each question. All Gemini requests use `gemini-3.5-flash-lite`; a busy reply is retried once on `gemini-3.1-flash-lite` (`gemini-2.5-flash-lite` returns 404 for this key). Live check: both models read a 1.2 MB PDF correctly; several requests were refused under high demand.
+- **Analytics:** results grouped by semester with semester GPA and running CGPA (matches a real UG transcript for the first semesters), and a "What if?" projection of CGPA, FGPA and class from expected grades.
+- **Fixes:** the course dropdown overflowed on long names (Quizzes, Tutor); the course list no longer sends a null lecturer.
+- **Tests:** Flutter 442/442 and backend unit 109/109 (5 November), database 14/14 (6 November), smoke 212/212 against the live server (5 November): **777**. The local smoke run now fails 8 grade checks only because the demo student holds a real transcript instead of the 4 sample grades.
+- **Report:** Sections 1.3, 4.2, 4.3.2 to 4.3.5, Tables 4.1 to 4.3, the summaries, limitations and future work updated; 58 pages. Two contents entries Word's spell-checker had changed to American spelling were kept British, matching the headings.
+- **Not released:** students recording their own results and Lost & Found photos (server code written and tested, app screens not built; the live database needs the new columns first). Listed as future work.
 
 ## 3. Feature classification (verified against the code and tests)
 

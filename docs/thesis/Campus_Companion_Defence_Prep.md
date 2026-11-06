@@ -20,12 +20,12 @@ Everything here matches the code and the final report as of 3 November 2026. Whe
 
 There are three roles (student, lecturer and administrator), plus a read-only guest mode.
 
-**Evidence.** On 5 November 2026 all 758 automated test executions passed:
+**Evidence.** On 5–6 November 2026 all 777 automated test executions passed:
 
 | Suite | Passed |
 |---|---|
-| Flutter tests | 429 |
-| Backend unit tests | 103 |
+| Flutter tests | 442 |
+| Backend unit tests | 109 |
 | Database tests | 14 |
 | API smoke tests | 212 |
 
@@ -151,8 +151,8 @@ The ER diagram is Figure 3.2 in the report.
 | Level | Tool | Result (5 Nov 2026) | What it proves |
 |---|---|---|---|
 | Static analysis | `flutter analyze` | No issues | No analyser-detected errors |
-| Mobile unit and widget tests | `flutter test` | 429 / 429 | Logic and screens, including grading and the FGPA, timetable parsing, walking routes, guest mode and the demo labels |
-| Backend unit tests (offline) | `node --test` | 103 / 103 | Grading scale, push fan-out, token verification, `optionalAuth`, and the events, clubs, quizzes, locations, Lost & Found and login controllers |
+| Mobile unit and widget tests | `flutter test` | 442 / 442 | Logic and screens, including grading and the FGPA, timetable parsing, walking routes, guest mode and the demo labels |
+| Backend unit tests (offline) | `node --test` | 109 / 109 | Grading scale, push fan-out, token verification, `optionalAuth`, and the events, clubs, quizzes, locations, Lost & Found and login controllers |
 | Database tests | `npm run test:db` | 14 / 14 | Real SQL against PostgreSQL: device tokens, Google account linking |
 | End-to-end API | `npm run test:smoke` | 212 / 212 | Real user journeys through the running API, including the role and ownership rules |
 | Live integrations | `npm run verify:integrations` | 3 verified, 0 failed | Firebase credential, FCM authorisation (dry run), Firebase token rejection |
