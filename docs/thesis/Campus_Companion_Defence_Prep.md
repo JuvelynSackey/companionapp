@@ -20,14 +20,14 @@ Everything here matches the code and the final report as of 3 November 2026. Whe
 
 There are three roles (student, lecturer and administrator), plus a read-only guest mode.
 
-**Evidence.** On 5–6 November 2026 all 797 automated test executions passed:
+**Evidence.** On 5–6 November 2026 all 809 automated test executions passed:
 
 | Suite | Passed |
 |---|---|
 | Flutter tests | 452 |
 | Backend unit tests | 119 |
 | Database tests | 14 |
-| API smoke tests | 212 |
+| API smoke tests | 224 |
 
 Flutter static analysis was clean. Mutation testing confirmed that the key tests fail when the code they check is broken.
 
@@ -98,7 +98,7 @@ Flutter app (Android / web)          Node.js + Express API             PostgreSQ
    - **Lost & Found:** post an item, mark it returned, then remove it. Point out that a guest sees the board without names or contact notes.
 4. **Log in as the administrator.** Post an emergency announcement and show it in Alerts. Open the admin panel and show account provisioning: lecturer and admin accounts can only be created here.
 5. **Evidence in the terminal:**
-   - `npm run test:smoke`: shows **212 passed, 0 failed**.
+   - `npm run test:smoke`: shows **224 passed, 0 failed** (on a database freshly set up with `npm run db:setup`).
    - `npm run verify:integrations`: shows 3 verified and 0 failed, and lists exactly what is not verified.
 
 > If the first smoke-test run says "fetch failed", run it again. The very first request after the server starts sometimes fails to connect; this happened consistently on 30 October and 3 November.
@@ -154,7 +154,7 @@ The ER diagram is Figure 3.2 in the report.
 | Mobile unit and widget tests | `flutter test` | 452 / 452 | Logic and screens, including grading and the FGPA, timetable parsing, walking routes, guest mode and the demo labels |
 | Backend unit tests (offline) | `node --test` | 119 / 119 | Grading scale, push fan-out, token verification, `optionalAuth`, and the events, clubs, quizzes, locations, Lost & Found and login controllers |
 | Database tests | `npm run test:db` | 14 / 14 | Real SQL against PostgreSQL: device tokens, Google account linking |
-| End-to-end API | `npm run test:smoke` | 212 / 212 | Real user journeys through the running API, including the role and ownership rules |
+| End-to-end API | `npm run test:smoke` | 224 / 224 | Real user journeys through the running API, including the role and ownership rules |
 | Live integrations | `npm run verify:integrations` | 3 verified, 0 failed | Firebase credential, FCM authorisation (dry run), Firebase token rejection |
 
 **Mutation testing.** For key rules, I deliberately broke the real code and checked that the tests then failed. The rules covered were:

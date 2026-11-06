@@ -18,8 +18,8 @@ All test suites were run on 3 November 2026 against the final code:
 | `flutter test` | 452 / 452 passed (6 November 2026) |
 | Backend offline unit tests (`npm test`) | 119 / 119 passed |
 | Backend database tests (`npm run test:db`) | 14 / 14 passed |
-| Backend API smoke tests (`npm run test:smoke`) | 212 / 212 passed |
-| **Total** | **797 passing test executions** (the sum of suite totals, not 797 unique test cases), all four suites run on 5 November 2026 |
+| Backend API smoke tests (`npm run test:smoke`) | 224 / 224 passed (6 November 2026, fresh test database) |
+| **Total** | **809 passing test executions** (the sum of suite totals, not 809 unique test cases), all four suites run on 5 November 2026 |
 | Live integrations (`npm run verify:integrations`) | 4 November 2026: 4 verified, 0 failed: Firebase credential loads; FCM accepts a dry-run message (nothing delivered); real Firebase rejects an invalid ID token; the Gemini API accepts the key. Google provider: enabled, fingerprint registered. Not verified: push delivery to a phone, a real Google sign-in. |
 
 **The audit brief's baseline (332 / 38 / 8 / 180 = 558) was not used.** Those figures come from an older run, before Google Sign-In, the new dashboard and the regression tests were added. Before guest mode, the suites stood at 371 / 50 / 14 / 182 = 617, a result obtained on both 30 and 31 October. Guest mode then added 8 Flutter tests, 4 backend unit tests and 13 smoke checks. On 31 October, with guest mode, they were 379 / 54 / 14 / 195 = 642. The final round then added 2 Flutter tests and dropped 1 (380) and added 7 smoke checks (202). No suite regressed. The report uses the current figures above.
@@ -31,7 +31,7 @@ All test suites were run on 3 November 2026 against the final code:
 ## 2. Corrections made
 
 ### Accuracy (highest priority)
-- **Test figures:** every chapter uses the verified 452 / 119 / 14 / 212 = 797 (5–6 November 2026). No outdated totals remain.
+- **Test figures:** every chapter uses the verified 452 / 119 / 14 / 224 = 809 (5–6 November 2026). No outdated totals remain.
 - **Target-class calculator:**
   - **Before:** described as a "prediction" with "predictive accuracy".
   - **After:** described as a fixed formula, the average needed over the remaining credit hours to reach a chosen honours class (confirmed in `grade_prediction_engine.dart`). This affects Chapters 1, 3 and 4, Table 4.2 and Table 4.3.
@@ -256,3 +256,10 @@ The audit brief asked for placeholders for unconfirmed personal details. These d
 - Figures restyled after a same-department report: each screenshot is now its own numbered figure (4.1 Welcome Screen to 4.10 Digital Student ID, replacing the three grouped figures with (a)–(d) panels), with a thin grey frame and a plain caption below; two screens share a row. Diagram captions are plain and in title case (e.g. "Figure 3.1: System Architecture"). Every reference in the text and Table 4.2 was renumbered, and the List of Figures has 14 entries.
 - Fixed while checking: the architecture diagram said 15 tables (now 16, as in Table 3.4); the ERD shows the new `self_reported` and `photo` columns; screenshot rows no longer carry keep-with-next, which had left headings stranded at the foot of pages (no page now ends with a heading). The report is 60 pages.
 - **New screenshots (6 November 2026):** Figures 4.8 Results by Semester, 4.9 What If?, 4.10 Add a Result, 4.11 AI Tutor with Lecture Slides, 4.15 Lost & Found Board and 4.16 Lost & Found Post Form, taken from the web build against the local backend with a second demonstration account (sample results, not the author's). The tutor answer is a real Gemini reply to a five-slide sample PDF and was checked against the slides; the item photos are drawings, as the report says. Campus-life figures renumbered 4.12-4.14. Taking Figure 4.11 exposed raw LaTeX in an AI answer; the formatter now shows plain maths (commit 43da107, 452 Flutter tests). The report is 62 pages, 20 figures.
+
+### Report compared with a same-department report (6 November 2026)
+- **Compared with** another student's report ("Final Year Project (1).pdf", a job portal; the PDF holds two copies of a ~55-page report). Main gaps found: per-feature test tables, a usability study, a performance evaluation, an objective-by-objective Chapter 5, and title-case table captions.
+- **Added:** Section 4.4.8 with Tables 4.2–4.5 (authentication, grades, Lost & Found, events and quizzes; Test case / Expected / Actual / Status) and Table 4.6 (all 224 smoke checks by function); Section 4.4.9 with Table 4.7 (live API timings, five runs each, 6 November 2026: data loads ~0.2 s, sign-in ~2.3 s because of bcrypt at 12 rounds, cold start 8.1 s, Gemini ~1.1 s); Section 5.2 Achievement of Research Objectives (one paragraph per objective). Former Tables 4.2–4.3 are now 4.8–4.9 and Chapter 5 sections 5.2–5.5 are 5.3–5.6, with cross-references updated. Table captions are plain title case and kept with their tables. Times New Roman kept (the other report uses Arial).
+- **Smoke test:** 12 checks added (matching, photos, self-entered results); 224/224 on a fresh local test database (`cc_smoke`), so the author's transcript in the main local database does not affect the fixture checks. Totals now 452 / 119 / 14 / 224 = **809**.
+- **Not added:** a usability evaluation. It needs real participants; `docs/usability-study.md` has the tester guide, the Google Form (8 feature statements plus the System Usability Scale) and the analysis plan. The report still states that no usability study has been done.
+- **Report:** 66 pages, 20 figures, 15 tables.
