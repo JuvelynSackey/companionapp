@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 ///   **bold**   *italic*   `code`   "* item" / "- item" -> "• item"   "## Title" -> bold
 ///   "---" / "***" / "___" -> a paragraph break
 List<TextSpan> formatMessage(String text, TextStyle base) {
-  final lines = text
+  final lines = plainMath(text)
       .split('\n')
       .map(_normaliseLine)
       .join('\n')
@@ -17,6 +17,37 @@ List<TextSpan> formatMessage(String text, TextStyle base) {
       .replaceAll(RegExp(r'^\n+|\n+$'), '');
 
   return _inlineSpans(lines, base);
+}
+
+/// Gemini sometimes writes maths in LaTeX ("$(1\times8) + (0\times4)$"),
+/// which a chat bubble would show raw. This turns the common commands into
+/// plain symbols and drops the $...$ delimiters around them. A dollar amount
+/// ("$10 and $20") is left alone: only a $...$ span that contains a LaTeX
+/// command, ^ or { is treated as maths.
+String plainMath(String text) {
+  var out = text.replaceAllMapped(
+    RegExp(r'\$\$([^$]+?)\$\$|\$(?!\s)([^$\n]*?[\\^{][^$\n]*?)(?<!\s)\$'),
+    (m) => m.group(1) ?? m.group(2)!,
+  );
+  out = out
+      .replaceAllMapped(RegExp(r'\\frac\{([^{}]*)\}\{([^{}]*)\}'), (m) => '${m[1]}/${m[2]}')
+      .replaceAllMapped(RegExp(r'\\sqrt\{([^{}]*)\}'), (m) => '√(${m[1]})')
+      .replaceAllMapped(RegExp(r'\\(?:text|mathrm|mathbf)\{([^{}]*)\}'), (m) => m[1]!)
+      .replaceAllMapped(RegExp(r'\^\{([^{}]*)\}'), (m) => '^${m[1]}');
+  const symbols = {
+    r'\times': '×', r'\div': '÷', r'\cdot': '·', r'\pm': '±', r'\leq': '≤', r'\geq': '≥',
+    r'\neq': '≠', r'\approx': '≈', r'\rightarrow': '→', r'\to': '→', r'\infty': '∞',
+    r'\le': '≤', r'\ge': '≥', r'\ne': '≠', r'\%': '%', r'\left': '', r'\right': '',
+  };
+  for (final entry in symbols.entries) {
+    // Spaces around the command go too, so "1\times8" and "1 \times 8"
+    // both become "1 × 8"; nothing else on the line is touched.
+    out = out.replaceAllMapped(RegExp('[ \\t]*${RegExp.escape(entry.key)}(?![A-Za-z])[ \\t]*'), (m) {
+      final symbol = entry.value;
+      return symbol.isEmpty || symbol == '%' ? symbol : ' $symbol ';
+    });
+  }
+  return out;
 }
 
 List<TextSpan> _inlineSpans(String text, TextStyle style) {

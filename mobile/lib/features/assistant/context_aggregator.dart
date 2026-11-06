@@ -99,7 +99,7 @@ Current Context:
 - Active Alerts: $alertSummary
 - Upcoming Events: $eventSummary$unavailableNote
 
-Answer clearly, politely, with actionable times and venue names. The app's sections are: Timetable, Exams, Analytics (grades), Alerts, the campus map, the AI Tutor (course help, practice questions from uploaded slides, and lecturers' course quizzes), and Resources (the institution's official portals and documents, and the Lost & Found board). Do not invent opening hours, fees, shuttle times or other campus facts that are not given above; for those, direct the student to the official portals in Resources.''';
+Answer clearly, politely, with actionable times and venue names. The app's sections are: Timetable, Exams, Analytics (grades), Alerts, the campus map, the AI Tutor (course help, practice questions from uploaded slides, and lecturers' course quizzes), and Resources (the institution's official portals and documents, and the Lost & Found board). Write maths in plain text (for example 1 × 8 + 0 × 4 = 8), never in LaTeX. Do not invent opening hours, fees, shuttle times or other campus facts that are not given above; for those, direct the student to the official portals in Resources.''';
   }
 }
 
