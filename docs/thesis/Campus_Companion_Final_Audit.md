@@ -15,11 +15,11 @@ All test suites were run on 3 November 2026 against the final code:
 | Check | Result |
 |---|---|
 | `flutter analyze` | No issues |
-| `flutter test` | 442 / 442 passed (5 November 2026) |
-| Backend offline unit tests (`npm test`) | 109 / 109 passed |
+| `flutter test` | 449 / 449 passed (6 November 2026) |
+| Backend offline unit tests (`npm test`) | 119 / 119 passed |
 | Backend database tests (`npm run test:db`) | 14 / 14 passed |
 | Backend API smoke tests (`npm run test:smoke`) | 212 / 212 passed |
-| **Total** | **777 passing test executions** (the sum of suite totals, not 777 unique test cases), all four suites run on 5 November 2026 |
+| **Total** | **794 passing test executions** (the sum of suite totals, not 794 unique test cases), all four suites run on 5 November 2026 |
 | Live integrations (`npm run verify:integrations`) | 4 November 2026: 4 verified, 0 failed: Firebase credential loads; FCM accepts a dry-run message (nothing delivered); real Firebase rejects an invalid ID token; the Gemini API accepts the key. Google provider: enabled, fingerprint registered. Not verified: push delivery to a phone, a real Google sign-in. |
 
 **The audit brief's baseline (332 / 38 / 8 / 180 = 558) was not used.** Those figures come from an older run, before Google Sign-In, the new dashboard and the regression tests were added. Before guest mode, the suites stood at 371 / 50 / 14 / 182 = 617, a result obtained on both 30 and 31 October. Guest mode then added 8 Flutter tests, 4 backend unit tests and 13 smoke checks. On 31 October, with guest mode, they were 379 / 54 / 14 / 195 = 642. The final round then added 2 Flutter tests and dropped 1 (380) and added 7 smoke checks (202). No suite regressed. The report uses the current figures above.
@@ -31,7 +31,7 @@ All test suites were run on 3 November 2026 against the final code:
 ## 2. Corrections made
 
 ### Accuracy (highest priority)
-- **Test figures:** every chapter uses the verified 442 / 109 / 14 / 212 = 777 (5–6 November 2026). No outdated totals remain.
+- **Test figures:** every chapter uses the verified 449 / 119 / 14 / 212 = 794 (5–6 November 2026). No outdated totals remain.
 - **Target-class calculator:**
   - **Before:** described as a "prediction" with "predictive accuracy".
   - **After:** described as a fixed formula, the average needed over the remaining credit hours to reach a chosen honours class (confirmed in `grade_prediction_engine.dart`). This affects Chapters 1, 3 and 4, Table 4.2 and Table 4.3.
@@ -181,7 +181,7 @@ Report:
 - **Fixes:** the course dropdown overflowed on long names (Quizzes, Tutor); the course list no longer sends a null lecturer.
 - **Tests:** Flutter 442/442 and backend unit 109/109 (5 November), database 14/14 (6 November), smoke 212/212 against the live server (5 November): **777**. The local smoke run now fails 8 grade checks only because the demo student holds a real transcript instead of the 4 sample grades.
 - **Report:** Sections 1.3, 4.2, 4.3.2 to 4.3.5, Tables 4.1 to 4.3, the summaries, limitations and future work updated; 58 pages. Two contents entries Word's spell-checker had changed to American spelling were kept British, matching the headings.
-- **Not released:** students recording their own results and Lost & Found photos (server code written and tested, app screens not built; the live database needs the new columns first). Listed as future work.
+- **Own results and Lost & Found photos (6 November 2026):** the new columns were added to the live database first (migration `2026-11-self-grades-photos.sql`, columns only), then the server and app. Checked on the live server: a self-entered result is saved and labelled, an attempt to overwrite an official grade is refused (409, the official A unchanged), the result can be deleted; a photo uploads and is served back byte for byte. Tests: Flutter 449/449, backend unit 119/119 (6 November) = **794** with database 14 and smoke 212. The report describes both features (Sections 3.3.3, 4.3.2, 4.3.5) and no longer lists them as future work; still 58 pages.
 
 ## 3. Feature classification (verified against the code and tests)
 
