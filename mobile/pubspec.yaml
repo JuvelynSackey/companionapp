@@ -51,6 +51,7 @@ dependencies:
   google_sign_in: ^7.2.0
   firebase_auth: ^6.7.1
   maplibre_gl: ^0.28.0
+  image_picker: ^1.2.4
 
 dev_dependencies:
   flutter_test:

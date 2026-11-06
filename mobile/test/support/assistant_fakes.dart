@@ -93,4 +93,7 @@ class FakeGradeApi implements GradeApi {
 
   @override
   Future<List<CourseGrade>> fetch() async => grades;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }

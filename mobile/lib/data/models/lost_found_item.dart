@@ -15,6 +15,7 @@ class LostFoundItem {
     required this.isMine,
     required this.canManage,
     this.possibleMatches = const [],
+    this.hasPhoto = false,
   });
 
   factory LostFoundItem.fromJson(Map<String, dynamic> json) => LostFoundItem(
@@ -29,6 +30,7 @@ class LostFoundItem {
         contact: json['contact'] as String?,
         isMine: json['isMine'] as bool? ?? false,
         canManage: json['canManage'] as bool? ?? false,
+        hasPhoto: json['hasPhoto'] as bool? ?? false,
         possibleMatches: [
           for (final m in (json['possibleMatches'] as List? ?? const []))
             LostFoundMatch(itemId: (m as Map<String, dynamic>)['itemId'] as int, title: m['title'] as String),
@@ -54,6 +56,9 @@ class LostFoundItem {
   /// Open posts of the other kind that may be the same item, best first.
   /// The server suggests them from shared words in the title and place.
   final List<LostFoundMatch> possibleMatches;
+
+  /// The post has a photo, served at GET /api/lost-found/{itemId}/photo.
+  final bool hasPhoto;
 }
 
 /// A post the server thinks may be the same item as another.

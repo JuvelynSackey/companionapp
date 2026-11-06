@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,7 +30,7 @@ class _FakeApi extends LostFoundApi {
   int matchesToReport = 0;
 
   @override
-  Future<int> post({required LostFoundKind kind, required String title, String? description, String? location, String? contact}) async {
+  Future<int> post({required LostFoundKind kind, required String title, String? description, String? location, String? contact, Uint8List? photo}) async {
     posts.add({'kind': kind, 'title': title, 'description': description, 'location': location, 'contact': contact});
     return matchesToReport;
   }
@@ -43,7 +45,7 @@ class _FakeApi extends LostFoundApi {
   Future<void> remove(int itemId) async => removed.add(itemId);
 }
 
-LostFoundItem _item(int id, {bool mine = false, bool canManage = false, bool returned = false, LostFoundKind kind = LostFoundKind.lost, List<LostFoundMatch> matches = const []}) =>
+LostFoundItem _item(int id, {bool mine = false, bool canManage = false, bool returned = false, LostFoundKind kind = LostFoundKind.lost, List<LostFoundMatch> matches = const [], bool photo = false}) =>
     LostFoundItem(
       itemId: id,
       kind: kind,
@@ -57,6 +59,7 @@ LostFoundItem _item(int id, {bool mine = false, bool canManage = false, bool ret
       isMine: mine,
       canManage: canManage,
       possibleMatches: matches,
+      hasPhoto: photo,
     );
 
 Future<_FakeApi> _pump(WidgetTester tester, List<LostFoundItem> items) async {
@@ -187,6 +190,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Posted. 1 possible match found; the poster has been notified.'), findsOneWidget);
+  });
+
+  test('an item reads whether it has a photo, and the photo URL is built from the API base', () {
+    final base = {'itemId': 4, 'kind': 'lost', 'title': 'Bottle', 'status': 'open', 'createdAt': '2026-11-04T10:00:00.000Z'};
+    expect(LostFoundItem.fromJson({...base, 'hasPhoto': true}).hasPhoto, isTrue);
+    expect(LostFoundItem.fromJson(base).hasPhoto, isFalse, reason: 'an older server sends no flag');
+    expect(_FakeApi(const []).photoUrl(4), endsWith('/lost-found/4/photo'));
+  });
+
+  testWidgets('a post with a photo shows it; one without shows no image', (tester) async {
+    await _pump(tester, [_item(1, photo: true), _item(2)]);
+    final images = tester.widgetList<Image>(find.byType(Image)).toList();
+    expect(images.length, 1);
+    expect((images.single.image as NetworkImage).url, endsWith('/lost-found/1/photo'));
+  });
+
+  testWidgets('the post form offers an optional photo', (tester) async {
+    await _pump(tester, []);
+    await tester.tap(find.text('Post an item'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add a photo (optional)'), findsOneWidget);
   });
 
   testWidgets('a title under three characters is not posted', (tester) async {

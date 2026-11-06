@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import '../../core/network/api_client.dart';
 import '../models/lost_found_item.dart';
 
@@ -20,6 +23,7 @@ class LostFoundApi {
     String? description,
     String? location,
     String? contact,
+    Uint8List? photo,
   }) =>
       _client.guard(() async {
         final res = await _client.dio.post('/lost-found', data: {
@@ -28,10 +32,14 @@ class LostFoundApi {
           if (description != null && description.isNotEmpty) 'description': description,
           if (location != null && location.isNotEmpty) 'location': location,
           if (contact != null && contact.isNotEmpty) 'contact': contact,
+          if (photo != null) 'photo': base64Encode(photo),
         });
         final data = res.data;
         return data is Map && data['possibleMatches'] is List ? (data['possibleMatches'] as List).length : 0;
       });
+
+  /// Where a post's photo is served (the board says whether there is one).
+  String photoUrl(int itemId) => '${_client.dio.options.baseUrl}/lost-found/$itemId/photo';
 
   /// Only the poster or an admin; the server answers 403 otherwise.
   Future<void> markReturned(int itemId) => _client.guard(() async {

@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/providers/core_providers.dart';
@@ -112,6 +115,20 @@ class _ItemCard extends ConsumerWidget {
               Text(DateFormat('d MMM').format(item.createdAt.toLocal()), style: TextStyle(color: campus.textMuted, fontSize: 12)),
             ],
           ),
+          if (item.hasPhoto) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.network(
+                ref.read(lostFoundApiProvider).photoUrl(item.itemId),
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                semanticLabel: 'Photo of ${item.title}',
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           Text(item.title, style: Theme.of(context).textTheme.titleMedium),
           if (item.location != null) ...[
@@ -212,6 +229,9 @@ class _ReportItemDialogState extends ConsumerState<ReportItemDialog> {
   final _location = TextEditingController();
   final _description = TextEditingController();
   final _contact = TextEditingController();
+
+  /// The chosen photo, already shrunk by the picker (see [_pickPhoto]).
+  Uint8List? _photo;
   LostFoundKind _kind = LostFoundKind.lost;
   bool _submitting = false;
   String? _error;
@@ -223,6 +243,33 @@ class _ReportItemDialogState extends ConsumerState<ReportItemDialog> {
     _description.dispose();
     _contact.dispose();
     super.dispose();
+  }
+
+  /// Camera or gallery; the picker shrinks the photo to at most 1280 px at
+  /// 70% quality (a few hundred KB), well under the server's 2 MB limit.
+  Future<void> _pickPhoto() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (sheet) => SafeArea(
+        child: Wrap(children: [
+          ListTile(leading: const Icon(Icons.photo_camera_outlined), title: const Text('Take a photo'), onTap: () => Navigator.of(sheet).pop(ImageSource.camera)),
+          ListTile(leading: const Icon(Icons.photo_library_outlined), title: const Text('Choose from gallery'), onTap: () => Navigator.of(sheet).pop(ImageSource.gallery)),
+        ]),
+      ),
+    );
+    if (source == null) return;
+    final picked = await ImagePicker().pickImage(source: source, maxWidth: 1280, maxHeight: 1280, imageQuality: 70);
+    if (picked == null) return;
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+    if (bytes.length > 2 * 1024 * 1024) {
+      setState(() => _error = 'That photo is too large (2 MB at most).');
+      return;
+    }
+    setState(() {
+      _photo = bytes;
+      _error = null;
+    });
   }
 
   Future<void> _submit() async {
@@ -238,6 +285,7 @@ class _ReportItemDialogState extends ConsumerState<ReportItemDialog> {
             location: _location.text.trim(),
             description: _description.text.trim(),
             contact: _contact.text.trim(),
+            photo: _photo,
           );
       if (mounted) Navigator.of(context).pop(matches);
     } on ApiException catch (e) {
@@ -291,6 +339,34 @@ class _ReportItemDialogState extends ConsumerState<ReportItemDialog> {
                   helperText: 'Only shown to signed-in students.',
                 ),
               ),
+              const SizedBox(height: 8),
+              if (_photo == null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: _submitting ? null : _pickPhoto,
+                    icon: const Icon(Icons.add_a_photo_outlined),
+                    label: const Text('Add a photo (optional)'),
+                  ),
+                )
+              else
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.memory(_photo!, height: 140, width: double.infinity, fit: BoxFit.cover),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: IconButton.filledTonal(
+                        tooltip: 'Remove photo',
+                        onPressed: () => setState(() => _photo = null),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ),
+                  ],
+                ),
               if (_error != null) Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ],
           ),

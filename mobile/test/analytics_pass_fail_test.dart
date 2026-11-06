@@ -18,6 +18,9 @@ class _FakeGradeApi implements GradeApi {
 
   @override
   Future<List<CourseGrade>> fetch() async => grades;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
 /// The app does not decide pass/fail itself: it shows the server's `passed`

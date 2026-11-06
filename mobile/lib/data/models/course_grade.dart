@@ -13,6 +13,7 @@ class CourseGrade {
     required this.letterGrade,
     required this.semester,
     required this.passed,
+    this.selfReported = false,
   });
 
   factory CourseGrade.fromJson(Map<String, dynamic> json) => CourseGrade(
@@ -24,6 +25,7 @@ class CourseGrade {
         letterGrade: json['letterGrade'] as String,
         semester: json['semester'] as String,
         passed: json['passed'] as bool,
+        selfReported: json['selfReported'] as bool? ?? false,
       );
 
   final int gradeId;
@@ -34,4 +36,7 @@ class CourseGrade {
   final String letterGrade;
   final String semester;
   final bool passed;
+
+  /// The student entered this result themselves; it is not an official record.
+  final bool selfReported;
 }

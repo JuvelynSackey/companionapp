@@ -9,6 +9,9 @@ import '../onboarding/institution_controller.dart';
 import 'analytics_providers.dart';
 import 'target_class_predictor.dart';
 import 'what_if_screen.dart';
+import 'add_result_dialog.dart';
+import '../../core/network/api_exception.dart';
+import '../../core/providers/core_providers.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
@@ -42,7 +45,23 @@ class AnalyticsScreen extends ConsumerWidget {
                   ),
                 ],
                 const SizedBox(height: 24),
-                Text('Results by semester', style: Theme.of(context).textTheme.titleMedium),
+                Row(
+                  children: [
+                    Expanded(child: Text('Results by semester', style: Theme.of(context).textTheme.titleMedium)),
+                    TextButton.icon(
+                      onPressed: () async {
+                        final saved = await showDialog<bool>(context: context, builder: (_) => const AddResultDialog());
+                        if (saved != true) return;
+                        ref.invalidate(gradesProvider);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Result added. Your CGPA and FGPA now include it.')));
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add a result'),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 if (items.isEmpty)
                   const Padding(
@@ -159,12 +178,36 @@ class _SemesterHeader extends StatelessWidget {
   }
 }
 
-class _GradeCard extends StatelessWidget {
+class _GradeCard extends ConsumerWidget {
   const _GradeCard({required this.grade});
   final CourseGrade grade;
 
+  /// Only the student's own, self-entered results can be removed.
+  Future<void> _remove(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove this result?'),
+        content: Text('${grade.courseCode} · ${grade.courseTitle} (${grade.letterGrade}), entered by you.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(gradeApiProvider).deleteMine(grade.gradeId);
+      ref.invalidate(gradesProvider);
+      messenger.showSnackBar(const SnackBar(content: Text('Result removed.')));
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final campus = Theme.of(context).campusTheme;
     return CampusCardTile(
       margin: const EdgeInsets.only(bottom: 8),
@@ -172,7 +215,11 @@ class _GradeCard extends StatelessWidget {
       radius: campus.cardRadius,
       child: ListTile(
         title: Text('${grade.courseCode} · ${grade.courseTitle}'),
-        subtitle: Text('${grade.creditHours} credit hours', style: TextStyle(color: campus.textMuted)),
+        subtitle: Text(
+          grade.selfReported ? '${grade.creditHours} credit hours · Entered by you (tap to remove)' : '${grade.creditHours} credit hours',
+          style: TextStyle(color: campus.textMuted),
+        ),
+        onTap: grade.selfReported ? () => _remove(context, ref) : null,
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -184,7 +231,8 @@ class _GradeCard extends StatelessWidget {
                 color: grade.passed ? campus.accentGlow : Theme.of(context).colorScheme.error,
               ),
             ),
-            Text('${grade.score.toStringAsFixed(0)}%', style: TextStyle(color: campus.textMuted, fontSize: 12)),
+            // A self-entered result has a letter, not a real mark.
+            if (!grade.selfReported) Text('${grade.score.toStringAsFixed(0)}%', style: TextStyle(color: campus.textMuted, fontSize: 12)),
           ],
         ),
       ),
