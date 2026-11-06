@@ -269,3 +269,9 @@ The audit brief asked for placeholders for unconfirmed personal details. These d
 - Section 4.4.1 now lists the environment of every result (offline tests, local database, physical phones, deployed backend, web build for screenshots, external services). Section 4.4.5 says the deployed smoke run was the earlier 212-check version.
 - Chapter 2: a critical comparison after Table 2.1 (what each work solved, how it was evaluated, what Campus Companion adopts and where it differs, and that it has not yet been evaluated with students) and the gap claim limited to the works reviewed; Section 1.2's claim limited to general-purpose tools.
 - Unchanged on purpose: no usability results were added (none collected); the declaration's signature and date lines are left for the author to complete by hand. 66 pages.
+
+### University of Ghana format (6 November 2026)
+- Checked against the stated UG undergraduate IT project format: Times New Roman 12, 1.5 line spacing (tables single), page numbers bottom centre, Roman numerals for preliminary pages and Arabic from Chapter One were already met.
+- **Margins changed** to 38 mm (1.5 in) on the left for binding and 25 mm (1 in) on the other sides; Word reports 108 / 72 / 72 / 72 pt. Everything was resized for the narrower text area (8,306 twips): tables scale down when wider, the abbreviations table, diagrams (540 px) and screenshot rows; contents dot leaders end at the new margin, and long contents entries wrap with the page number on the last line.
+- **APA 7:** all 20 references now italicise the journal name and volume, or the title of the book, report, dissertation, proceedings or web page, and are left-aligned (APA 7 does not justify reference lists). Hanging indent and https DOIs were already in place.
+- Report is now 69 pages; no heading, caption or contents entry is stranded or overrun.
