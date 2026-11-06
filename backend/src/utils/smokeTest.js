@@ -389,6 +389,70 @@ async function run() {
     }
   }
 
+  console.log('\nLost & Found matching and photos');
+  const matchIds = [];
+  try {
+    const finder = await newStudent('finder');
+    const lost = await call('POST', '/lost-found', { token: studentToken, body: { kind: 'lost', title: 'Smoke rucksack', location: 'Great Hall' } });
+    if (lost.data?.itemId) matchIds.push(lost.data.itemId);
+    // A tiny file that starts like a JPEG; the server checks the bytes, not the name.
+    const photo = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.from('smoke-photo')]);
+    const found = await call('POST', '/lost-found', {
+      token: finder.token,
+      body: { kind: 'found', title: 'Rucksack found', location: 'Great Hall', photo: photo.toString('base64') },
+    });
+    if (found.data?.itemId) matchIds.push(found.data.itemId);
+    check('a found post with a photo is accepted (201)', found.status === 201);
+    check('it reports the matching lost post', found.data?.possibleMatches?.some((m) => m.itemId === lost.data?.itemId) === true);
+
+    const board = await call('GET', '/lost-found', { token: studentToken });
+    const lostOnBoard = board.data?.items?.find((i) => i.itemId === lost.data?.itemId);
+    const foundOnBoard = board.data?.items?.find((i) => i.itemId === found.data?.itemId);
+    check('the lost post lists the found one as a possible match', lostOnBoard?.possibleMatches?.some((m) => m.itemId === found.data?.itemId) === true);
+    check('the board says the found post has a photo', foundOnBoard?.hasPhoto === true && lostOnBoard?.hasPhoto === false);
+
+    const served = await fetch(`${BASE}/lost-found/${found.data?.itemId}/photo`);
+    const servedBytes = Buffer.from(await served.arrayBuffer());
+    check('the photo is served back unchanged, as a JPEG', served.status === 200 && served.headers.get('content-type') === 'image/jpeg' && servedBytes.equals(photo));
+
+    const notImage = await call('POST', '/lost-found', {
+      token: finder.token,
+      body: { kind: 'found', title: 'Not a photo', photo: Buffer.from('<html>').toString('base64') },
+    });
+    check('a file that is not a JPEG or PNG is refused (400)', notImage.status === 400);
+  } finally {
+    for (const id of matchIds) await call('DELETE', `/lost-found/${id}`, { token: adminToken });
+  }
+
+  console.log('\nSelf-entered results');
+  {
+    const semester = `Smoke semester ${Date.now() % 100000}`;
+    const added = await call('POST', '/grades/mine', {
+      token: studentToken,
+      body: { courseCode: 'dcit 418', courseTitle: 'Systems and Network Security', creditHours: 3, score: 77, semester },
+    });
+    check('a student can record their own result (201, B+)', added.status === 201 && added.data?.letterGrade === 'B+' && added.data?.courseCode === 'DCIT 418');
+
+    const listed = await call('GET', '/grades', { token: studentToken });
+    const own = listed.data?.grades?.find((g) => g.gradeId === added.data?.gradeId);
+    check('it is listed and marked as entered by the student', own?.selfReported === true);
+    check('official grades stay marked as official', listed.data?.grades?.filter((g) => g.gradeId !== added.data?.gradeId).every((g) => g.selfReported === false) === true);
+
+    const overOfficial = await call('POST', '/grades/mine', {
+      token: studentToken,
+      body: { courseCode: 'DCIT 201', courseTitle: 'Mathematics', creditHours: 3, score: 30, semester: 'Semester 1 - 2025/2026' },
+    });
+    check('it cannot overwrite an official grade (409)', overOfficial.status === 409);
+
+    const stranger = await newStudent('grades-other');
+    const strangerDelete = await call('DELETE', `/grades/mine/${added.data?.gradeId}`, { token: stranger.token });
+    check("another student cannot delete it (404, as if it did not exist)", strangerDelete.status === 404);
+
+    const ownDelete = await call('DELETE', `/grades/mine/${added.data?.gradeId}`, { token: studentToken });
+    const after = await call('GET', '/grades', { token: studentToken });
+    check('the student can delete it', ownDelete.status === 204 && !after.data?.grades?.some((g) => g.gradeId === added.data?.gradeId));
+  }
+
   // Quizzes and events created below are tracked so they are removed even if
   // a check throws part-way. Deleting a quiz cascades to its questions and
   // attempts; deleting an event cascades to its RSVPs. Accounts are NOT
